@@ -8,7 +8,9 @@ lint:
 	pre-commit run --all-files
 
 test:
-	pytest
+	python -m doctest README.md
+	pytest -x -v
+
 
 clean:
 	rm -rf .pytest_cache

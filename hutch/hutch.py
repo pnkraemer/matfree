@@ -17,7 +17,7 @@ from hutch.backend import flow, np, prng, transform
         "matvec_fn",
         "tangents_shape",
         "tangents_dtype",
-        "batch_size",
+        "num_samples_per_key",
         "generate_samples_fn",
     ),
 )
@@ -39,7 +39,7 @@ def diagonal(matvec_fn, **kwargs):
     return _stochastic_estimate(Q, **kwargs)
 
 
-def _stochastic_estimate(*args, batch_keys, **kwargs):
+def _stochastic_estimate(*args, keys, **kwargs):
     """Hutchinson-style stochastic estimation."""
 
     @transform.jit
@@ -47,7 +47,7 @@ def _stochastic_estimate(*args, batch_keys, **kwargs):
         return _stochastic_estimate_batch(*args, key=key, **kwargs)
 
     # Compute batches sequentially to reduce memory.
-    means = flow.map(f, xs=batch_keys)
+    means = flow.map(f, xs=keys)
 
     # Mean of batches is the mean of the total expectation
     return np.mean(means, axis=0)
@@ -60,10 +60,10 @@ def _stochastic_estimate_batch(
     tangents_shape,
     tangents_dtype,
     key,
-    batch_size,
+    num_samples_per_key=10_000,
     generate_samples_fn=prng.rademacher,
 ):
-    shape = (batch_size,) + tangents_shape
+    shape = (num_samples_per_key,) + tangents_shape
     samples = generate_samples_fn(key, shape=shape, dtype=tangents_dtype)
     return np.mean(transform.vmap(Q)(samples), axis=0)
 
