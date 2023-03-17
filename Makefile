@@ -2,6 +2,7 @@ format:
 	isort .
 	black .
 	yamlfix .
+	eof .
 
 lint:
 	pre-commit run --all-files
