@@ -10,14 +10,14 @@ Stochastic trace estimation and so on
 
 >>> a = jnp.reshape(jnp.arange(12.), (6, 2))
 >>> key = jax.random.PRNGKey(1)
->>> keys = jax.random.split(key, num=2)
+>>> keys = jax.random.split(key, num=2)  # a single batch
 >>> 
 >>> trace = hutch.trace(
 ...     keys=keys,
 ...     matvec_fn=lambda x: a.T @ (a @ x), 
 ...     tangents_shape=(2,), 
 ...     tangents_dtype=float, 
-...     batch_size=100, 
+...     num_samples_per_key=100, 
 ... )
 >>> print(trace)
 511.0

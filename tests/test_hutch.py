@@ -18,10 +18,10 @@ def fixture_key():
 
 
 @testing.parametrize("num_batches", [1_000])
-@testing.parametrize("batch_size", [1_000])
+@testing.parametrize("num_samples_per_key", [1_000])
 @testing.parametrize("dim", [1, 10])
 @testing.parametrize("generate_samples_fn", [prng.normal, prng.rademacher])
-def test_trace(fn, key, num_batches, batch_size, dim, generate_samples_fn):
+def test_trace(fn, key, num_batches, num_samples_per_key, dim, generate_samples_fn):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
     _, jvp = transform.linearize(fn, x0)
@@ -36,7 +36,7 @@ def test_trace(fn, key, num_batches, batch_size, dim, generate_samples_fn):
         tangents_shape=np.shape(x0),
         tangents_dtype=np.dtype(x0),
         keys=keys,
-        batch_size=batch_size,
+        num_samples_per_key=num_samples_per_key,
         generate_samples_fn=generate_samples_fn,
     )
     truth = np.trace(J)

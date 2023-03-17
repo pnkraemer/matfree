@@ -17,7 +17,7 @@ from hutch.backend import flow, np, prng, transform
         "matvec_fn",
         "tangents_shape",
         "tangents_dtype",
-        "batch_size",
+        "num_samples_per_key",
         "generate_samples_fn",
     ),
 )
@@ -60,10 +60,10 @@ def _stochastic_estimate_batch(
     tangents_shape,
     tangents_dtype,
     key,
-    batch_size,
+    num_samples_per_key,
     generate_samples_fn=prng.rademacher,
 ):
-    shape = (batch_size,) + tangents_shape
+    shape = (num_samples_per_key,) + tangents_shape
     samples = generate_samples_fn(key, shape=shape, dtype=tangents_dtype)
     return np.mean(transform.vmap(Q)(samples), axis=0)
 
