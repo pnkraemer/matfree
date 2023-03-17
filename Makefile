@@ -1,6 +1,7 @@
 format:
 	isort .
 	black .
+	yamlfix .
 
 lint:
 	pre-commit run --all-files

@@ -1,13 +1,10 @@
+---
 name: ci
-
 on:
   push:
-    branches:
-    - main
+    branches: [main]
   pull_request:
-    branches:
-    - main
-
+    branches: [main]
 jobs:
   lint:
     name: Lint with ${{ matrix.python-version }} on ${{ matrix.os }}
@@ -16,22 +13,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10"]
-        os: [ ubuntu-latest ]
+        python-version: ['3.10']
+        os: [ubuntu-latest]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install .[cpu,lint]
-    - name: Apply linter
-      run:
-        make lint
-
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .[cpu,lint]
+      - name: Apply linter
+        run: make lint
   test:
     name: Test with ${{ matrix.python-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -39,18 +34,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
-        os: [ ubuntu-latest ]
+        python-version: ['3.8', '3.9', '3.10']
+        os: [ubuntu-latest]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run:
-        pip install --upgrade pip
-        pip install .[cpu,test]
-    - name: Run tests
-      run:
-        make test
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install --upgrade pip pip install .[cpu,test]
+      - name: Run tests
+        run: make test
