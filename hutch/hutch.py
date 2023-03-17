@@ -39,7 +39,7 @@ def diagonal(matvec_fn, **kwargs):
     return _stochastic_estimate(Q, **kwargs)
 
 
-def _stochastic_estimate(*args, batch_keys, **kwargs):
+def _stochastic_estimate(*args, keys, **kwargs):
     """Hutchinson-style stochastic estimation."""
 
     @transform.jit
@@ -47,7 +47,7 @@ def _stochastic_estimate(*args, batch_keys, **kwargs):
         return _stochastic_estimate_batch(*args, key=key, **kwargs)
 
     # Compute batches sequentially to reduce memory.
-    means = flow.map(f, xs=batch_keys)
+    means = flow.map(f, xs=keys)
 
     # Mean of batches is the mean of the total expectation
     return np.mean(means, axis=0)
