@@ -60,7 +60,7 @@ def _stochastic_estimate_batch(
     tangents_shape,
     tangents_dtype,
     key,
-    num_samples_per_key,
+    num_samples_per_key=10_000,
     generate_samples_fn=prng.rademacher,
 ):
     shape = (num_samples_per_key,) + tangents_shape
