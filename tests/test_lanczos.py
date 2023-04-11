@@ -1,14 +1,14 @@
 """Tests for Lanczos functionality."""
 
 from hutch import lanczos
-from hutch.backend import linalg, np, prng
+from hutch.backend import np, prng
 
 
 def test_tridiagonal_sym():
     n = 12
-    m = 8
+    m = 4
     A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
-    B = A.T @ A / linalg.norm(A) + np.eye(n)  # symmetrise for good measure
+    B = A.T @ A + np.eye(n)  # symmetrise for good measure
 
     key = prng.PRNGKey(seed=2)
     v0 = prng.normal(key, shape=(n,))

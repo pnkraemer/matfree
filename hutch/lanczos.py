@@ -2,8 +2,12 @@
 from hutch.backend import linalg, np
 
 
-def tridiagonal_sym(matrix_vector_product, order, /, init_vec, threshold=1e-5):
+def tridiagonal_sym(matrix_vector_product, order, /, init_vec, threshold=None):
     ds, es, Ws = [], [], []
+
+    # Don't trust the result if orthogonality gets close to floating-point
+    # arithmetic limits
+    threshold = threshold or 100 * np.finfo(np.dtype(init_vec)).eps
 
     v, v_old = init_vec / linalg.norm(init_vec), 0.0
 
@@ -19,6 +23,7 @@ def tridiagonal_sym(matrix_vector_product, order, /, init_vec, threshold=1e-5):
         w = _reorthogonalise(w, Ws)
 
         beta = linalg.norm(w)
+        print(beta)
         beta_small = beta < threshold
         success_so_far = success_so_far and not beta_small
 

@@ -10,6 +10,7 @@ dot = jnp.dot
 diag = jnp.diag
 dtype = jnp.dtype
 eye = jnp.eye
+finfo = jnp.finfo
 flip = jnp.flip
 reshape = jnp.reshape
 shape = jnp.shape
