@@ -47,8 +47,15 @@ def tridiagonal_sym(matrix_vector_product, order, /, *, key, shape):
 
 
 def _reorthogonalise(w, Ws):
-    for tau in Ws:
+    Ws = np.stack(Ws)
+
+    def body_fn(carry, x):
+        w = carry
+        tau = x
         coeff = np.dot(w, tau)
         w = w - coeff * tau
         w = w / linalg.norm(w)
+        return w, None
+
+    w, _ = flow.scan(body_fn, init=w, xs=Ws)
     return w
