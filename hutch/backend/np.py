@@ -2,6 +2,7 @@
 
 import jax.numpy as jnp
 
+abs = jnp.abs
 asarray = jnp.asarray
 allclose = jnp.allclose
 arange = jnp.arange
@@ -12,6 +13,7 @@ dtype = jnp.dtype
 eye = jnp.eye
 finfo = jnp.finfo
 flip = jnp.flip
+log = jnp.log
 reshape = jnp.reshape
 shape = jnp.shape
 sin = jnp.sin
