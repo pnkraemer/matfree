@@ -1,41 +1,49 @@
 """Lanczos-style functionality."""
-from hutch.backend import linalg, np
+from hutch.backend import linalg, np, prng
 
 
-def tridiagonal_sym(matrix_vector_product, order, /, init_vec, threshold=None):
+def tridiagonal_sym(matrix_vector_product, order, /, *, key, shape):
     ds, es, Ws = [], [], []
+    init_vec = prng.normal(key, shape=shape)
 
     # Don't trust the result if orthogonality gets close to floating-point
     # arithmetic limits
-    threshold = threshold or 100 * np.finfo(np.dtype(init_vec)).eps
+    threshold = 100 * np.finfo(np.dtype(init_vec)).eps
 
-    v, v_old = init_vec / linalg.norm(init_vec), 0.0
+    # j = 1:
+    vj = init_vec / linalg.norm(init_vec)
+    wj_dash = matrix_vector_product(vj)
+    aj = np.dot(wj_dash, vj)
+    wj = wj_dash - aj * vj
 
-    beta = 0
-    success_so_far = True
+    vj_prev = vj
+    Ws.append(vj)
+    ds.append(aj)
+    for _ in range(2, order + 1):
+        bj = linalg.norm(wj)
 
-    for _ in range(order):
-        w = matrix_vector_product(v)
-        w = w - beta * v_old
+        print(linalg.norm(bj))
+        if bj < threshold:
+            _, key = prng.split(key)
+            vj = prng.normal(key, shape=shape)
+            vj = _reorthogonalise(vj, Ws)
+        else:
+            vj = wj / bj
+        Ws.append(vj)
 
-        alpha = np.dot(w, v)
-        w = w - alpha * v
-        w = _reorthogonalise(w, Ws)
+        wj_dash = matrix_vector_product(vj)
+        aj = np.dot(wj_dash, vj)
+        wj = wj_dash - aj * vj - bj * vj_prev
+        vj_prev = vj
+        ds.append(aj)
+        es.append(bj)
 
-        beta = linalg.norm(w)
-        print(beta)
-        beta_small = beta < threshold
-        success_so_far = success_so_far and not beta_small
-
-        ds.append(alpha)
-        es.append(beta)
-        Ws.append(v)
-        v, v_old = w / beta, v
-    return success_so_far, (np.asarray(ds), np.asarray(es[:-1])), np.stack(Ws, axis=1)
+    return True, (np.asarray(ds), np.asarray(es)), np.asarray(Ws)
 
 
 def _reorthogonalise(w, Ws):
     for tau in Ws:
         coeff = np.dot(w, tau)
         w = w - coeff * tau
+        w = w / linalg.norm(w)
     return w
