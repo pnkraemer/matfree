@@ -25,6 +25,8 @@ def trace_of_matfn(matfn, matrix_vector_product, order, /, *, keys, shape):
     # todo: assert that
     #  -- while tridiagonal() is not reliable for large matrices --
     #  trace_of_matfn is.
+    # todo: can we use the full power of hutch.py here?
+    #  (e.g. control variates, batching, etc.)
     traces = key_to_trace(keys)
     is_not_nan_index = np.logical_not(np.isnan(traces))
     return np.mean(traces[is_not_nan_index])
