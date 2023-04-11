@@ -2,21 +2,36 @@
 from hutch.backend import flow, linalg, np, prng, transform
 
 
+# todo: rethink name of function.
+# todo: move to hutch.py?
 def trace_of_matfn(matfn, matrix_vector_product, order, /, *, keys, shape):
     @transform.vmap
     def key_to_trace(k):
+        # todo: this only works because tridiagonal() itself
+        #  generates starting vectors as Gaussians.
         _, (d, e) = tridiagonal(matrix_vector_product, order, key=k, shape=shape)
+
+        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
+        #  use it here. Until then: an eigen-decomposition of size (order + 1)
+        #  does not hurt too much...
         T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
         s, Q = linalg.eigh(T)
 
         (d,) = shape
         return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
 
+    # todo: return number (and indices) of NaNs filtered out?
+    # todo: make lower-memory by combining map and vmap.
+    # todo: assert that
+    #  -- while tridiagonal() is not reliable for large matrices --
+    #  trace_of_matfn is.
     traces = key_to_trace(keys)
     is_not_nan_index = np.logical_not(np.isnan(traces))
     return np.mean(traces[is_not_nan_index])
 
 
+# todo: should this function even be public API? It is only here because of the
+#  function above. Depends on what the goal of this toolbox is, I guess...
 @transform.partial(transform.jit, static_argnums=(0, 1), static_argnames=("shape",))
 def tridiagonal(matrix_vector_product, order, /, *, key, shape):
     """Decompose A = V T V^t purely based on matvec-products with A."""
