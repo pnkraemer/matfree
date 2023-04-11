@@ -1,5 +1,5 @@
 """Lanczos-style functionality."""
-from hutch.backend import linalg, np, prng
+from hutch.backend import flow, linalg, np, prng
 
 
 def tridiagonal_sym(matrix_vector_product, order, /, *, key, shape):
@@ -22,13 +22,18 @@ def tridiagonal_sym(matrix_vector_product, order, /, *, key, shape):
     for _ in range(2, order + 1):
         bj = linalg.norm(wj)
 
-        print(linalg.norm(bj))
-        if bj < threshold:
-            _, key = prng.split(key)
-            vj = prng.normal(key, shape=shape)
-            vj = _reorthogonalise(vj, Ws)
-        else:
-            vj = wj / bj
+        def true_fn(_a, _b, B, k):
+            _, k = prng.split(k)
+            a = prng.normal(k, shape=shape)
+            a = _reorthogonalise(a, B)
+            return a, _b, B, k
+
+        def false_fn(a, b, B, k):
+            a = a / b
+            return a, b, B, k
+
+        reortho = bj < threshold
+        vj, bj, Ws, key = flow.cond(reortho, true_fn, false_fn, vj, bj, Ws, key)
         Ws.append(vj)
 
         wj_dash = matrix_vector_product(vj)
