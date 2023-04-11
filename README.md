@@ -16,6 +16,7 @@ Imports:
 
 ```
 
+### Traces
 
 Estimate traces as such:
 ```python
@@ -28,6 +29,9 @@ Estimate traces as such:
 ... )
 >>> print(jnp.round(trace))
 504.0
+>>> # for comparison:
+>>> print(jnp.round(jnp.trace(a.T @ a)))
+506.0
 
 ```
 The number of keys determines the number of sequential batches.
@@ -48,5 +52,37 @@ Determine the number of samples per batch as follows.
 ... )
 >>> print(jnp.round(trace))
 510.0
+>>> # for comparison:
+>>> print(jnp.round(jnp.trace(a.T @ a)))
+506.0
+
+```
+
+### Traces and diagonals
+
+Jointly estimating traces and diagonals improves performance.
+Here is how to use it:
+
+```python
+>>> keys = jax.random.split(key, num=10_000)  
+>>> trace, diagonal = hutch.trace_and_diagonal(
+...     keys=keys,
+...     matvec_fn=lambda x: a.T @ (a @ x), 
+...     tangents_shape=(2,), 
+...     tangents_dtype=float, 
+... )
+>>> print(jnp.round(trace))
+509.0
+
+>>> print(jnp.round(diagonal))
+[222. 287.]
+
+>>> # for comparison:
+>>> print(jnp.round(jnp.trace(a.T @ a)))
+506.0
+
+>>> print(jnp.round(jnp.diagonal(a.T @ a)))
+[220. 286.]
+
 
 ```
