@@ -2,6 +2,16 @@
 from hutch.backend import flow, linalg, np, prng, transform
 
 
+def trace_of_matfn(matfn, matrix_vector_product, order, /, *, key, shape):
+    _, (d, e) = tridiagonal(matrix_vector_product, order, key=key, shape=shape)
+
+    T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
+    s, Q = linalg.eigh(T)
+
+    (d,) = shape
+    return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
+
+
 @transform.partial(transform.jit, static_argnums=(0, 1), static_argnames=("shape",))
 def tridiagonal(matrix_vector_product, order, /, *, key, shape):
     """Decompose A = V T V^t purely based on matvec-products with A."""
