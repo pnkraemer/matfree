@@ -6,7 +6,7 @@ from hutch.backend import linalg, np, prng, testing
 
 @testing.fixture
 # don't exceed this value of 'n' because lanczos is not very stable.
-@testing.parametrize("n", [600])
+@testing.parametrize("n", [6])
 def A(n):
     A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
     A = A / linalg.norm(A)
@@ -17,9 +17,9 @@ def test_logdet(A):
     # todo: test this function for larger matrices.
     #  The n=6 limit is only for the below.
     n, _ = np.shape(A)
-    order = 10
+    order = 3
     key = prng.PRNGKey(1)
-    keys = prng.split(key, num=10_000)
+    keys = prng.split(key, num=100_000)
     received = lanczos.trace_of_matfn(
         np.log, lambda v: A @ v, order, keys=keys, shape=(n,)
     )
