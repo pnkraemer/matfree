@@ -19,6 +19,7 @@ def tridiagonal_sym(matrix_vector_product, order, /, *, key, shape):
     vj_prev = vj
     Ws.append(vj)
     ds.append(aj)
+    # todo: use scan() (maybe padd Ws and alpha/beta in zeros).
     for _ in range(2, order + 1):
         bj = linalg.norm(wj)
 
@@ -34,6 +35,7 @@ def tridiagonal_sym(matrix_vector_product, order, /, *, key, shape):
 
         reortho = bj < threshold
         vj, bj, Ws, key = flow.cond(reortho, true_fn, false_fn, vj, bj, Ws, key)
+
         Ws.append(vj)
 
         wj_dash = matrix_vector_product(vj)
