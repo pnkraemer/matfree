@@ -2,14 +2,19 @@
 from hutch.backend import flow, linalg, np, prng, transform
 
 
-def trace_of_matfn(matfn, matrix_vector_product, order, /, *, key, shape):
-    _, (d, e) = tridiagonal(matrix_vector_product, order, key=key, shape=shape)
+def trace_of_matfn(matfn, matrix_vector_product, order, /, *, keys, shape):
+    @transform.vmap
+    def key_to_trace(k):
+        _, (d, e) = tridiagonal(matrix_vector_product, order, key=k, shape=shape)
+        T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
+        s, Q = linalg.eigh(T)
 
-    T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
-    s, Q = linalg.eigh(T)
+        (d,) = shape
+        return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
 
-    (d,) = shape
-    return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
+    traces = key_to_trace(keys)
+    is_not_nan_index = np.logical_not(np.isnan(traces))
+    return np.mean(traces[is_not_nan_index])
 
 
 @transform.partial(transform.jit, static_argnums=(0, 1), static_argnames=("shape",))

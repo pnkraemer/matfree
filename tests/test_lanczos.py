@@ -15,11 +15,14 @@ def A(n):
 
 def test_logdet(A):
     n, _ = np.shape(A)
-    order = n - 1
+    order = 3
     key = prng.PRNGKey(1)
-    logdet = lanczos.trace_of_matfn(np.log, lambda v: A @ v, order, key=key, shape=(n,))
-
-    assert np.allclose(logdet, linalg.slogdet(A)[1])
+    keys = prng.split(key, num=100_000)
+    received = lanczos.trace_of_matfn(
+        np.log, lambda v: A @ v, order, keys=keys, shape=(n,)
+    )
+    expected = linalg.slogdet(A)[1]
+    assert np.allclose(received, expected, atol=1e-3, rtol=1e-3)
 
 
 def test_tridiagonal_error_for_too_high_order(A):
