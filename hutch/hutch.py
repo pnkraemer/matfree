@@ -83,7 +83,7 @@ def trace_and_diagonal(
     tangents_shape,
     tangents_dtype,
     keys,
-    generate_samples_fn,
+    generate_samples_fn=prng.normal,
 ):
     """Jointly estimate the trace and the diagonal stochastically.
 
@@ -105,6 +105,7 @@ def trace_and_diagonal(
         z = generate_samples_fn(key, shape=tangents_shape, dtype=tangents_dtype)
         y = z * (matvec_fn(z) - diag * z)
 
+        # todo: allow batch-mode.
         trace_new = _increment(trace, n, np.sum(y) + sum(diag))
         diag_new = _increment(diag, n, y + diag)
 
