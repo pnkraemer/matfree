@@ -6,7 +6,7 @@ from hutch.backend import flow, linalg, np, prng, transform
 # todo: move to hutch.py?
 def trace_of_matfn(
     matfn,
-    matrix_vector_product,
+    matvec_fn,
     order,
     /,
     *,
@@ -18,7 +18,7 @@ def trace_of_matfn(
     @transform.vmap
     def key_to_trace(k):
         v0 = generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
-        _, (d, e) = tridiagonal(matrix_vector_product, order, v0)
+        _, (d, e) = tridiagonal(matvec_fn, order, v0)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
@@ -43,7 +43,7 @@ def trace_of_matfn(
 
 # all arguments positional-only because we will rename arguments a lot
 @transform.partial(transform.jit, static_argnums=(0, 1))
-def tridiagonal(matrix_vector_product, order, init_vec, /):
+def tridiagonal(matvec_fn, order, init_vec, /):
     """Decompose A = V T V^t purely based on matvec-products with A."""
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
@@ -57,7 +57,7 @@ def tridiagonal(matrix_vector_product, order, init_vec, /):
 
     # j = 1:
     vj = init_vec / linalg.norm(init_vec)
-    wj_dash = matrix_vector_product(vj)
+    wj_dash = matvec_fn(vj)
     aj = np.dot(wj_dash, vj)
     wj = wj_dash - aj * vj
     vj_prev = vj
@@ -71,7 +71,7 @@ def tridiagonal(matrix_vector_product, order, init_vec, /):
         vj = _reorthogonalise(vj, Ws)
         Ws.append(vj)
 
-        wj_dash = matrix_vector_product(vj)
+        wj_dash = matvec_fn(vj)
         aj = np.dot(wj_dash, vj)
         wj = wj_dash - aj * vj - bj * vj_prev
         vj_prev = vj
