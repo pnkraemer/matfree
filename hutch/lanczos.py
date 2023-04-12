@@ -1,5 +1,5 @@
 """Lanczos-style functionality."""
-from hutch.backend import flow, linalg, np, prng, transform
+from hutch.backend import containers, flow, linalg, np, prng, transform
 
 
 # todo: rethink name of function.
@@ -41,10 +41,20 @@ def trace_of_matfn(
     return np.mean(traces[is_not_nan_index]), *is_nan_where
 
 
-# all arguments positional-only because we will rename arguments a lot
-@transform.partial(transform.jit, static_argnums=(0, 1))
+# all arguments are positional-only because we will rename arguments a lot
 def tridiagonal(matvec_fn, order, init_vec, /):
-    """Decompose A = V T V^t purely based on matvec-products with A."""
+    r"""Decompose A = V T V^t purely based on matvec-products with A.
+
+
+    Orthogonally project the original matrix onto the (n+1)-th order Krylov subspace
+
+    \{ v, Av, A^2v, ..., A^n v \}
+
+    using the Gram-Schmidt procedure.
+    The result is a tri-diagonal matrix whose spectrum
+    approximates the spectrum of the original matrix.
+    (More specifically, the spectrum tends to the 'most extreme' eigenvalues.)
+    """
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
@@ -53,46 +63,82 @@ def tridiagonal(matvec_fn, order, init_vec, /):
     if order >= ncols or order < 1:
         raise ValueError
 
-    diag = np.empty((order + 1,))
-    offdiag = np.empty((order,))
-    Q = np.empty((order + 1, ncols))
+    diag = np.zeros((order + 1,))
+    offdiag = np.zeros((order,))
+    Q = np.zeros((order + 1, ncols))
 
     # j = 1:
-    vj = init_vec / linalg.norm(init_vec)
-    wj_dash = matvec_fn(vj)
-    aj = np.dot(wj_dash, vj)
-    wj = wj_dash - aj * vj
-    vj_prev = vj
-    Q = Q.at[0, :].set(vj)
+    q, _ = _normalise(init_vec)
+    Q = Q.at[0, :].set(q)
+
+    q = matvec_fn(q)
+    q, aj = _gram_schmidt_orthogonalise(q, Q[0])
     diag = diag.at[0].set(aj)
 
-    # todo: use scan() (maybe padd Q and alpha/beta in zeros).
-    for idx_diag, idx_offdiag in zip(range(1, order + 1), range(order)):
-        bj = linalg.norm(wj)
-        vj = wj / bj
-        vj = _reorthogonalise(vj, Q)
-        Q = Q.at[idx_diag, :].set(vj)
-
-        wj_dash = matvec_fn(vj)
-        aj = np.dot(wj_dash, vj)
-        wj = wj_dash - aj * vj - bj * vj_prev
-        vj_prev = vj
-        diag = diag.at[idx_diag].set(aj)
-        offdiag = offdiag.at[idx_offdiag].set(bj)
-
-    return Q, (diag, offdiag)
+    init_val = _lanczos_init(Q, (diag, offdiag), q)
+    body_fun = transform.partial(_lanczos_iterate, matvec_fn=matvec_fn)
+    output_val = flow.fori_loop(
+        lower=1, upper=order + 1, body_fun=body_fun, init_val=init_val
+    )
+    return _lanczos_extract(output_val)
 
 
-def _reorthogonalise(w, Q):  # Gram-Schmidt
-    Q = np.stack(Q)
+_LanczosResult = containers.namedtuple("_LanczosState", ["Q", "diag", "offdiag"])
+_LanczosState = containers.namedtuple("_LanczosState", ["result", "q"])
 
-    def body_fn(carry, x):
-        w = carry
-        tau = x
-        coeff = np.dot(w, tau)
-        w = w - coeff * tau
-        w = w / linalg.norm(w)
-        return w, None
 
-    w, _ = flow.scan(body_fn, init=w, xs=Q)
-    return w
+def _lanczos_init(Q, diag_and_offdiag, q):
+    result = _LanczosResult(Q, *diag_and_offdiag)
+    return _LanczosState(result, q)
+
+
+def _lanczos_iterate(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
+    (Q, diag, offdiag), q = val
+
+    # This one is a hack:
+    #
+    # Re-orthogonalise agains ALL basis elements (see note) before storing
+    # This has a big impact on numerical stability
+    # But is a little bit of a hack.
+    # Note: we reorthogonalise against ALL columns of Q, not just
+    # the ones we have already computed. This increases the complexity
+    # of the whole iteration from n(n+1)/2 to n^2, but has the advantage
+    # that the whole computation has static bounds (thus we can JIT it all).
+    # Since 'Q' is padded with zeros, the numerical values are identical
+    # between both modes of computing.
+    #
+    # Todo: only reorthogonalise if |q| = 0?
+    q, bj = _normalise(q)
+    # if bj == 0:
+    q, _ = _gram_schmidt_orthogonalise_set(q, Q)
+    q, _ = _normalise(q)  # I don't know why, but this line is soooo crucial
+
+    Q = Q.at[i, :].set(q)
+    q = matvec_fn(q)
+    q, (aj, _) = _gram_schmidt_orthogonalise_set(q, [Q[i], Q[i - 1]])
+    diag = diag.at[i].set(aj)
+    offdiag = offdiag.at[i - 1].set(bj)
+
+    result = _LanczosResult(Q, diag, offdiag)
+    return _LanczosState(result, q)
+
+
+def _lanczos_extract(val):
+    (Q, *diag_and_offdiag), _ = val
+    return Q, diag_and_offdiag
+
+
+def _normalise(v):
+    b = linalg.norm(v)
+    return v / b, b
+
+
+def _gram_schmidt_orthogonalise_set(w, Q):  # Gram-Schmidt
+    w, coeffs = flow.scan(_gram_schmidt_orthogonalise, init=w, xs=np.asarray(Q))
+    return w, coeffs
+
+
+def _gram_schmidt_orthogonalise(v, w):
+    c = np.dot(v, w)
+    v_new = v - c * w
+    return v_new, c

@@ -9,3 +9,4 @@ jacfwd = jax.jacfwd
 jit = jax.jit
 vmap = jax.vmap
 partial = functools.partial
+disable_jit = jax.disable_jit

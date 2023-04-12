@@ -16,6 +16,7 @@ finfo = jnp.finfo
 flip = jnp.flip
 isnan = jnp.isnan
 log = jnp.log
+log10 = jnp.log10
 logical_not = jnp.logical_not
 mean = jnp.mean
 reshape = jnp.reshape
