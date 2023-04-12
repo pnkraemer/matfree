@@ -49,11 +49,13 @@ def tridiagonal(matvec_fn, order, init_vec, /):
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
 
-    (d,) = np.shape(init_vec)
-    if order >= d or order < 1:
+    (ncols,) = np.shape(init_vec)
+    if order >= ncols or order < 1:
         raise ValueError
 
-    ds, es, Ws = [], [], []
+    diag = np.empty((order + 1,))
+    offdiag = np.empty((order,))
+    Q = np.empty((order + 1, ncols))
 
     # j = 1:
     vj = init_vec / linalg.norm(init_vec)
@@ -61,28 +63,33 @@ def tridiagonal(matvec_fn, order, init_vec, /):
     aj = np.dot(wj_dash, vj)
     wj = wj_dash - aj * vj
     vj_prev = vj
-    Ws.append(vj)
-    ds.append(aj)
+    Q = Q.at[0, :].set(vj)
+    diag = diag.at[0].set(aj)
+    # Q.append(vj)
+    # diag.append(aj)
 
-    # todo: use scan() (maybe padd Ws and alpha/beta in zeros).
-    for _ in range(order):
+    # todo: use scan() (maybe padd Q and alpha/beta in zeros).
+    for idx_diag, idx_offdiag in zip(range(1, order + 1), range(order)):
         bj = linalg.norm(wj)
         vj = wj / bj
-        vj = _reorthogonalise(vj, Ws)
-        Ws.append(vj)
+        vj = _reorthogonalise(vj, Q)
+        Q = Q.at[idx_diag, :].set(vj)
+        # Q.append(vj)
 
         wj_dash = matvec_fn(vj)
         aj = np.dot(wj_dash, vj)
         wj = wj_dash - aj * vj - bj * vj_prev
         vj_prev = vj
-        ds.append(aj)
-        es.append(bj)
+        diag = diag.at[idx_diag].set(aj)
+        offdiag = offdiag.at[idx_offdiag].set(bj)
+        # diag.append(aj)
+        # offdiag.append(bj)
 
-    return np.asarray(Ws), (np.asarray(ds), np.asarray(es))
+    return Q, (diag, offdiag)
 
 
-def _reorthogonalise(w, Ws):  # Gram-Schmidt
-    Ws = np.stack(Ws)
+def _reorthogonalise(w, Q):  # Gram-Schmidt
+    Q = np.stack(Q)
 
     def body_fn(carry, x):
         w = carry
@@ -92,5 +99,5 @@ def _reorthogonalise(w, Ws):  # Gram-Schmidt
         w = w / linalg.norm(w)
         return w, None
 
-    w, _ = flow.scan(body_fn, init=w, xs=Ws)
+    w, _ = flow.scan(body_fn, init=w, xs=Q)
     return w

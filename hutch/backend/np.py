@@ -10,6 +10,7 @@ cos = jnp.cos
 dot = jnp.dot
 diag = jnp.diag
 dtype = jnp.dtype
+empty = jnp.empty
 eye = jnp.eye
 finfo = jnp.finfo
 flip = jnp.flip
