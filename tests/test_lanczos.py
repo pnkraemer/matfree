@@ -28,11 +28,9 @@ def A(n, num_significant_eigvals):
 
 
 @testing.parametrize("n", [200])
-@testing.parametrize("num_significant_eigvals", [10])
-@testing.parametrize("order", [15])  # ~1.5 * num_significant_eigvals
+@testing.parametrize("num_significant_eigvals", [4])
+@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
 def test_logdet(A, order):
-    # todo: test this function for larger matrices.
-    #  The n=6 limit is only for the below.
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     keys = prng.split(key, num=10_000)
@@ -49,7 +47,7 @@ def test_logdet(A, order):
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails
 
 
-@testing.parametrize("n", [100])
+@testing.parametrize("n", [6])
 @testing.parametrize("num_significant_eigvals", [4])
 def test_tridiagonal_error_for_too_high_order(A):
     n, _ = np.shape(A)
@@ -102,7 +100,7 @@ def test_tridiagonal_max_order(A):
     assert np.allclose(Q.T @ T @ Q, A, **tols_lanczos)
 
 
-@testing.parametrize("n", [100])
+@testing.parametrize("n", [50])
 @testing.parametrize("num_significant_eigvals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
 def test_tridiagonal(A, order):
@@ -115,11 +113,7 @@ def test_tridiagonal(A, order):
     tols_lanczos = {"atol": 1e-5, "rtol": 1e-5}
 
     assert np.shape(Q) == (order + 1, n)
-    QQt = Q @ Q.T
-    assert np.allclose(np.diag(QQt), 1.0)
-    # assert np.allclose(np.diag(QQt, 1), 0.), np.diag(QQt, 1)
-    # assert np.allclose(np.diag(QQt, -1), 0.), np.diag(QQt, -1)
-    # assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_lanczos), Q @ Q.T
+    assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_lanczos), Q @ Q.T
 
     # T = Q A Qt
     T = np.diag(d_m) + np.diag(e_m, -1) + np.diag(e_m, 1)
