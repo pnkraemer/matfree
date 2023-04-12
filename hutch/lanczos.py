@@ -65,8 +65,6 @@ def tridiagonal(matvec_fn, order, init_vec, /):
     vj_prev = vj
     Q = Q.at[0, :].set(vj)
     diag = diag.at[0].set(aj)
-    # Q.append(vj)
-    # diag.append(aj)
 
     # todo: use scan() (maybe padd Q and alpha/beta in zeros).
     for idx_diag, idx_offdiag in zip(range(1, order + 1), range(order)):
@@ -74,7 +72,6 @@ def tridiagonal(matvec_fn, order, init_vec, /):
         vj = wj / bj
         vj = _reorthogonalise(vj, Q)
         Q = Q.at[idx_diag, :].set(vj)
-        # Q.append(vj)
 
         wj_dash = matvec_fn(vj)
         aj = np.dot(wj_dash, vj)
@@ -82,8 +79,6 @@ def tridiagonal(matvec_fn, order, init_vec, /):
         vj_prev = vj
         diag = diag.at[idx_diag].set(aj)
         offdiag = offdiag.at[idx_offdiag].set(bj)
-        # diag.append(aj)
-        # offdiag.append(bj)
 
     return Q, (diag, offdiag)
 
