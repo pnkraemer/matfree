@@ -42,7 +42,6 @@ def trace_of_matfn(
 
 
 # all arguments are positional-only because we will rename arguments a lot
-@transform.partial(transform.jit, static_argnums=(0, 1))
 def tridiagonal(matvec_fn, order, init_vec, /):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
@@ -78,9 +77,9 @@ _LanczosResult = containers.namedtuple("_LanczosState", ["Q", "diag_and_offdiag"
 _LanczosState = containers.namedtuple("_LanczosState", ["result", "q"])
 
 
-def _lanczos_init(Q, diag_and_offdiag, q):
+def _lanczos_init(Q, diag_and_offdiag, v):
     result = _LanczosResult(Q, diag_and_offdiag)
-    return _LanczosState(result, q)
+    return _LanczosState(result, v)
 
 
 def _lanczos_apply(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
@@ -100,14 +99,15 @@ def _lanczos_apply(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
     #
     # Todo: only reorthogonalise if |q| = 0?
     q, bj = _normalise(q)
-    # if bj == 0:
     q, _ = _gram_schmidt_orthogonalise_set(q, Q)
-    q, _ = _normalise(q)  # I don't know why, but this line is soooo crucial
 
+    # I don't know why, but this re-normalisation is soooo crucial
+    q, _ = _normalise(q)
     Q = Q.at[i, :].set(q)
-    q = matvec_fn(q)
+
     # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
     #  that Q is initialised with zeros.
+    q = matvec_fn(q)
     q, (aj, _) = _gram_schmidt_orthogonalise_set(q, [Q[i], Q[i - 1]])
     diag = diag.at[i].set(aj)
     offdiag = offdiag.at[i - 1].set(bj)
