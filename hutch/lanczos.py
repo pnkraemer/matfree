@@ -42,6 +42,7 @@ def trace_of_matfn(
 
 
 # all arguments are positional-only because we will rename arguments a lot
+@transform.partial(transform.jit, static_argnums=(0, 1))
 def tridiagonal(matvec_fn, order, init_vec, /):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
@@ -67,33 +68,23 @@ def tridiagonal(matvec_fn, order, init_vec, /):
     offdiag = np.zeros((order,))
     Q = np.zeros((order + 1, ncols))
 
-    # j = 1:
-    q, _ = _normalise(init_vec)
-    Q = Q.at[0, :].set(q)
-
-    q = matvec_fn(q)
-    q, aj = _gram_schmidt_orthogonalise(q, Q[0])
-    diag = diag.at[0].set(aj)
-
-    init_val = _lanczos_init(Q, (diag, offdiag), q)
-    body_fun = transform.partial(_lanczos_iterate, matvec_fn=matvec_fn)
-    output_val = flow.fori_loop(
-        lower=1, upper=order + 1, body_fun=body_fun, init_val=init_val
-    )
+    init_val = _lanczos_init(Q, (diag, offdiag), init_vec)
+    body_fun = transform.partial(_lanczos_apply, matvec_fn=matvec_fn)
+    output_val = flow.fori_loop(0, order + 1, body_fun=body_fun, init_val=init_val)
     return _lanczos_extract(output_val)
 
 
-_LanczosResult = containers.namedtuple("_LanczosState", ["Q", "diag", "offdiag"])
+_LanczosResult = containers.namedtuple("_LanczosState", ["Q", "diag_and_offdiag"])
 _LanczosState = containers.namedtuple("_LanczosState", ["result", "q"])
 
 
 def _lanczos_init(Q, diag_and_offdiag, q):
-    result = _LanczosResult(Q, *diag_and_offdiag)
+    result = _LanczosResult(Q, diag_and_offdiag)
     return _LanczosState(result, q)
 
 
-def _lanczos_iterate(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
-    (Q, diag, offdiag), q = val
+def _lanczos_apply(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
+    (Q, (diag, offdiag)), q = val
 
     # This one is a hack:
     #
@@ -115,17 +106,19 @@ def _lanczos_iterate(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
 
     Q = Q.at[i, :].set(q)
     q = matvec_fn(q)
+    # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
+    #  that Q is initialised with zeros.
     q, (aj, _) = _gram_schmidt_orthogonalise_set(q, [Q[i], Q[i - 1]])
     diag = diag.at[i].set(aj)
     offdiag = offdiag.at[i - 1].set(bj)
 
-    result = _LanczosResult(Q, diag, offdiag)
+    result = _LanczosResult(Q, (diag, offdiag))
     return _LanczosState(result, q)
 
 
 def _lanczos_extract(val):
-    (Q, *diag_and_offdiag), _ = val
-    return Q, diag_and_offdiag
+    (Q, (diag, offdiag)), _ = val
+    return Q, (diag, offdiag)
 
 
 def _normalise(v):
