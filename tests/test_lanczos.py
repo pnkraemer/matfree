@@ -36,7 +36,7 @@ def test_logdet(A, order):
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     keys = prng.split(key, num=10_000)
-    received = lanczos.trace_of_matfn(
+    received, _is_nan_index = lanczos.trace_of_matfn(
         np.log,
         lambda v: A @ v,
         order,

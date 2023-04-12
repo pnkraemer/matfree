@@ -31,14 +31,14 @@ def trace_of_matfn(
 
     # todo: return number (and indices) of NaNs filtered out?
     # todo: make lower-memory by combining map and vmap.
-    # todo: assert that
-    #  -- while tridiagonal() is not reliable for large matrices --
-    #  trace_of_matfn is.
     # todo: can we use the full power of hutch.py here?
     #  (e.g. control variates, batching, etc.)
     traces = key_to_trace(keys)
-    is_not_nan_index = np.logical_not(np.isnan(traces))
-    return np.mean(traces[is_not_nan_index])
+    is_nan_index = np.isnan(traces)
+    is_nan_where = np.where(is_nan_index)
+
+    is_not_nan_index = np.logical_not(is_nan_index)
+    return np.mean(traces[is_not_nan_index]), *is_nan_where
 
 
 # all arguments positional-only because we will rename arguments a lot
