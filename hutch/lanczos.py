@@ -4,12 +4,21 @@ from hutch.backend import flow, linalg, np, prng, transform
 
 # todo: rethink name of function.
 # todo: move to hutch.py?
-def trace_of_matfn(matfn, matrix_vector_product, order, /, *, keys, shape):
+def trace_of_matfn(
+    matfn,
+    matrix_vector_product,
+    order,
+    /,
+    *,
+    keys,
+    tangents_shape,
+    tangents_dtype,
+    generate_samples_fn=prng.normal,
+):
     @transform.vmap
     def key_to_trace(k):
-        # todo: this only works because tridiagonal() itself
-        #  generates starting vectors as Gaussians.
-        _, (d, e) = tridiagonal(matrix_vector_product, order, key=k, shape=shape)
+        v0 = generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
+        _, (d, e) = tridiagonal(matrix_vector_product, order, v0)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
@@ -17,7 +26,7 @@ def trace_of_matfn(matfn, matrix_vector_product, order, /, *, keys, shape):
         T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
         s, Q = linalg.eigh(T)
 
-        (d,) = shape
+        (d,) = tangents_shape
         return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
 
     # todo: return number (and indices) of NaNs filtered out?
@@ -32,22 +41,18 @@ def trace_of_matfn(matfn, matrix_vector_product, order, /, *, keys, shape):
     return np.mean(traces[is_not_nan_index])
 
 
-# todo: should this function even be public API? It is only here because of the
-#  function above. Depends on what the goal of this toolbox is, I guess...
-@transform.partial(transform.jit, static_argnums=(0, 1), static_argnames=("shape",))
-def tridiagonal(matrix_vector_product, order, /, *, key, shape):
+# all arguments positional-only because we will rename arguments a lot
+@transform.partial(transform.jit, static_argnums=(0, 1))
+def tridiagonal(matrix_vector_product, order, init_vec, /):
     """Decompose A = V T V^t purely based on matvec-products with A."""
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
 
-    init_vec = prng.normal(key, shape=shape)
-    (d,) = shape
+    (d,) = np.shape(init_vec)
     if order >= d or order < 1:
         raise ValueError
 
-    # Don't trust the result if orthogonality gets close to floating-point
-    # arithmetic limits
     ds, es, Ws = [], [], []
 
     # j = 1:

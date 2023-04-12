@@ -37,7 +37,12 @@ def test_logdet(A, order):
     key = prng.PRNGKey(1)
     keys = prng.split(key, num=10_000)
     received = lanczos.trace_of_matfn(
-        np.log, lambda v: A @ v, order, keys=keys, shape=(n,)
+        np.log,
+        lambda v: A @ v,
+        order,
+        keys=keys,
+        tangents_shape=(n,),
+        tangents_dtype=np.dtype(A),
     )
     expected = linalg.slogdet(A)[1]
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
@@ -50,10 +55,11 @@ def test_tridiagonal_error_for_too_high_order(A):
     n, _ = np.shape(A)
     order = n
     key = prng.PRNGKey(1)
+    v0 = prng.normal(key, shape=(n,))
     with testing.raises(ValueError):
-        _ = lanczos.tridiagonal(lambda v: A @ v, order + 10, key=key, shape=(n,))
+        _ = lanczos.tridiagonal(lambda v: A @ v, order + 10, v0)
     with testing.raises(ValueError):
-        _ = lanczos.tridiagonal(lambda v: A @ v, order, key=key, shape=(n,))
+        _ = lanczos.tridiagonal(lambda v: A @ v, order, v0)
 
 
 @testing.parametrize("n", [6])
@@ -63,7 +69,8 @@ def test_tridiagonal_max_order(A):
     n, _ = np.shape(A)
     order = n - 1
     key = prng.PRNGKey(1)
-    Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, key=key, shape=(n,))
+    v0 = prng.normal(key, shape=(n,))
+    Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, v0)
 
     # Lanczos is not stable.
     tols_lanczos = {"atol": 1e-5, "rtol": 1e-5}
@@ -96,7 +103,8 @@ def test_tridiagonal_max_order(A):
 def test_tridiagonal(A, order):
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
-    Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, key=key, shape=(n,))
+    init_vec = prng.normal(key, shape=(n,))
+    Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, init_vec)
 
     # Lanczos is not stable.
     tols_lanczos = {"atol": 1e-5, "rtol": 1e-5}
