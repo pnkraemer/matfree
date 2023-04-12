@@ -17,6 +17,7 @@ isnan = jnp.isnan
 log = jnp.log
 logical_not = jnp.logical_not
 reshape = jnp.reshape
+round = jnp.round
 shape = jnp.shape
 sin = jnp.sin
 stack = jnp.stack
