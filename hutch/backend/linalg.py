@@ -10,3 +10,4 @@ det = jnp.linalg.det
 slogdet = jnp.linalg.slogdet
 tridiagonal = jax.lax.linalg.tridiagonal
 eigh_tridiagonal = jax.scipy.linalg.eigh_tridiagonal
+qr = jnp.linalg.qr

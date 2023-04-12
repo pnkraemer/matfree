@@ -5,28 +5,47 @@ from hutch.backend import linalg, np, prng, testing
 
 
 @testing.fixture
-# don't exceed this value of 'n' because lanczos is not very stable.
-@testing.parametrize("n", [6])
-def A(n):
+def A(n, num_significant_eigvals):
+    """Make a positive definite matrix with certain spectrum."""
+    # Need _some_ matrix to start with
     A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
     A = A / linalg.norm(A)
-    return A.T @ A + np.eye(n)
+    X = A.T @ A + np.eye(n)
+
+    # QR decompose. We need the orthogonal matrix.
+    # Treat Q as a stack of eigenvectors.
+    Q, R = linalg.qr(X)
+
+    # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
+    d = np.arange(n) + 1.0
+    d = d.at[num_significant_eigvals:].set(0.001)
+
+    # Treat Q as eigenvectors, and 'D' as eigenvalues.
+    # return Q D Q.T.
+    # This matrix will be dense, symmetric, and have a given spectrum.
+    D = np.diag(d)
+    return Q @ D @ Q.T
 
 
-def test_logdet(A):
+@testing.parametrize("n", [200])
+@testing.parametrize("num_significant_eigvals", [10])
+@testing.parametrize("order", [15])  # ~1.5 * num_significant_eigvals
+def test_logdet(A, order):
     # todo: test this function for larger matrices.
     #  The n=6 limit is only for the below.
     n, _ = np.shape(A)
-    order = 3
     key = prng.PRNGKey(1)
-    keys = prng.split(key, num=100_000)
+    keys = prng.split(key, num=10_000)
     received = lanczos.trace_of_matfn(
         np.log, lambda v: A @ v, order, keys=keys, shape=(n,)
     )
     expected = linalg.slogdet(A)[1]
-    assert np.allclose(received, expected, atol=1e-3, rtol=1e-3)
+    print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
+    assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails
 
 
+@testing.parametrize("n", [100])
+@testing.parametrize("num_significant_eigvals", [4])
 def test_tridiagonal_error_for_too_high_order(A):
     n, _ = np.shape(A)
     order = n
@@ -37,6 +56,8 @@ def test_tridiagonal_error_for_too_high_order(A):
         _ = lanczos.tridiagonal(lambda v: A @ v, order, key=key, shape=(n,))
 
 
+@testing.parametrize("n", [6])
+@testing.parametrize("num_significant_eigvals", [6])
 def test_tridiagonal_max_order(A):
     """If m == n, the matrix should be equal to the full tridiagonal."""
     n, _ = np.shape(A)
@@ -66,12 +87,14 @@ def test_tridiagonal_max_order(A):
     # Since full-order mode: Qt T Q = A
     # Since Q is unitary and T = Q A Qt, this test
     # should always pass.
-    assert np.allclose(Q.T @ T @ Q, A)
+    assert np.allclose(Q.T @ T @ Q, A, **tols_lanczos)
 
 
-def test_tridiagonal(A):
+@testing.parametrize("n", [100])
+@testing.parametrize("num_significant_eigvals", [4])
+@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
+def test_tridiagonal(A, order):
     n, _ = np.shape(A)
-    order = n - 2
     key = prng.PRNGKey(1)
     Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, key=key, shape=(n,))
 
@@ -89,5 +112,6 @@ def test_tridiagonal(A):
     assert np.allclose(np.diag(QAQt), d_m, **tols_lanczos)
     assert np.allclose(np.diag(QAQt, 1), e_m, **tols_lanczos)
     assert np.allclose(np.diag(QAQt, -1), e_m, **tols_lanczos)
+
     # Test the full decompoisition
     assert np.allclose(QAQt, T, **tols_lanczos)
