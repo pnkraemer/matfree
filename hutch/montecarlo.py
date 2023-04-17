@@ -6,7 +6,7 @@ from hutch.backend import flow, np, prng, transform
 def montecarlo(f, /, *, sample_fn):
     def f_mc(key, /):
         x = sample_fn(key)
-        return f(x)
+        return f(x), None
 
     return f_mc
 
@@ -14,7 +14,7 @@ def montecarlo(f, /, *, sample_fn):
 def mean_vmap(f, num, /):
     def g(key, /):
         subkeys = prng.split(key, num)
-        fx = transform.vmap(f)(subkeys)
+        fx, _isnan = transform.vmap(f)(subkeys)
 
         isnan = None
         return np.mean(fx, axis=0), isnan
@@ -25,7 +25,7 @@ def mean_vmap(f, num, /):
 def mean_map(f, num, /):
     def g(key, /):
         subkeys = prng.split(key, num)
-        fx = flow.map(f, subkeys)
+        fx, _isnan = flow.map(f, subkeys)
 
         isnan = None
         return np.mean(fx, axis=0), isnan
@@ -39,7 +39,7 @@ def mean_loop(f, num, /):
             mean, k = mean_and_key
             _, subk = prng.split(k)
 
-            fx = f(subk)
+            fx, _isnan = f(subk)
 
             mean_new = (mean * i + fx) / (i + 1)
             return mean_new, subk
@@ -53,42 +53,6 @@ def mean_loop(f, num, /):
     return g
 
 
-#
-# from hutch.backend import np, flow, transform
-#
-#
-# def montecarlo(f, sample_fn):
-#     def g(key):
-#         x = sample_fn(key)
-#         return f(x), key
-#
-#     return g
-#
-#
-# def mean_vmap(f, n, advance_fn=prng.split):
-#     def g(key):
-#         keys = advance_fn(key, n)
-#         return np.mean(transform.vmap(f)(keys)), keys
-#
-#     return g
-#
-#
-# def mean_fori_loop(f, n, advance_fn=prng.split):
-#     def g(key):
-#         def body_fn(i, val):
-#             mean, k = val
-#             _, k = advance_fn(k, 2)
-#             fx, k = f(k)
-#             mean_new = (val * (i + 1) + fx) / (i + 2)
-#             return mean_new, k
-#
-#         return flow.fori_loop(
-#             lower=1, upper=n + 1, body_fn=body_fn, init_val=(key, 0.0)
-#         )
-#
-#     return g
-#
-#
 # r"""
 # Example
 # -------
