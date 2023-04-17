@@ -12,7 +12,6 @@ Imports:
 
 >>> a = jnp.reshape(jnp.arange(12.), (6, 2))
 >>> key = jax.random.PRNGKey(1)
->>> keys = jax.random.split(key, num=2)  # 2 sequential batches
 
 ```
 
@@ -22,13 +21,14 @@ Estimate traces as such:
 ```python
 >>> 
 >>> trace = hutch.trace(
-...     keys=keys,
+...     key=key,
 ...     matvec_fn=lambda x: a.T @ (a @ x), 
 ...     tangents_shape=(2,), 
-...     tangents_dtype=float, 
+...     tangents_dtype=float,
+...     num_batches=2,
 ... )
 >>> print(jnp.round(trace))
-504.0
+508.0
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
 506.0
@@ -41,17 +41,16 @@ Few large batches increases memory and runtime.
 Determine the number of samples per batch as follows.
 
 ```python
->>> # This time, 10 sequential batches
->>> keys = jax.random.split(key, num=10)  
 >>> trace = hutch.trace(
-...     keys=keys,
+...     key=key,
+...     num_batches=10,
 ...     matvec_fn=lambda x: a.T @ (a @ x), 
 ...     tangents_shape=(2,), 
 ...     tangents_dtype=float, 
-...     num_samples_per_key=100
+...     num_samples_per_batch=1000
 ... )
 >>> print(jnp.round(trace))
-510.0
+513.0
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
 506.0

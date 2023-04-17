@@ -45,10 +45,10 @@ def _stochastic_estimate(
     Q,
     /,
     *,
-    num_batches,
     tangents_shape,
     tangents_dtype,
     key,
+    num_batches=1,
     num_samples_per_batch=10_000,
     generate_samples_fn=prng.rademacher,
 ):
@@ -58,7 +58,7 @@ def _stochastic_estimate(
         return generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
 
     Q_mc = montecarlo.montecarlo(Q, sample_fn=sample_fn)
-    Q_batch = montecarlo.mean_loop(
+    Q_batch = montecarlo.mean_map(
         montecarlo.mean_vmap(Q_mc, num_samples_per_batch), num_batches
     )
     mean, _ = Q_batch(key)

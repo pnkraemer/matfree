@@ -30,8 +30,8 @@ def mean_map(f, num, /):
 
 
 def _filter_nan_and_mean(fx, how_many_previously):
-    is_nan = np.isnan(fx)
-    how_many = np.sum(np.where(is_nan, np.maximum(1, np.sum(how_many_previously)), 0))
+    is_nan = np.any(np.isnan(fx))
+    how_many = np.sum(np.where(is_nan, np.maximum(1, how_many_previously), 0))
     mean = np.nanmean(fx, axis=0)
     return mean, how_many
 
