@@ -15,19 +15,16 @@ def trace_of_matfn(
     tangents_dtype,
     generate_samples_fn=prng.normal,
 ):
+    """Compute the trace of the function of a matrix.
+
+    For example, logdet(M) = trace(log(M)) = trace(U log(D) Ut) = E[v U log(D) Ut vt]
+
+    """
+
     @transform.vmap
     def key_to_trace(k):
         v0 = generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
-        _, (d, e) = tridiagonal(matvec_fn, order, v0)
-
-        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-        #  use it here. Until then: an eigen-decomposition of size (order + 1)
-        #  does not hurt too much...
-        T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
-        s, Q = linalg.eigh(T)
-
-        (d,) = tangents_shape
-        return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
+        return slq_quadform(order=order, matvec_fn=matvec_fn, matfn=matfn)(v0)
 
     # todo: return number (and indices) of NaNs filtered out?
     # todo: make lower-memory by combining map and vmap.
@@ -41,10 +38,25 @@ def trace_of_matfn(
     return np.mean(traces[is_not_nan_index]), *is_nan_where
 
 
+def slq_quadform(*, order, matvec_fn, matfn):
+    def Q(v0):
+        _, (d, e) = tridiagonal(matvec_fn, order, v0)
+
+        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
+        #  use it here. Until then: an eigen-decomposition of size (order + 1)
+        #  does not hurt too much...
+        T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
+        s, Q = linalg.eigh(T)
+
+        (d,) = v0.shape
+        return d * np.dot(Q[0, :], transform.vmap(matfn)(s) * Q[0, :])
+
+    return Q
+
+
 # all arguments are positional-only because we will rename arguments a lot
 def tridiagonal(matvec_fn, order, init_vec, /):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
-
 
     Orthogonally project the original matrix onto the (n+1)-th order Krylov subspace
 
