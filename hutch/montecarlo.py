@@ -6,7 +6,7 @@ from hutch.backend import flow, np, prng, transform
 def montecarlo(f, /, *, sample_fn):
     def f_mc(key, /):
         x = sample_fn(key)
-        return f(x), None
+        return f(x)
 
     return f_mc
 
@@ -14,10 +14,8 @@ def montecarlo(f, /, *, sample_fn):
 def mean_vmap(f, num, /):
     def g(key, /):
         subkeys = prng.split(key, num)
-        fx, _isnan = transform.vmap(f)(subkeys)
-
-        isnan = None
-        return np.mean(fx, axis=0), isnan
+        fx = transform.vmap(f)(subkeys)
+        return np.mean(fx, axis=0)
 
     return g
 
@@ -25,10 +23,8 @@ def mean_vmap(f, num, /):
 def mean_map(f, num, /):
     def g(key, /):
         subkeys = prng.split(key, num)
-        fx, _isnan = flow.map(f, subkeys)
-
-        isnan = None
-        return np.mean(fx, axis=0), isnan
+        fx = flow.map(f, subkeys)
+        return np.mean(fx, axis=0)
 
     return g
 
@@ -39,7 +35,7 @@ def mean_loop(f, num, /):
             mean, k = mean_and_key
             _, subk = prng.split(k)
 
-            fx, _isnan = f(subk)
+            fx = f(subk)
 
             mean_new = (mean * i + fx) / (i + 1)
             return mean_new, subk
@@ -47,7 +43,6 @@ def mean_loop(f, num, /):
         init_val = (0.0, key)
         mean, _key = flow.fori_loop(1, upper=num + 1, body_fun=body, init_val=init_val)
 
-        isnan = None
-        return mean, isnan
+        return mean
 
     return g
