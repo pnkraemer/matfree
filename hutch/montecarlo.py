@@ -6,7 +6,7 @@ from hutch.backend import flow, np, prng, transform
 def montecarlo(f, /, *, sample_fn):
     def f_mc(key, /):
         x = sample_fn(key)
-        return f(x), None
+        return f(x), {}
 
     return f_mc
 
@@ -40,7 +40,7 @@ def mean_loop(f, num, /):
             mean_new = (mean * i + fx) / (i + 1)
             return mean_new, subk, info
 
-        init_val = (0.0, key, None)
+        init_val = (0.0, key, {})
         mean, _key, info = flow.fori_loop(
             1, upper=num + 1, body_fun=body, init_val=init_val
         )
