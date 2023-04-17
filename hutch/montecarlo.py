@@ -1,12 +1,36 @@
 """A million ways of computing arithmetic means."""
 
+from hutch.backend import flow, np, prng, transform
 
-def montecarlo(f, *, sample_fn):
-    def f_mc(key):
+
+def montecarlo(f, /, *, sample_fn):
+    def f_mc(key, /):
         x = sample_fn(key)
         return f(x)
 
     return f_mc
+
+
+def mean_vmap(f, num, /):
+    def g(key, /):
+        subkeys = prng.split(key, num)
+        fx = transform.vmap(f)(subkeys)
+
+        isnan = None
+        return np.mean(fx, axis=0), isnan
+
+    return g
+
+
+def mean_map(f, num, /):
+    def g(key, /):
+        subkeys = prng.split(key, num)
+        fx = flow.map(f, subkeys)
+
+        isnan = None
+        return np.mean(fx, axis=0), isnan
+
+    return g
 
 
 #
