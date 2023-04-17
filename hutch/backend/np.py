@@ -3,6 +3,7 @@
 import jax.numpy as jnp
 
 abs = jnp.abs
+any = jnp.any
 asarray = jnp.asarray
 allclose = jnp.allclose
 arange = jnp.arange
