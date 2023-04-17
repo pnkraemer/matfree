@@ -19,7 +19,7 @@ _ALL_MEAN_FNS = [montecarlo.mean_vmap, montecarlo.mean_map, montecarlo.mean_loop
 @testing.parametrize("mean_fn", _ALL_MEAN_FNS)
 def test_mean(f_mc, key, mean_fn):
     f_mc_mean = mean_fn(f_mc, 10_000)
-    received = f_mc_mean(key)
+    received, _num_nans = f_mc_mean(key)
     assert np.allclose(received, 1.0, rtol=1e-2)
 
 
@@ -27,5 +27,33 @@ def test_mean(f_mc, key, mean_fn):
 @testing.parametrize("mean_fn1, mean_fn2", (_ALL_MEAN_FNS[1:], _ALL_MEAN_FNS[:-1]))
 def test_mean_nested(f_mc, key, mean_fn1, mean_fn2):
     f_mc_mean = montecarlo.mean_loop(montecarlo.mean_vmap(f_mc, 5), 10_000)
-    received = f_mc_mean(key)
+    received, _num_nans = f_mc_mean(key)
     assert np.allclose(received, 1.0, rtol=1e-2)
+
+
+@testing.parametrize("key", [prng.PRNGKey(1)])
+@testing.parametrize("mean_fn", _ALL_MEAN_FNS)
+def test_mean_many_nans(key, mean_fn):
+    def f(x):
+        return np.nan * np.ones_like(x)
+
+    f_mc = montecarlo.montecarlo(f, sample_fn=prng.normal)
+    f_mc_mean = mean_fn(f_mc, 10_000)
+    _received, num_nans = f_mc_mean(key)
+    assert num_nans == 10_000
+
+
+@testing.parametrize("key", [prng.PRNGKey(1)])
+@testing.parametrize(
+    "mean_fn1, mean_fn2, mean_fn3",
+    zip(_ALL_MEAN_FNS[1:], _ALL_MEAN_FNS[:-1], _ALL_MEAN_FNS[1:]),
+)
+def test_mean_many_nans_nested(key, mean_fn1, mean_fn2, mean_fn3):
+    def f(x):
+        return np.nan * np.ones_like(x)
+
+    n1, n2, n3 = 3, 4, 5
+    f_mc = montecarlo.montecarlo(f, sample_fn=prng.normal)
+    f_mc_mean = mean_fn3(mean_fn2(mean_fn1(f_mc, n1), n2), n3)
+    _received, num_nans = f_mc_mean(key)
+    assert num_nans == n1 * n2 * n3
