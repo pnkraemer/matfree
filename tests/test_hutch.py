@@ -27,19 +27,41 @@ def test_trace(fn, key, num_batches, num_samples_per_key, dim, generate_samples_
     _, jvp = transform.linearize(fn, x0)
     J = transform.jacfwd(fn)(x0)
 
-    # Sequential batches
-    keys = prng.split(key, num=num_batches)
-
     # Estimate the trace
     estimate = hutch.trace(
         matvec_fn=jvp,
         tangents_shape=np.shape(x0),
         tangents_dtype=np.dtype(x0),
-        keys=keys,
-        num_samples_per_key=num_samples_per_key,
+        num_batches=num_batches,
+        key=key,
+        num_samples_per_batch=num_samples_per_key,
         generate_samples_fn=generate_samples_fn,
     )
     truth = np.trace(J)
+    assert np.allclose(estimate, truth, rtol=1e-2)
+
+
+@testing.parametrize("num_batches", [1_000])
+@testing.parametrize("num_samples_per_key", [1_000])
+@testing.parametrize("dim", [1, 10])
+@testing.parametrize("generate_samples_fn", [prng.normal, prng.rademacher])
+def test_diagonal(fn, key, num_batches, num_samples_per_key, dim, generate_samples_fn):
+    # Linearise function
+    x0 = prng.uniform(key, shape=(dim,))  # random lin. point
+    _, jvp = transform.linearize(fn, x0)
+    J = transform.jacfwd(fn)(x0)
+
+    # Estimate the trace
+    estimate = hutch.diagonal(
+        matvec_fn=jvp,
+        tangents_shape=np.shape(x0),
+        tangents_dtype=np.dtype(x0),
+        num_batches=num_batches,
+        key=key,
+        num_samples_per_batch=num_samples_per_key,
+        generate_samples_fn=generate_samples_fn,
+    )
+    truth = np.diag(J)
     assert np.allclose(estimate, truth, rtol=1e-2)
 
 

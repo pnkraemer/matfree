@@ -8,6 +8,7 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 
 import functools
 
+from hutch import montecarlo
 from hutch.backend import flow, np, prng, transform
 
 
@@ -17,7 +18,8 @@ from hutch.backend import flow, np, prng, transform
         "matvec_fn",
         "tangents_shape",
         "tangents_dtype",
-        "num_samples_per_key",
+        "num_batches",
+        "num_samples_per_batch",
         "generate_samples_fn",
     ),
 )
@@ -39,33 +41,28 @@ def diagonal(matvec_fn, **kwargs):
     return _stochastic_estimate(Q, **kwargs)
 
 
-def _stochastic_estimate(*args, keys, **kwargs):
-    """Hutchinson-style stochastic estimation."""
-
-    @transform.jit
-    def f(key):
-        return _stochastic_estimate_batch(*args, key=key, **kwargs)
-
-    # Compute batches sequentially to reduce memory.
-    means = flow.map(f, xs=keys)
-
-    # Mean of batches is the mean of the total expectation
-    return np.mean(means, axis=0)
-
-
-def _stochastic_estimate_batch(
+def _stochastic_estimate(
     Q,
     /,
     *,
     tangents_shape,
     tangents_dtype,
     key,
-    num_samples_per_key=10_000,
+    num_batches=1,
+    num_samples_per_batch=10_000,
     generate_samples_fn=prng.rademacher,
 ):
-    shape = (num_samples_per_key,) + tangents_shape
-    samples = generate_samples_fn(key, shape=shape, dtype=tangents_dtype)
-    return np.mean(transform.vmap(Q)(samples), axis=0)
+    """Hutchinson-style stochastic estimation."""
+
+    def sample_fn(k):
+        return generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
+
+    Q_mc = montecarlo.montecarlo(Q, sample_fn=sample_fn)
+    Q_batch = montecarlo.mean_map(
+        montecarlo.mean_vmap(Q_mc, num_samples_per_batch), num_batches
+    )
+    mean, _ = Q_batch(key)
+    return mean
 
 
 @functools.partial(
