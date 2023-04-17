@@ -19,3 +19,7 @@ def test_montecarlo(sample_fn):
     f_mc_mean = montecarlo.mean_map(f_mc, 10_000)
     received, _isnan = f_mc_mean(key)
     assert np.allclose(received, 1.0, rtol=1e-2)
+
+    f_mc_mean = montecarlo.mean_loop(f_mc, 10_000)
+    received, _isnan = f_mc_mean(key)
+    assert np.allclose(received, 1.0, rtol=1e-2)
