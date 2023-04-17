@@ -17,7 +17,7 @@ def A(n, num_significant_eigvals):
     Q, R = linalg.qr(X)
 
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
-    d = np.arange(n) + 1.0
+    d = np.arange(n) + 10.0
     d = d.at[num_significant_eigvals:].set(0.001)
 
     # Treat Q as eigenvectors, and 'D' as eigenvalues.
@@ -28,17 +28,20 @@ def A(n, num_significant_eigvals):
 
 
 @testing.parametrize("n", [200])
-@testing.parametrize("num_significant_eigvals", [4])
-@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
+@testing.parametrize("num_significant_eigvals", [30])
+@testing.parametrize("order", [10])
+# usually: ~1.5 * num_significant_eigvals.
+# But logdet seems to converge sooo much faster.
 def test_logdet(A, order):
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
-    keys = prng.split(key, num=10_000)
-    received, _is_nan_index = lanczos.trace_of_matfn(
+    received, num_nans = lanczos.trace_of_matfn(
         np.log,
         lambda v: A @ v,
         order,
-        keys=keys,
+        key=key,
+        num_samples_per_batch=10,
+        num_batches=1,
         tangents_shape=(n,),
         tangents_dtype=np.dtype(A),
     )

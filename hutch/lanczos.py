@@ -1,4 +1,5 @@
 """Lanczos-style functionality."""
+from hutch import montecarlo
 from hutch.backend import containers, flow, linalg, np, prng, transform
 
 
@@ -10,14 +11,33 @@ def trace_of_matfn(
     order,
     /,
     *,
-    keys,
+    key,
+    num_samples_per_batch,
+    num_batches,
     tangents_shape,
     tangents_dtype,
     generate_samples_fn=prng.normal,
 ):
-    @transform.vmap
-    def key_to_trace(k):
-        v0 = generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
+    """Compute the trace of the function of a matrix.
+
+    For example, logdet(M) = trace(log(M))  ~ trace(U log(D) Ut) = E[v U log(D) Ut vt].
+    """
+
+    def sample_fn(k):
+        return generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
+
+    Q = quadratic_form(matfn, matvec_fn, order)
+    Q_mc = montecarlo.montecarlo(Q, sample_fn=sample_fn)
+
+    Q_batch = montecarlo.mean_vmap(Q_mc, num_samples_per_batch)
+    Q_batch = montecarlo.mean_map(Q_batch, num_batches)
+    return Q_batch(key)
+
+
+def quadratic_form(matfn, matvec_fn, order, /):
+    """Approximate quadratic form."""
+
+    def Q(v0):
         _, (d, e) = tridiagonal(matvec_fn, order, v0)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
@@ -26,25 +46,17 @@ def trace_of_matfn(
         T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
         s, Q = linalg.eigh(T)
 
-        (d,) = tangents_shape
-        return np.dot(Q[0, :] ** 2, transform.vmap(matfn)(s)) * d
+        # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
+        # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
+        (d,) = v0.shape
+        return d * np.dot(Q[0, :], transform.vmap(matfn)(s) * Q[0, :])
 
-    # todo: return number (and indices) of NaNs filtered out?
-    # todo: make lower-memory by combining map and vmap.
-    # todo: can we use the full power of hutch.py here?
-    #  (e.g. control variates, batching, etc.)
-    traces = key_to_trace(keys)
-    is_nan_index = np.isnan(traces)
-    is_nan_where = np.where(is_nan_index)
-
-    is_not_nan_index = np.logical_not(is_nan_index)
-    return np.mean(traces[is_not_nan_index]), *is_nan_where
+    return Q
 
 
 # all arguments are positional-only because we will rename arguments a lot
 def tridiagonal(matvec_fn, order, init_vec, /):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
-
 
     Orthogonally project the original matrix onto the (n+1)-th order Krylov subspace
 
