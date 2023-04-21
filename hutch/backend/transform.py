@@ -4,7 +4,9 @@ import functools
 
 import jax
 
+# todo: renamed to `func`?
 linearize = jax.linearize
+vjp = jax.vjp
 jacfwd = jax.jacfwd
 jit = jax.jit
 vmap = jax.vmap
