@@ -8,7 +8,7 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from hutch import hutch
+>>> from hutch import hutch, sample
 
 >>> a = jnp.reshape(jnp.arange(12.), (6, 2))
 >>> key = jax.random.PRNGKey(1)
@@ -19,16 +19,11 @@ Imports:
 
 Estimate traces as such:
 ```python
->>> 
->>> trace = hutch.trace(
-...     lambda x: a.T @ (a @ x), 
-...     key=key,
-...     tangents_shape=(2,), 
-...     tangents_dtype=float,
-...     num_batches=2,
-... )
+>>> sample_fun = sample.normal(shape=(2,), dtype=float)
+>>> matvec = lambda x: a.T @ (a @ x)
+>>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
-508.0
+515.0
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
 506.0
@@ -41,16 +36,9 @@ Few large batches increases memory and runtime.
 Determine the number of samples per batch as follows.
 
 ```python
->>> trace = hutch.trace(
-...     lambda x: a.T @ (a @ x), 
-...     key=key,
-...     num_batches=10,
-...     tangents_shape=(2,), 
-...     tangents_dtype=float, 
-...     num_samples_per_batch=1000
-... )
+>>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun, num_batches=10)
 >>> print(jnp.round(trace))
-513.0
+507.0
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
 506.0
@@ -64,12 +52,7 @@ Here is how to use it:
 
 ```python
 >>> keys = jax.random.split(key, num=10_000)  
->>> trace, diagonal = hutch.trace_and_diagonal(
-...     lambda x: a.T @ (a @ x), 
-...     keys=keys,
-...     tangents_shape=(2,), 
-...     tangents_dtype=float, 
-... )
+>>> trace, diagonal = hutch.trace_and_diagonal(matvec, keys=keys, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
 509.0
 

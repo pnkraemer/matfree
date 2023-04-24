@@ -62,7 +62,7 @@ def mean_loop(f, num, /):
 
         # Run for-loop
         increment = transform.partial(_mean_increment, fun=f)
-        mstate = flow.fori_loop(1, num + 1, body_fun=increment, init_val=mstate)
+        mstate = flow.fori_loop(0, num, body_fun=increment, init_val=mstate)
         mean, _key, num_nans = mstate  # todo: why not return key?
 
         # Return results
