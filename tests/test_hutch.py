@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from hutch import hutch
+from hutch import hutch, sample
 from hutch.backend import linalg, np, prng, testing, transform
 
 
@@ -18,48 +18,46 @@ def fixture_key():
 
 
 @testing.parametrize("num_batches", [1_000])
-@testing.parametrize("num_samples_per_key", [1_000])
+@testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
-def test_trace(fun, key, num_batches, num_samples_per_key, dim, sample_fun):
+@testing.parametrize("sample_fun", [sample.normal, sample.rademacher])
+def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
     _, jvp = transform.linearize(fun, x0)
     J = transform.jacfwd(fun)(x0)
 
     # Estimate the trace
+    fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
     estimate = hutch.trace(
         jvp,
-        tangents_shape=np.shape(x0),
-        tangents_dtype=np.dtype(x0),
         num_batches=num_batches,
         key=key,
-        num_samples_per_batch=num_samples_per_key,
-        sample_fun=sample_fun,
+        num_samples_per_batch=num_samples_per_batch,
+        sample_fun=fun,
     )
     truth = np.trace(J)
     assert np.allclose(estimate, truth, rtol=1e-2)
 
 
 @testing.parametrize("num_batches", [1_000])
-@testing.parametrize("num_samples_per_key", [1_000])
+@testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
-def test_diagonal(fun, key, num_batches, num_samples_per_key, dim, sample_fun):
+@testing.parametrize("sample_fun", [sample.normal, sample.rademacher])
+def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
     _, jvp = transform.linearize(fun, x0)
     J = transform.jacfwd(fun)(x0)
 
     # Estimate the trace
+    fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
     estimate = hutch.diagonal(
         jvp,
-        tangents_shape=np.shape(x0),
-        tangents_dtype=np.dtype(x0),
         num_batches=num_batches,
         key=key,
-        num_samples_per_batch=num_samples_per_key,
-        sample_fun=sample_fun,
+        num_samples_per_batch=num_samples_per_batch,
+        sample_fun=fun,
     )
     truth = np.diag(J)
     assert np.allclose(estimate, truth, rtol=1e-2)
@@ -67,7 +65,7 @@ def test_diagonal(fun, key, num_batches, num_samples_per_key, dim, sample_fun):
 
 @testing.parametrize("num_samples", [10_000])
 @testing.parametrize("dim", [5])
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
+@testing.parametrize("sample_fun", [sample.normal, sample.rademacher])
 def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))
@@ -78,12 +76,7 @@ def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     keys = prng.split(key, num=num_samples)
 
     # Estimate the trace
-    trace, diag = hutch.trace_and_diagonal(
-        jvp,
-        tangents_shape=np.shape(x0),
-        tangents_dtype=np.dtype(x0),
-        keys=keys,
-        sample_fun=sample_fun,
-    )
+    fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
+    trace, diag = hutch.trace_and_diagonal(jvp, keys=keys, sample_fun=fun)
     assert np.allclose(diag, np.diag(J), rtol=1e-2), linalg.norm(diag - np.diag(J))
     assert np.allclose(trace, np.trace(J), rtol=1e-2), linalg.norm(trace - np.trace(J))
