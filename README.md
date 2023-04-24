@@ -22,7 +22,7 @@ Estimate traces as such:
 >>> 
 >>> trace = hutch.trace(
 ...     key=key,
-...     matvec_fn=lambda x: a.T @ (a @ x), 
+...     matvec_fun=lambda x: a.T @ (a @ x), 
 ...     tangents_shape=(2,), 
 ...     tangents_dtype=float,
 ...     num_batches=2,
@@ -44,7 +44,7 @@ Determine the number of samples per batch as follows.
 >>> trace = hutch.trace(
 ...     key=key,
 ...     num_batches=10,
-...     matvec_fn=lambda x: a.T @ (a @ x), 
+...     matvec_fun=lambda x: a.T @ (a @ x), 
 ...     tangents_shape=(2,), 
 ...     tangents_dtype=float, 
 ...     num_samples_per_batch=1000
@@ -66,7 +66,7 @@ Here is how to use it:
 >>> keys = jax.random.split(key, num=10_000)  
 >>> trace, diagonal = hutch.trace_and_diagonal(
 ...     keys=keys,
-...     matvec_fn=lambda x: a.T @ (a @ x), 
+...     matvec_fun=lambda x: a.T @ (a @ x), 
 ...     tangents_shape=(2,), 
 ...     tangents_dtype=float, 
 ... )
