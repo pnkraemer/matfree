@@ -6,6 +6,7 @@ format:
 
 lint:
 	pre-commit run --all-files
+	pylint hutch/
 
 test:
 	python -m doctest README.md

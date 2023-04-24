@@ -3,7 +3,7 @@
 import jax
 
 scan = jax.lax.scan
-map = jax.lax.map
+map = jax.lax.map  # pylint: disable=redefined-builtin
 cond = jax.lax.cond
 fori_loop = jax.lax.fori_loop
 while_loop = jax.lax.while_loop
