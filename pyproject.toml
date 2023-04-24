@@ -16,3 +16,7 @@ write_to_template = """
 # don't change, don't track in version control
 version = \"{version}\"
 """
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "_"]
+disable = ["fixme"]

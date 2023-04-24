@@ -58,9 +58,8 @@ def _stochastic_estimate(
         return generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
 
     Q_mc = montecarlo.montecarlo(Q, sample_fn=sample_fn)
-    Q_batch = montecarlo.mean_map(
-        montecarlo.mean_vmap(Q_mc, num_samples_per_batch), num_batches
-    )
+    Q_single_batch = montecarlo.mean_vmap(Q_mc, num_samples_per_batch)
+    Q_batch = montecarlo.mean_map(Q_single_batch, num_batches)
     mean, _ = Q_batch(key)
     return mean
 
