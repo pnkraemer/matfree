@@ -29,7 +29,7 @@ def test_trace(fun, key, num_batches, num_samples_per_key, dim, sample_fun):
 
     # Estimate the trace
     estimate = hutch.trace(
-        matvec_fun=jvp,
+        jvp,
         tangents_shape=np.shape(x0),
         tangents_dtype=np.dtype(x0),
         num_batches=num_batches,
@@ -53,7 +53,7 @@ def test_diagonal(fun, key, num_batches, num_samples_per_key, dim, sample_fun):
 
     # Estimate the trace
     estimate = hutch.diagonal(
-        matvec_fun=jvp,
+        jvp,
         tangents_shape=np.shape(x0),
         tangents_dtype=np.dtype(x0),
         num_batches=num_batches,
@@ -79,7 +79,7 @@ def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
 
     # Estimate the trace
     trace, diag = hutch.trace_and_diagonal(
-        matvec_fun=jvp,
+        jvp,
         tangents_shape=np.shape(x0),
         tangents_dtype=np.dtype(x0),
         keys=keys,

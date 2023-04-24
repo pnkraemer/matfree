@@ -14,8 +14,8 @@ from hutch.backend import containers, flow, np, prng, transform
 
 @functools.partial(
     transform.jit,
+    static_argnums=0,
     static_argnames=(
-        "matvec_fun",
         "tangents_shape",
         "tangents_dtype",
         "num_batches",
@@ -23,7 +23,7 @@ from hutch.backend import containers, flow, np, prng, transform
         "sample_fun",
     ),
 )
-def trace(matvec_fun, **kwargs):
+def trace(matvec_fun, /, **kwargs):
     """Estimate the trace of a matrix stochastically."""
 
     def quadform(vec):
@@ -32,7 +32,7 @@ def trace(matvec_fun, **kwargs):
     return _stochastic_estimate(quadform, **kwargs)
 
 
-def diagonal(matvec_fun, **kwargs):
+def diagonal(matvec_fun, /, **kwargs):
     """Estimate the diagonal of a matrix stochastically."""
 
     def quadform(vec):
@@ -59,8 +59,8 @@ def _stochastic_estimate(
 
     quadform_mc = montecarlo.montecarlo(quadform, sample_fun=sample)
     quadform_single_batch = montecarlo.mean_vmap(quadform_mc, num_samples_per_batch)
-    quadform_batch = montecarlo.mean_map(quadform_single_batch, num_batches)
-    mean, _ = quadform_batch(key)
+    quadform_batched = montecarlo.mean_map(quadform_single_batch, num_batches)
+    mean, _ = quadform_batched(key)
     return mean
 
 
@@ -69,8 +69,8 @@ _EstState = containers.namedtuple("EstState", ["traceest", "diagest", "num"])
 
 @functools.partial(
     transform.jit,
+    static_argnums=0,
     static_argnames=(
-        "matvec_fun",
         "tangents_shape",
         "tangents_dtype",
         "sample_fun",
@@ -78,6 +78,7 @@ _EstState = containers.namedtuple("EstState", ["traceest", "diagest", "num"])
 )
 def trace_and_diagonal(
     matvec_fun,
+    /,
     *,
     tangents_shape,
     tangents_dtype,
