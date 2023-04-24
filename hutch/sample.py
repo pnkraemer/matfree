@@ -1,6 +1,6 @@
 """Sampling algorithms."""
 
-from hutch.backend import prng
+from hutch.backend import containers, flow, prng, transform
 
 
 def normal(*, shape, dtype):
@@ -19,3 +19,26 @@ def rademacher(*, shape, dtype):
         return prng.rademacher(key, shape=shape, dtype=dtype)
 
     return fun
+
+
+_VDCState = containers.namedtuple("VDCState", ["n", "vdc", "denom"])
+
+
+def van_der_corput(n, /, base=2):
+    """Compute the 'n'th element of the Van-der-Corput sequence."""
+    state = _VDCState(n, vdc=0, denom=1)
+
+    vdc_modify = transform.partial(_van_der_corput_modify, base=base)
+    state = flow.while_loop(_van_der_corput_cond, vdc_modify, state)
+    return state.vdc
+
+
+def _van_der_corput_cond(state: _VDCState):
+    return state.n > 0
+
+
+def _van_der_corput_modify(state: _VDCState, *, base):
+    denom = state.denom * base
+    num, remainder = divmod(state.n, base)
+    vdc = state.vdc + remainder / denom
+    return _VDCState(num, vdc, denom)
