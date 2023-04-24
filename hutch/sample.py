@@ -24,7 +24,7 @@ def rademacher(*, shape, dtype):
 _VDCState = containers.namedtuple("VDCState", ["n", "vdc", "denom"])
 
 
-def van_der_corput(n, base=2):
+def van_der_corput(n, /, base=2):
     """Compute the 'n'th element of the Van-der-Corput sequence."""
     state = _VDCState(n, vdc=0, denom=1)
 
@@ -39,6 +39,6 @@ def _van_der_corput_cond(state: _VDCState):
 
 def _van_der_corput_modify(state: _VDCState, *, base):
     denom = state.denom * base
-    n, remainder = divmod(state.n, base)
+    num, remainder = divmod(state.n, base)
     vdc = state.vdc + remainder / denom
-    return _VDCState(n, vdc, denom)
+    return _VDCState(num, vdc, denom)
