@@ -9,7 +9,7 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 import functools
 
 from hutch import montecarlo
-from hutch.backend import flow, np, prng, transform
+from hutch.backend import containers, flow, np, prng, transform
 
 
 @functools.partial(
@@ -26,23 +26,23 @@ from hutch.backend import flow, np, prng, transform
 def trace(matvec_fun, **kwargs):
     """Estimate the trace of a matrix stochastically."""
 
-    def Q(x):
-        return np.dot(x, matvec_fun(x))
+    def quadform(vec):
+        return np.dot(vec, matvec_fun(vec))
 
-    return _stochastic_estimate(Q, **kwargs)
+    return _stochastic_estimate(quadform, **kwargs)
 
 
 def diagonal(matvec_fun, **kwargs):
     """Estimate the diagonal of a matrix stochastically."""
 
-    def Q(x):
-        return x * matvec_fun(x)
+    def quadform(vec):
+        return vec * matvec_fun(vec)
 
-    return _stochastic_estimate(Q, **kwargs)
+    return _stochastic_estimate(quadform, **kwargs)
 
 
 def _stochastic_estimate(
-    Q,
+    quadform,
     /,
     *,
     tangents_shape,
@@ -57,11 +57,14 @@ def _stochastic_estimate(
     def sample(k):
         return sample_fun(k, shape=tangents_shape, dtype=tangents_dtype)
 
-    Q_mc = montecarlo.montecarlo(Q, sample_fun=sample)
-    Q_single_batch = montecarlo.mean_vmap(Q_mc, num_samples_per_batch)
-    Q_batch = montecarlo.mean_map(Q_single_batch, num_batches)
-    mean, _ = Q_batch(key)
+    quadform_mc = montecarlo.montecarlo(quadform, sample_fun=sample)
+    quadform_single_batch = montecarlo.mean_vmap(quadform_mc, num_samples_per_batch)
+    quadform_batch = montecarlo.mean_map(quadform_single_batch, num_batches)
+    mean, _ = quadform_batch(key)
     return mean
+
+
+_EstState = containers.namedtuple("EstState", ["traceest", "diagest", "num"])
 
 
 @functools.partial(
@@ -93,23 +96,31 @@ def trace_and_diagonal(
     Adams et al., Estimating the Spectral Density of Large Implicit Matrices, 2018.
     """
     zeros = np.zeros(shape=tangents_shape, dtype=tangents_dtype)
-    init = (0.0, zeros, 0)  # trace, diag, n
+    state = _EstState(traceest=0.0, diagest=zeros, num=0)
 
-    def body_fun(carry, key):
-        trace, diag, n = carry
+    def sample(key):
+        return sample_fun(key, shape=tangents_shape, dtype=tangents_dtype)
 
-        z = sample_fun(key, shape=tangents_shape, dtype=tangents_dtype)
-        y = z * (matvec_fun(z) - diag * z)
+    body_fun = transform.partial(_update, sample_fun=sample, matvec_fun=matvec_fun)
+    state, _ = flow.scan(body_fun, init=state, xs=keys)
 
-        # todo: allow batch-mode.
-        trace_new = _increment(trace, n, np.sum(y) + sum(diag))
-        diag_new = _increment(diag, n, y + diag)
-
-        return (trace_new, diag_new, n + 1), ()
-
-    (trace_final, diag_final, _), _ = flow.scan(body_fun, init=init, xs=keys)
+    (trace_final, diag_final, _) = state
     return trace_final, diag_final
 
 
-def _increment(old, count, incoming):
+# todo: use fori_loop.
+def _update(carry, key, *, sample_fun, matvec_fun):
+    traceest, diagest, num = carry
+
+    vec_sample = sample_fun(key)
+    quadform_value = vec_sample * (matvec_fun(vec_sample) - diagest * vec_sample)
+
+    # todo: allow batch-mode.
+    traceest = _incr(traceest, num, np.sum(quadform_value) + sum(diagest))
+    diagest = _incr(diagest, num, quadform_value + diagest)
+
+    return _EstState(traceest=traceest, diagest=diagest, num=num + 1), ()
+
+
+def _incr(old, count, incoming):
     return (old * count + incoming) / (count + 1)

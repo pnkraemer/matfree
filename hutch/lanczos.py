@@ -49,9 +49,9 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
         # Since Q orthogonal (orthonormal) to init_vec, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
         (dim,) = init_vec.shape
-        return dim * np.dot(
-            eigvecs[0, :], transform.vmap(matfun)(eigvals) * eigvecs[0, :]
-        )
+
+        fx_eigvals = transform.vmap(matfun)(eigvals)
+        return dim * np.dot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
 
@@ -79,25 +79,23 @@ def tridiagonal(matvec_fun, order, init_vec, /):
 
     diag = np.zeros((order + 1,))
     offdiag = np.zeros((order,))
-    Q = np.zeros((order + 1, ncols))
+    basis = np.zeros((order + 1, ncols))
 
-    init_val = _lanczos_init(Q, (diag, offdiag), init_vec)
+    init_val = _lanczos_init(basis, (diag, offdiag), init_vec)
     body_fun = transform.partial(_lanczos_apply, matvec_fun=matvec_fun)
     output_val = flow.fori_loop(0, order + 1, body_fun=body_fun, init_val=init_val)
     return _lanczos_extract(output_val)
 
 
-_LanczosResult = containers.namedtuple("_LanczosState", ["Q", "diag_and_offdiag"])
-_LanczosState = containers.namedtuple("_LanczosState", ["result", "q"])
+_LanczosState = containers.namedtuple("_LanczosState", ["basis", "tridiag", "q"])
 
 
-def _lanczos_init(Q, diag_and_offdiag, v):
-    result = _LanczosResult(Q, diag_and_offdiag)
-    return _LanczosState(result, v)
+def _lanczos_init(basis, tridiag, init_vec):
+    return _LanczosState(basis, tridiag, init_vec)
 
 
-def _lanczos_apply(i, val: _LanczosState, *, matvec_fun) -> _LanczosState:
-    (Q, (diag, offdiag)), q = val
+def _lanczos_apply(i, state: _LanczosState, *, matvec_fun) -> _LanczosState:
+    basis, (diag, offdiag), vec = state
 
     # This one is a hack:
     #
@@ -112,40 +110,40 @@ def _lanczos_apply(i, val: _LanczosState, *, matvec_fun) -> _LanczosState:
     # between both modes of computing.
     #
     # Todo: only reorthogonalise if |q| = 0?
-    q, bj = _normalise(q)
-    q, _ = _gram_schmidt_orthogonalise_set(q, Q)
+    vec, length = _normalise(vec)
+    vec, _ = _gram_schmidt_orthogonalise_set(vec, basis)
 
     # I don't know why, but this re-normalisation is soooo crucial
-    q, _ = _normalise(q)
-    Q = Q.at[i, :].set(q)
+    vec, _ = _normalise(vec)
+    basis = basis.at[i, :].set(vec)
 
     # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
     #  that Q is initialised with zeros.
-    q = matvec_fun(q)
-    q, (aj, _) = _gram_schmidt_orthogonalise_set(q, [Q[i], Q[i - 1]])
-    diag = diag.at[i].set(aj)
-    offdiag = offdiag.at[i - 1].set(bj)
+    vec = matvec_fun(vec)
+    basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
+    vec, (coeff, _) = _gram_schmidt_orthogonalise_set(vec, basis_vectors_previous)
+    diag = diag.at[i].set(coeff)
+    offdiag = offdiag.at[i - 1].set(length)
 
-    result = _LanczosResult(Q, (diag, offdiag))
-    return _LanczosState(result, q)
-
-
-def _lanczos_extract(val):
-    (Q, (diag, offdiag)), _ = val
-    return Q, (diag, offdiag)
+    return _LanczosState(basis, (diag, offdiag), vec)
 
 
-def _normalise(v):
-    b = linalg.norm(v)
-    return v / b, b
+def _lanczos_extract(state: _LanczosState, /):
+    basis, (diag, offdiag), _ = state
+    return basis, (diag, offdiag)
 
 
-def _gram_schmidt_orthogonalise_set(w, Q):  # Gram-Schmidt
-    w, coeffs = flow.scan(_gram_schmidt_orthogonalise, init=w, xs=np.asarray(Q))
-    return w, coeffs
+def _normalise(vec):
+    length = linalg.norm(vec)
+    return vec / length, length
 
 
-def _gram_schmidt_orthogonalise(v, w):
-    c = np.dot(v, w)
-    v_new = v - c * w
-    return v_new, c
+def _gram_schmidt_orthogonalise_set(vec, vectors):  # Gram-Schmidt
+    vec, coeffs = flow.scan(_gram_schmidt_orthogonalise, init=vec, xs=vectors)
+    return vec, coeffs
+
+
+def _gram_schmidt_orthogonalise(vec1, vec2):
+    coeff = np.dot(vec1, vec2)
+    vec_ortho = vec1 - coeff * vec2
+    return vec_ortho, coeff
