@@ -5,9 +5,9 @@ from hutch.backend import containers, flow, linalg, np, prng, transform
 
 # todo: rethink name of function.
 # todo: move to hutch.py?
-def trace_of_matfn(
-    matfn,
-    matvec_fn,
+def trace_of_matfun(
+    matfun,
+    matvec_fun,
     order,
     /,
     *,
@@ -16,46 +16,48 @@ def trace_of_matfn(
     num_batches,
     tangents_shape,
     tangents_dtype,
-    generate_samples_fn=prng.normal,
+    sample_fun=prng.normal,
 ):
     """Compute the trace of the function of a matrix.
 
-    For example, logdet(M) = trace(log(M))  ~ trace(U log(D) Ut) = E[v U log(D) Ut vt].
+    For example, logdet(M) = trace(log(M)) ~ trace(U log(D) Ut) = E[v U log(D) Ut vt].
     """
 
-    def sample_fn(k):
-        return generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
+    def sample(k):
+        return sample_fun(k, shape=tangents_shape, dtype=tangents_dtype)
 
-    Q = quadratic_form(matfn, matvec_fn, order)
-    Q_mc = montecarlo.montecarlo(Q, sample_fn=sample_fn)
+    quadform = quadratic_form_slq(matfun, matvec_fun, order)
+    quadform_mc = montecarlo.montecarlo(quadform, sample_fun=sample)
 
-    Q_batch = montecarlo.mean_vmap(Q_mc, num_samples_per_batch)
-    Q_batch = montecarlo.mean_map(Q_batch, num_batches)
-    return Q_batch(key)
+    quadform_batch = montecarlo.mean_vmap(quadform_mc, num_samples_per_batch)
+    quadform_batch = montecarlo.mean_map(quadform_batch, num_batches)
+    return quadform_batch(key)
 
 
-def quadratic_form(matfn, matvec_fn, order, /):
-    """Approximate quadratic form."""
+def quadratic_form_slq(matfun, matvec_fun, order, /):
+    """Approximate quadratic form for stochastic Lanczos quadrature."""
 
-    def Q(v0):
-        _, (d, e) = tridiagonal(matvec_fn, order, v0)
+    def quadform(init_vec, /):
+        _, (diag, off_diag) = tridiagonal(matvec_fun, order, init_vec)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
         #  does not hurt too much...
-        T = np.diag(d) + np.diag(e, -1) + np.diag(e, 1)
-        s, Q = linalg.eigh(T)
+        dense_matrix = np.diag(diag) + np.diag(off_diag, -1) + np.diag(off_diag, 1)
+        eigvals, eigvecs = linalg.eigh(dense_matrix)
 
-        # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
+        # Since Q orthogonal (orthonormal) to init_vec, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        (d,) = v0.shape
-        return d * np.dot(Q[0, :], transform.vmap(matfn)(s) * Q[0, :])
+        (dim,) = init_vec.shape
+        return dim * np.dot(
+            eigvecs[0, :], transform.vmap(matfun)(eigvals) * eigvecs[0, :]
+        )
 
-    return Q
+    return quadform
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def tridiagonal(matvec_fn, order, init_vec, /):
+def tridiagonal(matvec_fun, order, init_vec, /):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
     Orthogonally project the original matrix onto the (n+1)-th order Krylov subspace
@@ -80,7 +82,7 @@ def tridiagonal(matvec_fn, order, init_vec, /):
     Q = np.zeros((order + 1, ncols))
 
     init_val = _lanczos_init(Q, (diag, offdiag), init_vec)
-    body_fun = transform.partial(_lanczos_apply, matvec_fn=matvec_fn)
+    body_fun = transform.partial(_lanczos_apply, matvec_fun=matvec_fun)
     output_val = flow.fori_loop(0, order + 1, body_fun=body_fun, init_val=init_val)
     return _lanczos_extract(output_val)
 
@@ -94,7 +96,7 @@ def _lanczos_init(Q, diag_and_offdiag, v):
     return _LanczosState(result, v)
 
 
-def _lanczos_apply(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
+def _lanczos_apply(i, val: _LanczosState, *, matvec_fun) -> _LanczosState:
     (Q, (diag, offdiag)), q = val
 
     # This one is a hack:
@@ -119,7 +121,7 @@ def _lanczos_apply(i, val: _LanczosState, *, matvec_fn) -> _LanczosState:
 
     # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
     #  that Q is initialised with zeros.
-    q = matvec_fn(q)
+    q = matvec_fun(q)
     q, (aj, _) = _gram_schmidt_orthogonalise_set(q, [Q[i], Q[i - 1]])
     diag = diag.at[i].set(aj)
     offdiag = offdiag.at[i - 1].set(bj)

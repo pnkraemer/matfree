@@ -3,16 +3,17 @@
 from hutch.backend import containers, flow, np, prng, transform
 
 
-def montecarlo(f, /, *, sample_fn):
+def montecarlo(f, /, *, sample_fun):
     """Turn a function into a Monte-Carlo problem.
 
     More specifically, f(x) becomes g(key) = f(h(key)),
     using a sample function h: key -> x.
     This can then be evaluated and averaged in batches, loops, and compositions thereof.
     """
+    # todo: what about randomised QMC? How do we best implement this?
 
     def f_mc(key, /):
-        sample = sample_fn(key)
+        sample = sample_fun(key)
         return f(sample), 0
 
     return f_mc

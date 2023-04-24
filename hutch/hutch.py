@@ -15,28 +15,28 @@ from hutch.backend import flow, np, prng, transform
 @functools.partial(
     transform.jit,
     static_argnames=(
-        "matvec_fn",
+        "matvec_fun",
         "tangents_shape",
         "tangents_dtype",
         "num_batches",
         "num_samples_per_batch",
-        "generate_samples_fn",
+        "sample_fun",
     ),
 )
-def trace(matvec_fn, **kwargs):
+def trace(matvec_fun, **kwargs):
     """Estimate the trace of a matrix stochastically."""
 
     def Q(x):
-        return np.dot(x, matvec_fn(x))
+        return np.dot(x, matvec_fun(x))
 
     return _stochastic_estimate(Q, **kwargs)
 
 
-def diagonal(matvec_fn, **kwargs):
+def diagonal(matvec_fun, **kwargs):
     """Estimate the diagonal of a matrix stochastically."""
 
     def Q(x):
-        return x * matvec_fn(x)
+        return x * matvec_fun(x)
 
     return _stochastic_estimate(Q, **kwargs)
 
@@ -50,14 +50,14 @@ def _stochastic_estimate(
     key,
     num_batches=1,
     num_samples_per_batch=10_000,
-    generate_samples_fn=prng.rademacher,
+    sample_fun=prng.rademacher,
 ):
     """Hutchinson-style stochastic estimation."""
 
-    def sample_fn(k):
-        return generate_samples_fn(k, shape=tangents_shape, dtype=tangents_dtype)
+    def sample(k):
+        return sample_fun(k, shape=tangents_shape, dtype=tangents_dtype)
 
-    Q_mc = montecarlo.montecarlo(Q, sample_fn=sample_fn)
+    Q_mc = montecarlo.montecarlo(Q, sample_fun=sample)
     Q_single_batch = montecarlo.mean_vmap(Q_mc, num_samples_per_batch)
     Q_batch = montecarlo.mean_map(Q_single_batch, num_batches)
     mean, _ = Q_batch(key)
@@ -67,19 +67,19 @@ def _stochastic_estimate(
 @functools.partial(
     transform.jit,
     static_argnames=(
-        "matvec_fn",
+        "matvec_fun",
         "tangents_shape",
         "tangents_dtype",
-        "generate_samples_fn",
+        "sample_fun",
     ),
 )
 def trace_and_diagonal(
-    matvec_fn,
+    matvec_fun,
     *,
     tangents_shape,
     tangents_dtype,
     keys,
-    generate_samples_fn=prng.normal,
+    sample_fun=prng.normal,
 ):
     """Jointly estimate the trace and the diagonal stochastically.
 
@@ -95,11 +95,11 @@ def trace_and_diagonal(
     zeros = np.zeros(shape=tangents_shape, dtype=tangents_dtype)
     init = (0.0, zeros, 0)  # trace, diag, n
 
-    def body_fn(carry, key):
+    def body_fun(carry, key):
         trace, diag, n = carry
 
-        z = generate_samples_fn(key, shape=tangents_shape, dtype=tangents_dtype)
-        y = z * (matvec_fn(z) - diag * z)
+        z = sample_fun(key, shape=tangents_shape, dtype=tangents_dtype)
+        y = z * (matvec_fun(z) - diag * z)
 
         # todo: allow batch-mode.
         trace_new = _increment(trace, n, np.sum(y) + sum(diag))
@@ -107,7 +107,7 @@ def trace_and_diagonal(
 
         return (trace_new, diag_new, n + 1), ()
 
-    (trace_final, diag_final, _), _ = flow.scan(body_fn, init=init, xs=keys)
+    (trace_final, diag_final, _), _ = flow.scan(body_fun, init=init, xs=keys)
     return trace_final, diag_final
 
 

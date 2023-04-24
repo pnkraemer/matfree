@@ -36,15 +36,15 @@ def A(n, num_significant_eigvals):
 def test_logdet(A, order):
     key = prng.PRNGKey(1)
 
-    def fn(s):
+    def fun(s):
         return _logdet(s, order, key)
 
-    testing.check_grads(fn, (A,), order=1, atol=1e-1, rtol=1e-1)
+    testing.check_grads(fun, (A,), order=1, atol=1e-1, rtol=1e-1)
 
 
 def _logdet(A, order, key):
     n, _ = np.shape(A)
-    received, num_nans = lanczos.trace_of_matfn(
+    received, num_nans = lanczos.trace_of_matfun(
         np.log,
         lambda v: A @ v,
         order,
