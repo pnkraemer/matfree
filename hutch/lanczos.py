@@ -23,7 +23,7 @@ def trace_of_matfun(
     For example, logdet(M) = trace(log(M)) ~ trace(U log(D) Ut) = E[v U log(D) Ut vt].
     """
 
-    def sample(k):
+    def sample(k, /):
         return sample_fun(k, shape=tangents_shape, dtype=tangents_dtype)
 
     quadform = quadratic_form_slq(matfun, matvec_fun, order)
