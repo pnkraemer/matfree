@@ -17,6 +17,9 @@ write_to_template = """
 version = \"{version}\"
 """
 
+
+# Not relevant for CI, but sometimes we run pylint locally to check
+# a few problems that ruff cannot detect.
 [tool.pylint.basic]
 good-names = ["i", "j", "k", "_"]
 disable = ["fixme"]
