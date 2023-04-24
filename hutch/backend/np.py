@@ -2,8 +2,8 @@
 
 import jax.numpy as jnp
 
-abs = jnp.abs
-any = jnp.any
+abs = jnp.abs  # pylint: disable=redefined-builtin
+any = jnp.any  # pylint: disable=redefined-builtin
 asarray = jnp.asarray
 allclose = jnp.allclose
 arange = jnp.arange
@@ -13,7 +13,7 @@ diag = jnp.diag
 dtype = jnp.dtype
 empty = jnp.empty
 eye = jnp.eye
-finfo = jnp.finfo
+finfo = jnp.finfo  # pylint: disable=invalid-name
 flip = jnp.flip
 isnan = jnp.isnan
 isscalar = jnp.isscalar
@@ -28,11 +28,11 @@ nanmean = jnp.nanmean
 nansum = jnp.nansum
 ones_like = jnp.ones_like
 reshape = jnp.reshape
-round = jnp.round
+round = jnp.round  # pylint: disable=redefined-builtin
 shape = jnp.shape
 sin = jnp.sin
 stack = jnp.stack
-sum = jnp.sum
+sum = jnp.sum  # pylint: disable=redefined-builtin
 trace = jnp.trace
 where = jnp.where
 zeros = jnp.zeros
