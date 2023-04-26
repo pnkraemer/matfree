@@ -1,7 +1,7 @@
-"""Tests for autodiff functionality."""
+"""Tests for (selected) autodiff functionality."""
 
 
-from matfree import lanczos
+from matfree import slq
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -44,7 +44,7 @@ def test_logdet(A, order):
 
 def _logdet(A, order, key):
     n, _ = np.shape(A)
-    received, num_nans = lanczos.trace_of_matfun(
+    received, num_nans = slq.trace_of_matfun(
         np.log,
         lambda v: A @ v,
         order,
