@@ -1,6 +1,9 @@
 """NumPy-style API."""
 
+import jax
 import jax.numpy as jnp
+
+Array = jax.Array
 
 abs = jnp.abs  # noqa: A001
 any = jnp.any  # noqa: A001
