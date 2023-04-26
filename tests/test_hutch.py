@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from matfree import hutch, sample
+from matfree import hutch, montecarlo
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -20,7 +20,7 @@ def fixture_key():
 @testing.parametrize("num_batches", [1_000])
 @testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-@testing.parametrize("sample_fun", [sample.normal, sample.rademacher])
+@testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
 def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
@@ -43,7 +43,7 @@ def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
 @testing.parametrize("num_batches", [1_000])
 @testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-@testing.parametrize("sample_fun", [sample.normal, sample.rademacher])
+@testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
 def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
@@ -65,7 +65,7 @@ def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun)
 
 @testing.parametrize("num_samples", [10_000])
 @testing.parametrize("dim", [5])
-@testing.parametrize("sample_fun", [sample.normal, sample.rademacher])
+@testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
 def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))
