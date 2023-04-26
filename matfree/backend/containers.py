@@ -1,5 +1,4 @@
 """Container types."""
 
-import collections
 
-namedtuple = collections.namedtuple
+from typing import NamedTuple  # noqa: F401

@@ -1,6 +1,7 @@
 """A million ways of computing arithmetic means."""
 
 from matfree.backend import containers, control_flow, func, np, prng
+from matfree.backend.typing import Any
 
 
 def montecarlo(f, /, *, sample_fun):
@@ -48,7 +49,10 @@ def _filter_nan_and_mean(fx_values, how_many_previously):
     return mean, how_many
 
 
-_MState = containers.namedtuple("_MState", ["mean", "key", "num_nans"])
+class _MState(containers.NamedTuple):
+    mean: Any
+    key: Any
+    num_nans: Any
 
 
 def mean_loop(f, num, /):
@@ -108,7 +112,10 @@ def rademacher(*, shape, dtype):
     return fun
 
 
-_VDCState = containers.namedtuple("VDCState", ["n", "vdc", "denom"])
+class _VDCState(containers.NamedTuple):
+    n: int
+    vdc: float
+    denom: int
 
 
 def van_der_corput(n, /, base=2):

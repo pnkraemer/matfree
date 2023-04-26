@@ -1,12 +1,20 @@
 """Lanczos-style functionality."""
 
 from matfree.backend import containers, control_flow, func, linalg, np
+from matfree.backend.typing import Any, Callable
 
-Decomp = containers.namedtuple("Decomp", ["allocate", "init", "step", "extract"])
+
+class DecompAlg(containers.NamedTuple):
+    """Matrix decomposition algorithm."""
+
+    allocate: Callable
+    init: Callable
+    step: Callable
+    extract: Callable
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def tridiagonal(matvec_fun, depth: int, init_vec: np.Array, /, method: Decomp):
+def tridiagonal(matvec_fun, depth, init_vec, /, method: DecompAlg):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
     Orthogonally project the original matrix onto the (n+1)-deep Krylov subspace
@@ -34,9 +42,9 @@ def tridiagonal(matvec_fun, depth: int, init_vec: np.Array, /, method: Decomp):
     return method.extract(result)
 
 
-def lanczos() -> Decomp:
+def lanczos() -> DecompAlg:
     """Lanczos tridiagonalisation."""
-    return Decomp(
+    return DecompAlg(
         allocate=_lanczos_allocate,
         init=_lanczos_init,
         step=_lanczos_apply,
@@ -47,7 +55,11 @@ def lanczos() -> Decomp:
 # todo: this below is a decomposition algorithm (init, step, extract),
 #  and the function above is more of a decompose() method.
 
-_LanczosState = containers.namedtuple("_LanczosState", ["basis", "tridiag", "q"])
+
+class _LanczosState(containers.NamedTuple):
+    basis: Any
+    tridiag: Any
+    q: Any
 
 
 def _lanczos_allocate(depth, init_vec, /):
