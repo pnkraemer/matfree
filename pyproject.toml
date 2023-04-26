@@ -20,6 +20,10 @@ version = \"{version}\"
 # See: https://beta.ruff.rs/docs/rules/
 select = ["E", "F", "D", "UP", "B", "A", "ICN", "PT", "Q", "RET", "SIM", "ARG", "RUF"]
 ignore = [
+    # warning: `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible.
+    "D203",
+    # warning: `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible.
+    "D213",
     # zip(..., strict=True/False) is not supported on Python < 3.10
     "B905",
 ]

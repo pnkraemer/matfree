@@ -42,7 +42,7 @@ def tridiagonal(matvec_fun, depth, init_vec, /, method: DecompAlg):
     return method.extract(result)
 
 
-def lanczos():
+def lanczos() -> DecompAlg:
     """Lanczos tridiagonalisation."""
     return DecompAlg(
         allocate=_lanczos_allocate,
