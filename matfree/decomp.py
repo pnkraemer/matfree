@@ -4,10 +4,10 @@ from matfree.backend import containers, control_flow, func, linalg, np
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def tridiagonal(matvec_fun, order, init_vec, /):
+def tridiagonal(matvec_fun, depth, init_vec, /):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
-    Orthogonally project the original matrix onto the (n+1)-th order Krylov subspace
+    Orthogonally project the original matrix onto the (n+1)-deep Krylov subspace
 
     \{ v, Av, A^2v, ..., A^n v \}
 
@@ -21,20 +21,25 @@ def tridiagonal(matvec_fun, order, init_vec, /):
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
 
     (ncols,) = np.shape(init_vec)
-    if order >= ncols or order < 1:
+    if depth >= ncols or depth < 1:
         raise ValueError
 
-    diag = np.zeros((order + 1,))
-    offdiag = np.zeros((order,))
-    basis = np.zeros((order + 1, ncols))
+    # todo: should this happen in init()?
+    diag = np.zeros((depth + 1,))
+    offdiag = np.zeros((depth,))
+    basis = np.zeros((depth + 1, ncols))
 
     init_val = _lanczos_init(basis, (diag, offdiag), init_vec)
     body_fun = func.partial(_lanczos_apply, matvec_fun=matvec_fun)
+    # todo: why from 0 to depth+1?
     output_val = control_flow.fori_loop(
-        0, order + 1, body_fun=body_fun, init_val=init_val
+        0, depth + 1, body_fun=body_fun, init_val=init_val
     )
     return _lanczos_extract(output_val)
 
+
+# todo: this below is a decomposition algorithm (init, step, extract),
+#  and the function above is more of a decompose() method.
 
 _LanczosState = containers.namedtuple("_LanczosState", ["basis", "tridiag", "q"])
 
