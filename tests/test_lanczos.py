@@ -1,6 +1,6 @@
 """Tests for Lanczos functionality."""
 
-from matfree import lanczos
+from matfree import decomp
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -35,9 +35,9 @@ def test_tridiagonal_error_for_too_high_order(A):
     key = prng.PRNGKey(1)
     v0 = prng.normal(key, shape=(n,))
     with testing.raises(ValueError):
-        _ = lanczos.tridiagonal(lambda v: A @ v, order + 10, v0)
+        _ = decomp.tridiagonal(lambda v: A @ v, order + 10, v0)
     with testing.raises(ValueError):
-        _ = lanczos.tridiagonal(lambda v: A @ v, order, v0)
+        _ = decomp.tridiagonal(lambda v: A @ v, order, v0)
 
 
 @testing.parametrize("n", [6])
@@ -48,15 +48,15 @@ def test_tridiagonal_max_order(A):
     order = n - 1
     key = prng.PRNGKey(1)
     v0 = prng.normal(key, shape=(n,))
-    Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, v0)
+    Q, (d_m, e_m) = decomp.tridiagonal(lambda v: A @ v, order, v0)
 
     # Lanczos is not stable.
-    tols_lanczos = {"atol": 1e-5, "rtol": 1e-5}
+    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
 
     # Since full-order mode: Q must be unitary
     assert np.shape(Q) == (order + 1, n)
-    assert np.allclose(Q @ Q.T, np.eye(n), **tols_lanczos), Q @ Q.T
-    assert np.allclose(Q.T @ Q, np.eye(n), **tols_lanczos), Q.T @ Q
+    assert np.allclose(Q @ Q.T, np.eye(n), **tols_decomp), Q @ Q.T
+    assert np.allclose(Q.T @ Q, np.eye(n), **tols_decomp), Q.T @ Q
 
     # T = Q A Qt
     T = np.diag(d_m) + np.diag(e_m, -1) + np.diag(e_m, 1)
@@ -64,20 +64,20 @@ def test_tridiagonal_max_order(A):
     assert np.shape(T) == (order + 1, order + 1)
 
     # Fail early if the (off)diagonals don't coincide
-    assert np.allclose(np.diag(QAQt), d_m, **tols_lanczos)
-    assert np.allclose(np.diag(QAQt, 1), e_m, **tols_lanczos)
-    assert np.allclose(np.diag(QAQt, -1), e_m, **tols_lanczos)
+    assert np.allclose(np.diag(QAQt), d_m, **tols_decomp)
+    assert np.allclose(np.diag(QAQt, 1), e_m, **tols_decomp)
+    assert np.allclose(np.diag(QAQt, -1), e_m, **tols_decomp)
 
     # Test the full decomposition
     # (i.e. assert that the off-tridiagonal elements are actually small)
     # be loose with this test. off-diagonal elements accumulate quickly.
-    tols_lanczos = {"atol": 1e-5, "rtol": 1e-5}
-    assert np.allclose(QAQt, T, **tols_lanczos)
+    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
+    assert np.allclose(QAQt, T, **tols_decomp)
 
     # Since full-order mode: Qt T Q = A
     # Since Q is unitary and T = Q A Qt, this test
     # should always pass.
-    assert np.allclose(Q.T @ T @ Q, A, **tols_lanczos)
+    assert np.allclose(Q.T @ T @ Q, A, **tols_decomp)
 
 
 @testing.parametrize("n", [50])
@@ -87,13 +87,13 @@ def test_tridiagonal(A, order):
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     init_vec = prng.normal(key, shape=(n,))
-    Q, (d_m, e_m) = lanczos.tridiagonal(lambda v: A @ v, order, init_vec)
+    Q, (d_m, e_m) = decomp.tridiagonal(lambda v: A @ v, order, init_vec)
 
     # Lanczos is not stable.
-    tols_lanczos = {"atol": 1e-5, "rtol": 1e-5}
+    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
 
     assert np.shape(Q) == (order + 1, n)
-    assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_lanczos), Q @ Q.T
+    assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_decomp), Q @ Q.T
 
     # T = Q A Qt
     T = np.diag(d_m) + np.diag(e_m, -1) + np.diag(e_m, 1)
@@ -101,9 +101,9 @@ def test_tridiagonal(A, order):
     assert np.shape(T) == (order + 1, order + 1)
 
     # Fail early if the (off)diagonals don't coincide
-    assert np.allclose(np.diag(QAQt), d_m, **tols_lanczos)
-    assert np.allclose(np.diag(QAQt, 1), e_m, **tols_lanczos)
-    assert np.allclose(np.diag(QAQt, -1), e_m, **tols_lanczos)
+    assert np.allclose(np.diag(QAQt), d_m, **tols_decomp)
+    assert np.allclose(np.diag(QAQt, 1), e_m, **tols_decomp)
+    assert np.allclose(np.diag(QAQt, -1), e_m, **tols_decomp)
 
     # Test the full decompoisition
-    assert np.allclose(QAQt, T, **tols_lanczos)
+    assert np.allclose(QAQt, T, **tols_decomp)
