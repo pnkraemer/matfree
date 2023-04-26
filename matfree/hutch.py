@@ -9,6 +9,7 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 
 from matfree import montecarlo
 from matfree.backend import containers, control_flow, func, np
+from matfree.backend.typing import Any
 
 
 def trace(matvec_fun, /, **kwargs):
@@ -40,7 +41,10 @@ def _stochastic_estimate(
     return mean
 
 
-_EstState = containers.namedtuple("EstState", ["traceest", "diagest", "num"])
+class _EstState(containers.NamedTuple):
+    traceest: float
+    diagest: Any
+    num: int
 
 
 def trace_and_diagonal(matvec_fun, /, *, sample_fun, keys):
