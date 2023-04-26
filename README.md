@@ -8,7 +8,7 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutch, sample
+>>> from matfree import hutch, montecarlo
 
 >>> a = jnp.reshape(jnp.arange(12.), (6, 2))
 >>> key = jax.random.PRNGKey(1)
@@ -19,7 +19,7 @@ Imports:
 
 Estimate traces as such:
 ```python
->>> sample_fun = sample.normal(shape=(2,), dtype=float)
+>>> sample_fun = montecarlo.normal(shape=(2,), dtype=float)
 >>> matvec = lambda x: a.T @ (a @ x)
 >>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
