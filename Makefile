@@ -19,3 +19,6 @@ clean:
 	rm -rf *.egg-info
 	rm -rf dist site build
 	rm -rf *.ipynb_checkpoints
+
+doc:
+	mkdocs build
