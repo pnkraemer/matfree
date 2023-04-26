@@ -6,7 +6,7 @@ Decomp = containers.namedtuple("Decomp", ["allocate", "init", "step", "extract"]
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def tridiagonal(matvec_fun, depth, init_vec, /, method: Decomp):
+def tridiagonal(matvec_fun, depth: int, init_vec: np.Array, /, method: Decomp):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
     Orthogonally project the original matrix onto the (n+1)-deep Krylov subspace
@@ -34,7 +34,7 @@ def tridiagonal(matvec_fun, depth, init_vec, /, method: Decomp):
     return method.extract(result)
 
 
-def lanczos():
+def lanczos() -> Decomp:
     """Lanczos tridiagonalisation."""
     return Decomp(
         allocate=_lanczos_allocate,
