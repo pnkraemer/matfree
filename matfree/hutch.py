@@ -8,7 +8,7 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 
 
 from matfree import montecarlo
-from matfree.backend import containers, flow, func, np
+from matfree.backend import containers, control_flow, func, np
 
 
 def trace(matvec_fun, /, **kwargs):
@@ -60,7 +60,7 @@ def trace_and_diagonal(matvec_fun, /, *, sample_fun, keys):
     state = _EstState(traceest=0.0, diagest=zeros, num=0)
 
     body_fun = func.partial(_update, sample_fun=sample_fun, matvec_fun=matvec_fun)
-    state, _ = flow.scan(body_fun, init=state, xs=keys)
+    state, _ = control_flow.scan(body_fun, init=state, xs=keys)
 
     (trace_final, diag_final, _) = state
     return trace_final, diag_final
