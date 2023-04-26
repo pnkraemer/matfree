@@ -36,9 +36,9 @@ def test_tridiagonal_error_for_too_high_order(A):
     v0 = prng.normal(key, shape=(n,))
     method = decomp.lanczos()
     with testing.raises(ValueError):
-        _ = decomp.tridiagonal(lambda v: A @ v, n + 10, v0, method=method)
+        _ = decomp.decompose(lambda v: A @ v, n + 10, v0, method=method)
     with testing.raises(ValueError):
-        _ = decomp.tridiagonal(lambda v: A @ v, n, v0, method=method)
+        _ = decomp.decompose(lambda v: A @ v, n, v0, method=method)
 
 
 @testing.parametrize("n", [6])
@@ -50,7 +50,7 @@ def test_tridiagonal_max_order(A):
     key = prng.PRNGKey(1)
     v0 = prng.normal(key, shape=(n,))
     method = decomp.lanczos()
-    Q, (d_m, e_m) = decomp.tridiagonal(lambda v: A @ v, order, v0, method=method)
+    Q, (d_m, e_m) = decomp.decompose(lambda v: A @ v, order, v0, method=method)
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -91,7 +91,7 @@ def test_tridiagonal(A, order):
     key = prng.PRNGKey(1)
     init_vec = prng.normal(key, shape=(n,))
     method = decomp.lanczos()
-    Q, (d_m, e_m) = decomp.tridiagonal(lambda v: A @ v, order, init_vec, method=method)
+    Q, (d_m, e_m) = decomp.decompose(lambda v: A @ v, order, init_vec, method=method)
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
