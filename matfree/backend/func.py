@@ -1,4 +1,4 @@
-"""Function transformations (including algorithmic differentiation)."""
+"""Function funcations (including algorithmic differentiation)."""
 
 import functools
 

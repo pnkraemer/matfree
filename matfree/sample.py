@@ -1,6 +1,6 @@
 """Sampling algorithms."""
 
-from matfree.backend import containers, flow, prng, transform
+from matfree.backend import containers, flow, func, prng
 
 
 def normal(*, shape, dtype):
@@ -28,7 +28,7 @@ def van_der_corput(n, /, base=2):
     """Compute the 'n'th element of the Van-der-Corput sequence."""
     state = _VDCState(n, vdc=0, denom=1)
 
-    vdc_modify = transform.partial(_van_der_corput_modify, base=base)
+    vdc_modify = func.partial(_van_der_corput_modify, base=base)
     state = flow.while_loop(_van_der_corput_cond, vdc_modify, state)
     return state.vdc
 

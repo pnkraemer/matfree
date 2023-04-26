@@ -1,6 +1,6 @@
 """Lanczos-style functionality."""
 from matfree import montecarlo
-from matfree.backend import containers, flow, linalg, np, prng, transform
+from matfree.backend import containers, flow, func, linalg, np, prng
 
 
 # todo: rethink name of function.
@@ -50,7 +50,7 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
         (dim,) = init_vec.shape
 
-        fx_eigvals = transform.vmap(matfun)(eigvals)
+        fx_eigvals = func.vmap(matfun)(eigvals)
         return dim * np.dot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
@@ -82,7 +82,7 @@ def tridiagonal(matvec_fun, order, init_vec, /):
     basis = np.zeros((order + 1, ncols))
 
     init_val = _lanczos_init(basis, (diag, offdiag), init_vec)
-    body_fun = transform.partial(_lanczos_apply, matvec_fun=matvec_fun)
+    body_fun = func.partial(_lanczos_apply, matvec_fun=matvec_fun)
     output_val = flow.fori_loop(0, order + 1, body_fun=body_fun, init_val=init_val)
     return _lanczos_extract(output_val)
 
