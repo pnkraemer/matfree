@@ -13,7 +13,6 @@ repos:
       - id: isort
         name: isort
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.261
+    rev: v0.0.263
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
