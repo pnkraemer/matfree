@@ -1,5 +1,5 @@
 # matfree
-Matrix-free stochastic trace- and diagonal-estimation and other numerical linear algebra.
+Randomised and deterministic matrix-free methods for trace estimation, matrix functions, and/or matrix factorisations.
 
 
 ## Minimal example
@@ -68,3 +68,16 @@ Here is how to use it:
 
 
 ```
+
+## Contributing
+
+Contributions are absolutely welcome! 
+To set up your developer setup, fork the repository, and install all dependencies with `pip install .[full]` or `pip install -e .[full]`.
+From the root of the project, run the tests via `make test`, and check out `make format` and `make lint`.
+There is a pre-commit hook that can be used, too.
+
+When making a pull request, keep in mind the following (rough) guidelines:
+
+* Every PR usually resolves an issue and changes ~10 lines of code (or less)
+* Every PR usually contains a single commit. The commit message is usually very descriptive
+* Every enhancement is usually covered by a test.
