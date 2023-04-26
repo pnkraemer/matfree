@@ -38,7 +38,7 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
 
     def quadform(init_vec, /):
         method = decomp.lanczos()
-        _, tridiag = decomp.tridiagonal(matvec_fun, order, init_vec, method=method)
+        _, tridiag = decomp.decompose(matvec_fun, order, init_vec, method=method)
         (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),

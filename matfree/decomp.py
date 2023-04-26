@@ -14,18 +14,8 @@ class DecompAlg(containers.NamedTuple):
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def tridiagonal(matvec_fun, depth, init_vec, /, method: DecompAlg):
-    r"""Decompose A = V T V^t purely based on matvec-products with A.
-
-    Orthogonally project the original matrix onto the (n+1)-deep Krylov subspace
-
-    \{ v, Av, A^2v, ..., A^n v \}
-
-    using the Gram-Schmidt procedure.
-    The result is a tri-diagonal matrix whose spectrum
-    approximates the spectrum of the original matrix.
-    (More specifically, the spectrum tends to the 'most extreme' eigenvalues.)
-    """
+def decompose(matvec_fun, depth, init_vec, /, method: DecompAlg):
+    r"""Decompose a matrix purely based on matvec-products with A."""
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
@@ -43,7 +33,21 @@ def tridiagonal(matvec_fun, depth, init_vec, /, method: DecompAlg):
 
 
 def lanczos() -> DecompAlg:
-    """Lanczos tridiagonalisation."""
+    r"""Decompose a matrix into a product of an orthogonal and a tridiagonal matrix.
+
+    This is Lanczos' algorithm. More specifically, orthogonally project the original
+    matrix onto the (n+1)-deep Krylov subspace
+
+    \{ v, Av, A^2v, ..., A^n v \}
+
+    using the Gram-Schmidt procedure.
+    The result is a tri-diagonal matrix whose spectrum
+    approximates the spectrum of the original matrix.
+    (More specifically, the spectrum tends to the 'most extreme' eigenvalues.)
+    """
+    # this algorithm is massively unstable.
+    # but despite this instability, quadrature might be stable?
+    # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
     return DecompAlg(
         allocate=_lanczos_allocate,
         init=_lanczos_init,
