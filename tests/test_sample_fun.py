@@ -1,6 +1,6 @@
 """Tests for some sample functions."""
-from hutch import sample
-from hutch.backend import np
+from matfree import sample
+from matfree.backend import np
 
 
 def test_van_der_corput_next():

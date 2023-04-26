@@ -1,7 +1,7 @@
 """Tests for Monte-Carlo machinery."""
 
-from hutch import montecarlo
-from hutch.backend import np, prng, testing
+from matfree import montecarlo
+from matfree.backend import np, prng, testing
 
 
 @testing.fixture(name="f_mc")

@@ -1,6 +1,6 @@
 """A million ways of computing arithmetic means."""
 
-from hutch.backend import containers, flow, np, prng, transform
+from matfree.backend import containers, flow, np, prng, transform
 
 
 def montecarlo(f, /, *, sample_fun):
