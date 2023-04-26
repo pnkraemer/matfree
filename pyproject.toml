@@ -19,4 +19,11 @@ version = \"{version}\"
 [tool.ruff]
 # See: https://beta.ruff.rs/docs/rules/
 select = ["E", "F", "D", "UP", "B", "A", "ICN", "PT", "Q", "RET", "SIM", "ARG", "RUF"]
-ignore = ["D211", "D213"]
+ignore = [
+    # Have to choose between two, we choose "the other":
+    "D211",
+    # Have to choose between two, we choose "the other":
+    "D213",
+    # zip(..., strict=True/False) is not supported on Python < 3.10
+    "B905",
+]

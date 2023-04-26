@@ -63,7 +63,7 @@ def test_mean_many_nans(key, mean_fun):
 @testing.parametrize("key", [prng.PRNGKey(1)])
 @testing.parametrize(
     "mean_fun1, mean_fun2, mean_fun3",
-    zip(_ALL_MEAN_FNS[1:], _ALL_MEAN_FNS[:-1], _ALL_MEAN_FNS[1:], strict=True),
+    zip(_ALL_MEAN_FNS[1:], _ALL_MEAN_FNS[:-1], _ALL_MEAN_FNS[1:]),
 )
 def test_mean_many_nans_nested(key, mean_fun1, mean_fun2, mean_fun3):
     """Assert that nested mean-computation captures NaNs (in an all-Nan situation)."""
