@@ -1,30 +1,17 @@
 """Tests for Lanczos functionality."""
 
-from matfree import slq
+from matfree import slq, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
 @testing.fixture
 def A(n, num_significant_eigvals):
     """Make a positive definite matrix with certain spectrum."""
-    # Need _some_ matrix to start with
-    A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
-    A = A / linalg.norm(A)
-    X = A.T @ A + np.eye(n)
-
-    # QR decompose. We need the orthogonal matrix.
-    # Treat Q as a stack of eigenvectors.
-    Q, R = linalg.qr(X)
-
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
     d = np.arange(n) + 10.0
     d = d.at[num_significant_eigvals:].set(0.001)
 
-    # Treat Q as eigenvectors, and 'D' as eigenvalues.
-    # return Q D Q.T.
-    # This matrix will be dense, symmetric, and have a given spectrum.
-    D = np.diag(d)
-    return Q @ D @ Q.T
+    return test_util.generate_symmetric_matrix_from_eigvals(d)
 
 
 @testing.parametrize("n", [200])
