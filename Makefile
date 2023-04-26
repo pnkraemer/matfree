@@ -6,7 +6,6 @@ format:
 
 lint:
 	pre-commit run --all-files
-	pylint matfree/
 
 test:
 	python -m doctest README.md

@@ -91,7 +91,7 @@ def _mean_increment(i, mstate: _MState, fun) -> _MState:
 
 
 def normal(*, shape, dtype):
-    """Standard normal distributions."""
+    """Construct a function that samples from a standard normal distribution."""
 
     def fun(key):
         return prng.normal(key, shape=shape, dtype=dtype)

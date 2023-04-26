@@ -33,6 +33,7 @@ def A(n, num_significant_eigvals):
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
 def test_logdet(A, order):
+    """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     received, num_nans = slq.trace_of_matfun(
