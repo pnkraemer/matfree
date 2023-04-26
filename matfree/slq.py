@@ -37,7 +37,9 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
     """Approximate quadratic form for stochastic Lanczos quadrature."""
 
     def quadform(init_vec, /):
-        _, (diag, off_diag) = decomp.tridiagonal(matvec_fun, order, init_vec)
+        method = decomp.lanczos()
+        _, tridiag = decomp.tridiagonal(matvec_fun, order, init_vec, method=method)
+        (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
