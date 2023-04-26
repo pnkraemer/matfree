@@ -2,9 +2,11 @@
 
 from matfree.backend import containers, control_flow, func, linalg, np
 
+Decomp = containers.namedtuple("Decomp", ["allocate", "init", "step", "extract"])
+
 
 # all arguments are positional-only because we will rename arguments a lot
-def tridiagonal(matvec_fun, depth, init_vec, /):
+def tridiagonal(matvec_fun, depth, init_vec, /, method: Decomp):
     r"""Decompose A = V T V^t purely based on matvec-products with A.
 
     Orthogonally project the original matrix onto the (n+1)-deep Krylov subspace
@@ -24,18 +26,22 @@ def tridiagonal(matvec_fun, depth, init_vec, /):
     if depth >= ncols or depth < 1:
         raise ValueError
 
-    # todo: should this happen in init()?
-    diag = np.zeros((depth + 1,))
-    offdiag = np.zeros((depth,))
-    basis = np.zeros((depth + 1, ncols))
-
-    init_val = _lanczos_init(basis, (diag, offdiag), init_vec)
-    body_fun = func.partial(_lanczos_apply, matvec_fun=matvec_fun)
+    empty_solution = method.allocate(depth, init_vec)
+    init_val = method.init(empty_solution, init_vec)
+    body_fun = func.partial(method.step, matvec_fun=matvec_fun)
     # todo: why from 0 to depth+1?
-    output_val = control_flow.fori_loop(
-        0, depth + 1, body_fun=body_fun, init_val=init_val
+    result = control_flow.fori_loop(0, depth + 1, body_fun=body_fun, init_val=init_val)
+    return method.extract(result)
+
+
+def lanczos():
+    """Lanczos tridiagonalisation."""
+    return Decomp(
+        allocate=_lanczos_allocate,
+        init=_lanczos_init,
+        step=_lanczos_apply,
+        extract=_lanczos_extract,
     )
-    return _lanczos_extract(output_val)
 
 
 # todo: this below is a decomposition algorithm (init, step, extract),
@@ -44,7 +50,16 @@ def tridiagonal(matvec_fun, depth, init_vec, /):
 _LanczosState = containers.namedtuple("_LanczosState", ["basis", "tridiag", "q"])
 
 
-def _lanczos_init(basis, tridiag, init_vec):
+def _lanczos_allocate(depth, init_vec, /):
+    (ncols,) = init_vec.shape
+    diag = np.zeros((depth + 1,))
+    offdiag = np.zeros((depth,))
+    basis = np.zeros((depth + 1, ncols))
+    return basis, (diag, offdiag)
+
+
+def _lanczos_init(empty_solution, init_vec):
+    basis, tridiag = empty_solution
     return _LanczosState(basis, tridiag, init_vec)
 
 
