@@ -1,6 +1,6 @@
 """Lanczos-style functionality."""
 from matfree import montecarlo
-from matfree.backend import containers, flow, func, linalg, np, prng
+from matfree.backend import containers, control_flow, func, linalg, np, prng
 
 
 # todo: rethink name of function.
@@ -83,7 +83,9 @@ def tridiagonal(matvec_fun, order, init_vec, /):
 
     init_val = _lanczos_init(basis, (diag, offdiag), init_vec)
     body_fun = func.partial(_lanczos_apply, matvec_fun=matvec_fun)
-    output_val = flow.fori_loop(0, order + 1, body_fun=body_fun, init_val=init_val)
+    output_val = control_flow.fori_loop(
+        0, order + 1, body_fun=body_fun, init_val=init_val
+    )
     return _lanczos_extract(output_val)
 
 
@@ -139,7 +141,7 @@ def _normalise(vec):
 
 
 def _gram_schmidt_orthogonalise_set(vec, vectors):  # Gram-Schmidt
-    vec, coeffs = flow.scan(_gram_schmidt_orthogonalise, init=vec, xs=vectors)
+    vec, coeffs = control_flow.scan(_gram_schmidt_orthogonalise, init=vec, xs=vectors)
     return vec, coeffs
 
 

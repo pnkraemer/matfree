@@ -1,6 +1,6 @@
 """A million ways of computing arithmetic means."""
 
-from matfree.backend import containers, flow, func, np, prng
+from matfree.backend import containers, control_flow, func, np, prng
 
 
 def montecarlo(f, /, *, sample_fun):
@@ -35,7 +35,7 @@ def mean_map(f, num, /):
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
-        fx_values, how_many_previously = flow.map(f, subkeys)
+        fx_values, how_many_previously = control_flow.map(f, subkeys)
         return _filter_nan_and_mean(fx_values, how_many_previously)
 
     return f_mean
@@ -62,7 +62,7 @@ def mean_loop(f, num, /):
 
         # Run for-loop
         increment = func.partial(_mean_increment, fun=f)
-        mstate = flow.fori_loop(0, num, body_fun=increment, init_val=mstate)
+        mstate = control_flow.fori_loop(0, num, body_fun=increment, init_val=mstate)
         mean, _key, num_nans = mstate  # todo: why not return key?
 
         # Return results
