@@ -1,10 +1,9 @@
-"""Function transformations (including algorithmic differentiation)."""
+"""Function transformations (algorithmic differentiation, vmap, partial, and so on)."""
 
 import functools
 
 import jax
 
-# todo: renamed to `func`?
 linearize = jax.linearize
 vjp = jax.vjp
 jacfwd = jax.jacfwd

@@ -8,7 +8,7 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 
 
 from matfree import montecarlo
-from matfree.backend import containers, flow, np, transform
+from matfree.backend import containers, flow, func, np
 
 
 def trace(matvec_fun, /, **kwargs):
@@ -55,11 +55,11 @@ def trace_and_diagonal(matvec_fun, /, *, sample_fun, keys):
     See:
     Adams et al., Estimating the Spectral Density of Large Implicit Matrices, 2018.
     """
-    sample_dummy = transform.eval_shape(sample_fun, keys[0])
+    sample_dummy = func.eval_shape(sample_fun, keys[0])
     zeros = np.zeros(shape=sample_dummy.shape, dtype=sample_dummy.dtype)
     state = _EstState(traceest=0.0, diagest=zeros, num=0)
 
-    body_fun = transform.partial(_update, sample_fun=sample_fun, matvec_fun=matvec_fun)
+    body_fun = func.partial(_update, sample_fun=sample_fun, matvec_fun=matvec_fun)
     state, _ = flow.scan(body_fun, init=state, xs=keys)
 
     (trace_final, diag_final, _) = state

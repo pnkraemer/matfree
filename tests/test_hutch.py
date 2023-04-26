@@ -1,7 +1,7 @@
 """Tests for basic trace estimators."""
 
 from matfree import hutch, sample
-from matfree.backend import linalg, np, prng, testing, transform
+from matfree.backend import func, linalg, np, prng, testing
 
 
 @testing.fixture(name="fun")
@@ -24,8 +24,8 @@ def fixture_key():
 def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
-    _, jvp = transform.linearize(fun, x0)
-    J = transform.jacfwd(fun)(x0)
+    _, jvp = func.linearize(fun, x0)
+    J = func.jacfwd(fun)(x0)
 
     # Estimate the trace
     fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
@@ -47,8 +47,8 @@ def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
 def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
-    _, jvp = transform.linearize(fun, x0)
-    J = transform.jacfwd(fun)(x0)
+    _, jvp = func.linearize(fun, x0)
+    J = func.jacfwd(fun)(x0)
 
     # Estimate the trace
     fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
@@ -69,8 +69,8 @@ def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun)
 def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))
-    _, jvp = transform.linearize(fun, x0)
-    J = transform.jacfwd(fun)(x0)
+    _, jvp = func.linearize(fun, x0)
+    J = func.jacfwd(fun)(x0)
 
     # Sequential batches
     keys = prng.split(key, num=num_samples)
