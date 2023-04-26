@@ -46,3 +46,24 @@ jobs:
         run: pip install --upgrade pip pip install .[cpu,test]
       - name: Run tests
         run: make test
+  doc:
+    name: Build documentation with ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10']
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .[doc]
+      - name: Build documentation
+        run: make doc
