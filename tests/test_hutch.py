@@ -1,7 +1,7 @@
 """Tests for basic trace estimators."""
 
-from hutch import hutch, sample
-from hutch.backend import linalg, np, prng, testing, transform
+from matfree import hutch, sample
+from matfree.backend import linalg, np, prng, testing, transform
 
 
 @testing.fixture(name="fun")

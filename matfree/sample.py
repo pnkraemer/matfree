@@ -1,6 +1,6 @@
 """Sampling algorithms."""
 
-from hutch.backend import containers, flow, prng, transform
+from matfree.backend import containers, flow, prng, transform
 
 
 def normal(*, shape, dtype):

@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 local_scheme = "dirty-tag"
-write_to = "hutch/_version.py"
+write_to = "matfree/_version.py"
 write_to_template = """
 # pylint: skip-file
 # coding: utf-8

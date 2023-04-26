@@ -1,8 +1,8 @@
 """Tests for autodiff functionality."""
 
 
-from hutch import lanczos
-from hutch.backend import linalg, np, prng, testing
+from matfree import lanczos
+from matfree.backend import linalg, np, prng, testing
 
 
 @testing.fixture

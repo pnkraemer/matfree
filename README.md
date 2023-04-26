@@ -1,5 +1,5 @@
-# hutch
-Matrix-free stochastic trace- and diagonal-estimation and related functions.
+# matfree
+Matrix-free stochastic trace- and diagonal-estimation and other numerical linear algebra.
 
 
 ## Minimal example
@@ -8,7 +8,7 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from hutch import hutch, sample
+>>> from matfree import hutch, sample
 
 >>> a = jnp.reshape(jnp.arange(12.), (6, 2))
 >>> key = jax.random.PRNGKey(1)

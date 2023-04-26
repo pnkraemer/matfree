@@ -7,8 +7,8 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 """
 
 
-from hutch import montecarlo
-from hutch.backend import containers, flow, np, transform
+from matfree import montecarlo
+from matfree.backend import containers, flow, np, transform
 
 
 def trace(matvec_fun, /, **kwargs):

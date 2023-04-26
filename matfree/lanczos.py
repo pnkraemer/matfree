@@ -1,10 +1,10 @@
 """Lanczos-style functionality."""
-from hutch import montecarlo
-from hutch.backend import containers, flow, linalg, np, prng, transform
+from matfree import montecarlo
+from matfree.backend import containers, flow, linalg, np, prng, transform
 
 
 # todo: rethink name of function.
-# todo: move to hutch.py?
+# todo: move to matfree.py?
 def trace_of_matfun(
     matfun,
     matvec_fun,
