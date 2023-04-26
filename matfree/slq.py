@@ -1,6 +1,6 @@
 """Stochastic Lanczos quadrature."""
 
-from matfree import lanczos, montecarlo
+from matfree import decomp, montecarlo
 from matfree.backend import func, linalg, np, prng
 
 
@@ -37,7 +37,7 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
     """Approximate quadratic form for stochastic Lanczos quadrature."""
 
     def quadform(init_vec, /):
-        _, (diag, off_diag) = lanczos.tridiagonal(matvec_fun, order, init_vec)
+        _, (diag, off_diag) = decomp.tridiagonal(matvec_fun, order, init_vec)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
