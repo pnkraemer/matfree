@@ -34,6 +34,7 @@ def A(n, num_significant_eigvals):
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
 def test_logdet(A, order):
+    """Assert that log-determinant computation admits valid VJPs and JVPs."""
     key = prng.PRNGKey(1)
 
     def fun(s):

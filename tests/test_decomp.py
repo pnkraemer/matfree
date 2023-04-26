@@ -30,15 +30,15 @@ def A(n, num_significant_eigvals):
 @testing.parametrize("n", [6])
 @testing.parametrize("num_significant_eigvals", [4])
 def test_tridiagonal_error_for_too_high_order(A):
+    """Assert graceful failure if the depth matches or exceeds the number of columns."""
     n, _ = np.shape(A)
-    order = n
     key = prng.PRNGKey(1)
     v0 = prng.normal(key, shape=(n,))
     method = decomp.lanczos()
     with testing.raises(ValueError):
-        _ = decomp.tridiagonal(lambda v: A @ v, order + 10, v0, method=method)
+        _ = decomp.tridiagonal(lambda v: A @ v, n + 10, v0, method=method)
     with testing.raises(ValueError):
-        _ = decomp.tridiagonal(lambda v: A @ v, order, v0, method=method)
+        _ = decomp.tridiagonal(lambda v: A @ v, n, v0, method=method)
 
 
 @testing.parametrize("n", [6])
@@ -86,6 +86,7 @@ def test_tridiagonal_max_order(A):
 @testing.parametrize("num_significant_eigvals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
 def test_tridiagonal(A, order):
+    """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     init_vec = prng.normal(key, shape=(n,))

@@ -6,6 +6,8 @@ from matfree.backend import func, linalg, np, prng, testing
 
 @testing.fixture(name="fun")
 def fixture_fun():
+    """Create a nonlinear, to-be-differentiated function."""
+
     def f(x):
         return np.sin(np.flip(np.cos(x)) + 1.0) * np.sin(x) + 1.0
 
@@ -14,6 +16,7 @@ def fixture_fun():
 
 @testing.fixture(name="key")
 def fixture_key():
+    """Fix a pseudo-random number generator."""
     return prng.PRNGKey(seed=1)
 
 
@@ -22,6 +25,7 @@ def fixture_key():
 @testing.parametrize("dim", [1, 10])
 @testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
 def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
+    """Assert that the estimated trace approximates the true trace accurately."""
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
     _, jvp = func.linearize(fun, x0)
@@ -45,6 +49,7 @@ def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
 @testing.parametrize("dim", [1, 10])
 @testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
 def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
+    """Assert that the estimated diagonal approximates the true diagonal accurately."""
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
     _, jvp = func.linearize(fun, x0)
@@ -67,6 +72,7 @@ def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun)
 @testing.parametrize("dim", [5])
 @testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
 def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
+    """Assert that the estimated trace and diagonal approximations are accurate."""
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))
     _, jvp = func.linearize(fun, x0)

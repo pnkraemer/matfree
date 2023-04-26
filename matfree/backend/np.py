@@ -2,8 +2,8 @@
 
 import jax.numpy as jnp
 
-abs = jnp.abs  # pylint: disable=redefined-builtin
-any = jnp.any  # pylint: disable=redefined-builtin
+abs = jnp.abs  # noqa: A001
+any = jnp.any  # noqa: A001
 asarray = jnp.asarray
 allclose = jnp.allclose
 arange = jnp.arange
@@ -28,11 +28,11 @@ nanmean = jnp.nanmean
 nansum = jnp.nansum
 ones_like = jnp.ones_like
 reshape = jnp.reshape
-round = jnp.round  # pylint: disable=redefined-builtin
+round = jnp.round  # noqa: A001
 shape = jnp.shape
 sin = jnp.sin
 stack = jnp.stack
-sum = jnp.sum  # pylint: disable=redefined-builtin
+sum = jnp.sum  # noqa: A001
 trace = jnp.trace
 where = jnp.where
 zeros = jnp.zeros
