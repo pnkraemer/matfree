@@ -3,6 +3,7 @@
 import jax
 import jax.numpy as jnp
 
+# todo: do we want backend.typing?
 Array = jax.Array
 
 abs = jnp.abs  # noqa: A001
