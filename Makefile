@@ -1,6 +1,6 @@
 format:
-	isort .
-	black .
+	isort .  --quiet
+	black .  --quiet
 	yamlfix .
 	eof .
 

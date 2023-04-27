@@ -3,8 +3,7 @@ site_name: matfree documentation
 repo_url: https://github.com/pnkraemer/matfree
 repo_name: pnkraemer/matfree
 nav:
-  - Get started:
-    - index.md
+  - Get started: [index.md]
   - API documentation:
       - api/montecarlo.md
       - api/decomp.md

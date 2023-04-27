@@ -16,7 +16,7 @@ class DecompAlg(containers.NamedTuple):
 # all arguments are positional-only because we will rename arguments a lot
 def decompose(matvec_fun, depth, init_vec, /, method: DecompAlg):
     r"""Decompose a matrix purely based on matvec-products with A."""
-    empty_solution = method.allocate(depth, init_vec)
+    empty_solution = method.allocate(init_vec)
     init_val = method.init(empty_solution, init_vec)
 
     body_fun = func.partial(method.step, matvec_fun=matvec_fun)
@@ -24,7 +24,7 @@ def decompose(matvec_fun, depth, init_vec, /, method: DecompAlg):
     return method.extract(result)
 
 
-def lanczos() -> DecompAlg:
+def lanczos(depth, /) -> DecompAlg:
     r"""Decompose a matrix into a product of an orthogonal and a tridiagonal matrix.
 
     This is Lanczos' algorithm. More specifically, orthogonally project the original
@@ -41,7 +41,7 @@ def lanczos() -> DecompAlg:
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
     return DecompAlg(
-        allocate=_lanczos_allocate,
+        allocate=func.partial(_lanczos_allocate, depth),
         init=_lanczos_init,
         step=_lanczos_apply,
         extract=_lanczos_extract,
