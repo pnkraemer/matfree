@@ -40,10 +40,11 @@ plugins:
         python:
           options:
             show_root_members_full_path: true
-            show_category_heading: true
+            show_category_heading: false
             docstring_style: numpy
             show_if_no_docstring: true
             show_signature_annotations: true
+watch: [matfree]
 extra:
   social:
     - icon: fontawesome/brands/twitter

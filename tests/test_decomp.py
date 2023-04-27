@@ -22,11 +22,11 @@ def test_tridiagonal_error_for_too_high_order(A):
     key = prng.PRNGKey(1)
     v0 = prng.normal(key, shape=(n,))
     with testing.raises(ValueError):
-        method = decomp.lanczos(n + 10)
-        _ = decomp.decompose(lambda v: A @ v, n + 10, v0, method=method)
+        alg = decomp.lanczos(n + 10)
+        _ = decomp.decompose_fori_loop(0, n + 10, lambda v: A @ v, v0, alg=alg)
     with testing.raises(ValueError):
-        method = decomp.lanczos(n)
-        _ = decomp.decompose(lambda v: A @ v, n, v0, method=method)
+        alg = decomp.lanczos(n)
+        _ = decomp.decompose_fori_loop(0, n + 1, lambda v: A @ v, v0, alg=alg)
 
 
 @testing.parametrize("n", [6])
@@ -37,8 +37,10 @@ def test_tridiagonal_max_order(A):
     order = n - 1
     key = prng.PRNGKey(1)
     v0 = prng.normal(key, shape=(n,))
-    method = decomp.lanczos(order)
-    Q, (d_m, e_m) = decomp.decompose(lambda v: A @ v, order, v0, method=method)
+    alg = decomp.lanczos(order)
+    Q, (d_m, e_m) = decomp.decompose_fori_loop(
+        0, order + 1, lambda v: A @ v, v0, alg=alg
+    )
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -77,9 +79,10 @@ def test_tridiagonal(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
-    init_vec = prng.normal(key, shape=(n,))
-    method = decomp.lanczos(order)
-    Q, (d_m, e_m) = decomp.decompose(lambda v: A @ v, order, init_vec, method=method)
+    v0 = prng.normal(key, shape=(n,))
+    alg = decomp.lanczos(order)
+    Q, tridiag = decomp.decompose_fori_loop(0, order + 1, lambda v: A @ v, v0, alg=alg)
+    (d_m, e_m) = tridiag
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
