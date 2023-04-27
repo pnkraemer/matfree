@@ -10,6 +10,7 @@ nav:
       - api/hutch.md
       - api/slq.md
   - dev/index.md
+  - benchmarks/index.md
 theme:
   name: material
   palette:
