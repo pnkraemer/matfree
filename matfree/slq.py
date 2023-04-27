@@ -6,7 +6,7 @@ from matfree.backend import func, linalg, np, prng
 
 def trace_of_matfun(
     matfun,
-    matvec_fun,
+    Av,
     order,
     /,
     *,
@@ -25,7 +25,7 @@ def trace_of_matfun(
     def sample(k, /):
         return sample_fun(k, shape=tangents_shape, dtype=tangents_dtype)
 
-    quadform = quadratic_form_slq(matfun, matvec_fun, order)
+    quadform = quadratic_form_slq(matfun, Av, order)
     quadform_mc = montecarlo.montecarlo(quadform, sample_fun=sample)
 
     quadform_batch = montecarlo.mean_vmap(quadform_mc, num_samples_per_batch)
@@ -33,12 +33,12 @@ def trace_of_matfun(
     return quadform_batch(key)
 
 
-def quadratic_form_slq(matfun, matvec_fun, order, /):
+def quadratic_form_slq(matfun, Av, order, /):
     """Approximate quadratic form for stochastic Lanczos quadrature."""
 
-    def quadform(init_vec, /):
-        method = decomp.lanczos(order)
-        _, tridiag = decomp.decompose(matvec_fun, order, init_vec, method=method)
+    def quadform(v0, /):
+        algorithm = decomp.lanczos(order)
+        _, tridiag = decomp.decompose_fori_loop(0, order + 1, Av, v0, alg=algorithm)
         (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
@@ -47,9 +47,9 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
         dense_matrix = np.diag(diag) + np.diag(off_diag, -1) + np.diag(off_diag, 1)
         eigvals, eigvecs = linalg.eigh(dense_matrix)
 
-        # Since Q orthogonal (orthonormal) to init_vec, Q v = Q[0],
+        # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        (dim,) = init_vec.shape
+        (dim,) = v0.shape
 
         fx_eigvals = func.vmap(matfun)(eigvals)
         return dim * np.dot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
