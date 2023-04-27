@@ -5,3 +5,4 @@ import matplotlib.pyplot  # noqa: ICN001
 
 plot = matplotlib.pyplot.plot
 show = matplotlib.pyplot.show
+subplots = matplotlib.pyplot.subplots
