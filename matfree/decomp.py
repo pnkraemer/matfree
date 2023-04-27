@@ -16,18 +16,10 @@ class DecompAlg(containers.NamedTuple):
 # all arguments are positional-only because we will rename arguments a lot
 def decompose(matvec_fun, depth, init_vec, /, method: DecompAlg):
     r"""Decompose a matrix purely based on matvec-products with A."""
-    # this algorithm is massively unstable.
-    # but despite this instability, quadrature might be stable?
-    # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
-
-    (ncols,) = np.shape(init_vec)
-    if depth >= ncols or depth < 1:
-        raise ValueError
-
     empty_solution = method.allocate(depth, init_vec)
     init_val = method.init(empty_solution, init_vec)
+
     body_fun = func.partial(method.step, matvec_fun=matvec_fun)
-    # todo: why from 0 to depth+1?
     result = control_flow.fori_loop(0, depth + 1, body_fun=body_fun, init_val=init_val)
     return method.extract(result)
 
@@ -67,6 +59,10 @@ class _LanczosState(containers.NamedTuple):
 
 
 def _lanczos_allocate(depth, init_vec, /):
+    (ncols,) = np.shape(init_vec)
+    if depth >= ncols or depth < 1:
+        raise ValueError
+
     (ncols,) = init_vec.shape
     diag = np.zeros((depth + 1,))
     offdiag = np.zeros((depth,))
