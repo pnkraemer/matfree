@@ -83,7 +83,7 @@ def _lanczos_init(depth: int, init_vec: Array) -> _LanczosState:
     return _LanczosState(0, basis, (diag, offdiag), init_vec)
 
 
-def _lanczos_apply(state: _LanczosState, Av: Callable[[Array], Array]) -> _LanczosState:
+def _lanczos_apply(state: _LanczosState, Av: Callable) -> _LanczosState:
     i, basis, (diag, offdiag), vec = state
 
     # This one is a hack:
