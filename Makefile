@@ -21,3 +21,7 @@ clean:
 
 doc:
 	mkdocs build
+
+run-benchmarks:
+	python docs/benchmarks/*.py
+
