@@ -51,14 +51,14 @@ def test_tridiagonal_max_order(A):
     assert np.allclose(Q.T @ Q, np.eye(n), **tols_decomp), Q.T @ Q
 
     # T = Q A Qt
-    T = np.diag(d_m) + np.diag(e_m, -1) + np.diag(e_m, 1)
+    T = np.diagonal(d_m) + np.diagonal(e_m, -1) + np.diagonal(e_m, 1)
     QAQt = Q @ A @ Q.T
     assert np.shape(T) == (order + 1, order + 1)
 
     # Fail early if the (off)diagonals don't coincide
-    assert np.allclose(np.diag(QAQt), d_m, **tols_decomp)
-    assert np.allclose(np.diag(QAQt, 1), e_m, **tols_decomp)
-    assert np.allclose(np.diag(QAQt, -1), e_m, **tols_decomp)
+    assert np.allclose(np.diagonal(QAQt), d_m, **tols_decomp)
+    assert np.allclose(np.diagonal(QAQt, 1), e_m, **tols_decomp)
+    assert np.allclose(np.diagonal(QAQt, -1), e_m, **tols_decomp)
 
     # Test the full decomposition
     # (i.e. assert that the off-tridiagonal elements are actually small)
@@ -91,14 +91,14 @@ def test_tridiagonal(A, order):
     assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_decomp), Q @ Q.T
 
     # T = Q A Qt
-    T = np.diag(d_m) + np.diag(e_m, -1) + np.diag(e_m, 1)
+    T = np.diagonal(d_m) + np.diagonal(e_m, -1) + np.diagonal(e_m, 1)
     QAQt = Q @ A @ Q.T
     assert np.shape(T) == (order + 1, order + 1)
 
     # Fail early if the (off)diagonals don't coincide
-    assert np.allclose(np.diag(QAQt), d_m, **tols_decomp)
-    assert np.allclose(np.diag(QAQt, 1), e_m, **tols_decomp)
-    assert np.allclose(np.diag(QAQt, -1), e_m, **tols_decomp)
+    assert np.allclose(np.diagonal(QAQt), d_m, **tols_decomp)
+    assert np.allclose(np.diagonal(QAQt, 1), e_m, **tols_decomp)
+    assert np.allclose(np.diagonal(QAQt, -1), e_m, **tols_decomp)
 
     # Test the full decompoisition
     assert np.allclose(QAQt, T, **tols_decomp)

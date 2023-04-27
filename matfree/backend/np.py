@@ -2,45 +2,125 @@
 
 import jax.numpy as jnp
 
-abs = jnp.abs  # noqa: A001
-amin = jnp.amin
-any = jnp.any  # noqa: A001
-asarray = jnp.asarray
-allclose = jnp.allclose
-arange = jnp.arange
-convolve = jnp.convolve
-cos = jnp.cos
-dot = jnp.dot
-diag = jnp.diag
-dtype = jnp.dtype
-empty = jnp.empty
-eye = jnp.eye
-finfo = jnp.finfo  # pylint: disable=invalid-name
-flip = jnp.flip
-isnan = jnp.isnan
-isscalar = jnp.isscalar
-log = jnp.log
-log10 = jnp.log10
-logical_not = jnp.logical_not
-maximum = jnp.maximum
-mean = jnp.mean
-ndim = jnp.ndim
-nan = jnp.nan
-nanmean = jnp.nanmean
-nansum = jnp.nansum
-ones = jnp.ones
-ones_like = jnp.ones_like
-reshape = jnp.reshape
-round = jnp.round  # noqa: A001
-set_printoptions = jnp.set_printoptions
-roll = jnp.roll
-shape = jnp.shape
-sin = jnp.sin
-sqrt = jnp.sqrt
-stack = jnp.stack
-std = jnp.std
-sum = jnp.sum  # noqa: A001
-trace = jnp.trace
-where = jnp.where
-zeros = jnp.zeros
-zeros_like = jnp.zeros_like
+# Creation functions:
+
+
+def arange(start, /, stop=None, step=1):
+    return jnp.arange(start, stop, step)
+
+
+def asarray(obj, /):
+    return jnp.asarray(obj)
+
+
+def eye(n_rows):
+    return jnp.eye(n_rows)
+
+
+def ones_like(x, /):
+    return jnp.ones_like(x)
+
+
+def zeros(shape, *, dtype=None):
+    return jnp.zeros(shape, dtype=dtype)
+
+
+# Element-wise functions
+
+
+def abs(x, /):  # noqa: A001
+    return jnp.abs(x)
+
+
+def log(x, /):
+    return jnp.log(x)
+
+
+def isnan(x, /):
+    return jnp.isnan(x)
+
+
+def sin(x, /):
+    return jnp.sin(x)
+
+
+def cos(x, /):
+    return jnp.cos(x)
+
+
+# Linear algebra functions
+# Todo: move to backend.linalg?
+
+
+def vecdot(x1, x2, /):
+    return jnp.dot(x1, x2)
+
+
+def diagonal(x, /, offset=0):
+    return jnp.diag(x, offset)
+
+
+def trace(x, /):
+    return jnp.trace(x)
+
+
+# Utility functions
+
+
+def any(x, /):  # noqa: A001
+    return jnp.any(x)
+
+
+def allclose(x1, x2, /, *, rtol=1e-5, atol=1e-8):
+    return jnp.allclose(x1, x2, rtol=rtol, atol=atol)
+
+
+# Statistical functions
+
+
+def sum(x, /, axis=None):  # noqa: A001
+    return jnp.sum(x, axis)
+
+
+def maximum(x1, x2):  # todo: call max()
+    return jnp.maximum(x1, x2)
+
+
+def nanmean(x, /, axis=None):
+    return jnp.nanmean(x, axis)
+
+
+# Searching functions
+
+
+def where(condition, x1, x2, /):
+    return jnp.where(condition, x1, x2)
+
+
+# Manipulation functions
+
+
+def reshape(x, /, shape):
+    return jnp.reshape(x, shape)
+
+
+def flip(x, /):
+    return jnp.flip(x)
+
+
+# Functional implementation of methods
+
+
+def shape(x, /):
+    return jnp.shape(x)
+
+
+def dtype(x, /):
+    return jnp.dtype(x)
+
+
+# Functional implementation of constants
+
+
+def nan():
+    return jnp.nan

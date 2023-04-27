@@ -27,3 +27,6 @@ ignore = [
     # zip(..., strict=True/False) is not supported on Python < 3.10
     "B905",
 ]
+
+[tool.ruff.per-file-ignores]
+"matfree/backend/np.py" = ["D103"]  # We don't write docstrings for the backend

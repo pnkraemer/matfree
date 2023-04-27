@@ -16,7 +16,7 @@ def trace(matvec_fun, /, **kwargs):
     """Estimate the trace of a matrix stochastically."""
 
     def quadform(vec):
-        return np.dot(vec, matvec_fun(vec))
+        return np.vecdot(vec, matvec_fun(vec))
 
     return _stochastic_estimate(quadform, **kwargs)
 

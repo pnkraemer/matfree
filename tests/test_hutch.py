@@ -64,7 +64,7 @@ def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun)
         num_samples_per_batch=num_samples_per_batch,
         sample_fun=fun,
     )
-    truth = np.diag(J)
+    truth = np.diagonal(J)
     assert np.allclose(estimate, truth, rtol=1e-2)
 
 
@@ -84,5 +84,7 @@ def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     # Estimate the trace
     fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
     trace, diag = hutch.trace_and_diagonal(jvp, keys=keys, sample_fun=fun)
-    assert np.allclose(diag, np.diag(J), rtol=1e-2), linalg.norm(diag - np.diag(J))
+    assert np.allclose(diag, np.diagonal(J), rtol=1e-2), linalg.norm(
+        diag - np.diagonal(J)
+    )
     assert np.allclose(trace, np.trace(J), rtol=1e-2), linalg.norm(trace - np.trace(J))
