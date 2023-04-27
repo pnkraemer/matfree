@@ -37,7 +37,7 @@ def quadratic_form_slq(matfun, matvec_fun, order, /):
     """Approximate quadratic form for stochastic Lanczos quadrature."""
 
     def quadform(init_vec, /):
-        method = decomp.lanczos()
+        method = decomp.lanczos(order)
         _, tridiag = decomp.decompose(matvec_fun, order, init_vec, method=method)
         (diag, off_diag) = tridiag
 
