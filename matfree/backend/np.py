@@ -3,10 +3,12 @@
 import jax.numpy as jnp
 
 abs = jnp.abs  # noqa: A001
+amin = jnp.amin
 any = jnp.any  # noqa: A001
 asarray = jnp.asarray
 allclose = jnp.allclose
 arange = jnp.arange
+convolve = jnp.convolve
 cos = jnp.cos
 dot = jnp.dot
 diag = jnp.diag
@@ -31,9 +33,12 @@ ones_like = jnp.ones_like
 reshape = jnp.reshape
 round = jnp.round  # noqa: A001
 set_printoptions = jnp.set_printoptions
+roll = jnp.roll
 shape = jnp.shape
 sin = jnp.sin
+sqrt = jnp.sqrt
 stack = jnp.stack
+std = jnp.std
 sum = jnp.sum  # noqa: A001
 trace = jnp.trace
 where = jnp.where
