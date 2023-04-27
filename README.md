@@ -72,12 +72,21 @@ Here is how to use it:
 ## Contributing
 
 Contributions are absolutely welcome! 
-To set up your developer setup, fork the repository, and install all dependencies with `pip install .[full]` or `pip install -e .[full]`.
-From the root of the project, run the tests via `make test`, and check out `make format` and `make lint`.
-There is a pre-commit hook that can be used, too.
+Most contributions start with an issue.
+Please don't hesitate to create issues in which you
+ask for features, give feedback on performances, or simply want to reach out.
+
+To make a pull request, proceed as follows:
+Fork the repository.
+Install all dependencies with `pip install .[full]` or `pip install -e .[full]`.
+Make your changes.
+From the root of the project, run the tests via `make test`, and check out `make format` and `make lint` as well.
+Use the pre-commit hook if you like.
+
+
 
 When making a pull request, keep in mind the following (rough) guidelines:
 
-* Every PR usually resolves an issue and changes ~10 lines of code (or less)
-* Every PR usually contains a single commit. The commit message is usually very descriptive
-* Every enhancement is usually covered by a test.
+* Most PRs resolve an issue and change ~10 lines of code (or less)
+* Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
+* Almost every enhancement (e.g. a new feature) is covered by a test.
