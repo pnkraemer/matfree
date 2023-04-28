@@ -1,7 +1,7 @@
 """Stochastic Lanczos quadrature."""
 
 from matfree import decomp, montecarlo
-from matfree.backend import func, linalg, np, prng
+from matfree.backend import func, linalg, np
 
 
 def trace_of_matfun(
@@ -11,22 +11,16 @@ def trace_of_matfun(
     /,
     *,
     key,
-    num_samples_per_batch,
-    num_batches,
-    tangents_shape,
-    tangents_dtype,
-    sample_fun=prng.normal,
+    sample_fun,
+    num_samples_per_batch=10,
+    num_batches=1,
 ):
     """Compute the trace of the function of a matrix.
 
     For example, logdet(M) = trace(log(M)) ~ trace(U log(D) Ut) = E[v U log(D) Ut vt].
     """
-
-    def sample(k, /):
-        return sample_fun(k, shape=tangents_shape, dtype=tangents_dtype)
-
     quadform = quadratic_form_slq(matfun, Av, order)
-    quadform_mc = montecarlo.montecarlo(quadform, sample_fun=sample)
+    quadform_mc = montecarlo.montecarlo(quadform, sample_fun=sample_fun)
 
     quadform_batch = montecarlo.mean_vmap(quadform_mc, num_samples_per_batch)
     quadform_batch = montecarlo.mean_map(quadform_batch, num_batches)

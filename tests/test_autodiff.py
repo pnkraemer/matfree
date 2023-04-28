@@ -1,7 +1,7 @@
 """Tests for (selected) autodiff functionality."""
 
 
-from matfree import slq, test_util
+from matfree import montecarlo, slq, test_util
 from matfree.backend import np, prng, testing
 
 
@@ -32,6 +32,7 @@ def test_logdet(A, order):
 
 def _logdet(A, order, key):
     n, _ = np.shape(A)
+    fun = montecarlo.normal(shape=(n,))
     received, num_nans = slq.trace_of_matfun(
         np.log,
         lambda v: A @ v,
@@ -39,7 +40,6 @@ def _logdet(A, order, key):
         key=key,
         num_samples_per_batch=10,
         num_batches=1,
-        tangents_shape=(n,),
-        tangents_dtype=float,
+        sample_fun=fun,
     )
     return received
