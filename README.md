@@ -90,7 +90,8 @@ Why is the argument called `num_levels`? Because under the hood,
 `trace_and_diagonal` implements a multilevel diagonal-estimation scheme:
 ```python
 >>> _, diagonal_1 = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
->>> diagonal_2 = hutch.diagonal_multilevel(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> init = jnp.zeros(shape=(2,), dtype=float)
+>>> diagonal_2 = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun)
 
 >>> print(jnp.round(diagonal_1, 4))
 [220.54979 286.7476 ]
@@ -98,7 +99,7 @@ Why is the argument called `num_levels`? Because under the hood,
 >>> print(jnp.round(diagonal_2, 4))
 [220.54979 286.7476 ]
 
->>> diagonal = hutch.diagonal_multilevel(matvec, key=key, num_levels=10, num_samples_per_batch=1000, num_batches=10, sample_fun=sample_fun)
+>>> diagonal = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10, num_samples_per_batch=1000, num_batches=10, sample_fun=sample_fun)
 >>> print(jnp.round(diagonal))
 [219. 285.]
 

@@ -64,12 +64,7 @@ def stochastic_estimate(
     return fun_batched(key)
 
 
-class _EstState(containers.NamedTuple):
-    diagonal_estimate: Any
-    key: Any
-
-
-def trace_and_diagonal(*args, **kwargs):
+def trace_and_diagonal(Av, /, *, sample_fun, key, **kwargs):
     """Jointly estimate the trace and the diagonal stochastically.
 
     The advantage of computing both quantities simultaneously is
@@ -81,13 +76,20 @@ def trace_and_diagonal(*args, **kwargs):
     See:
     Adams et al., Estimating the Spectral Density of Large Implicit Matrices, 2018.
     """
-    diagonal_estimate = diagonal_multilevel(*args, **kwargs)
-    return np.sum(diagonal_estimate), diagonal_estimate
+    fx_value = func.eval_shape(sample_fun, key)
+    init = np.zeros(shape=fx_value.shape, dtype=fx_value.dtype)
+    final = diagonal_multilevel(Av, init, sample_fun=sample_fun, key=key, **kwargs)
+    return np.sum(final), final
 
 
-# todo: implement this as multilevel(diagonal)(...)?
+class _EstState(containers.NamedTuple):
+    diagonal_estimate: Any
+    key: Any
+
+
 def diagonal_multilevel(
     Av,
+    init,
     /,
     *,
     num_levels,
@@ -107,7 +109,7 @@ def diagonal_multilevel(
         "sample_fun": sample_fun,
     }
 
-    def update_fun(level, x):
+    def update_fun(level: int, x: _EstState) -> _EstState:
         """Update the diagonal estimate."""
         diag, k = x
 
@@ -117,11 +119,7 @@ def diagonal_multilevel(
         diag = _incr(diag, level, update)
         return _EstState(diag, subkey)
 
-    # Todo: ask for this initial estimate?
-    sample_dummy = func.eval_shape(sample_fun, key)
-    diagonal_estimate = np.zeros(shape=sample_dummy.shape, dtype=sample_dummy.dtype)
-    state = _EstState(diagonal_estimate=diagonal_estimate, key=key)
-
+    state = _EstState(diagonal_estimate=init, key=key)
     state = control_flow.fori_loop(0, num_levels, body_fun=update_fun, init_val=state)
     (final, *_) = state
     return final

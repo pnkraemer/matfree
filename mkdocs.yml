@@ -44,7 +44,7 @@ plugins:
             docstring_style: numpy
             show_if_no_docstring: true
             show_signature_annotations: true
-            members_order: source
+            members_order: alphabetical
 watch: [matfree]
 extra:
   social:
