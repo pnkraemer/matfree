@@ -22,7 +22,16 @@ def trace(matvec_fun, /, **kwargs):
 
 
 def frobeniusnorm_squared(matvec_fun, /, **kwargs):
-    """Estimate the squared Frobenius norm of a matrix stochastically."""
+    r"""Estimate the squared Frobenius norm of a matrix stochastically.
+
+    The Frobenius norm of a matrix $A$ is defined as
+
+    $$
+    \|A\|_F^2 = \text{trace}(A^\top A)
+    $$
+
+    so computing squared Frobenius norms amounts to trace estimation.
+    """
 
     def quadform(vec):
         Av = matvec_fun(vec)
