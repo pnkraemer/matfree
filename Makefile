@@ -1,8 +1,6 @@
 format:
 	isort .  --quiet
 	black .  --quiet
-	yamlfix .
-	eof .
 
 lint:
 	pre-commit run --all-files
