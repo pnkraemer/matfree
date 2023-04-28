@@ -32,7 +32,6 @@ theme:
         name: Switch to light mode
   font:
     text: Fira Sans
-    code: Inconsolata
   features: [navigation.tabs, navigation.footer]
 plugins:
   - search
@@ -53,3 +52,5 @@ extra:
       name: Nico
   generator: false
 copyright: Copyright &copy; 2023 Nicholas Krämer
+markdown_extensions:
+  - pymdownx.superfences
