@@ -1,6 +1,6 @@
 """Tests for Lanczos functionality."""
 
-from matfree import slq, test_util
+from matfree import montecarlo, slq, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -23,6 +23,7 @@ def test_logdet(A, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
+    fun = montecarlo.normal(shape=(n,))
     received, num_nans = slq.trace_of_matfun(
         np.log,
         lambda v: A @ v,
@@ -30,8 +31,7 @@ def test_logdet(A, order):
         key=key,
         num_samples_per_batch=10,
         num_batches=1,
-        tangents_shape=(n,),
-        tangents_dtype=np.dtype(A),
+        sample_fun=fun,
     )
     expected = linalg.slogdet(A)[1]
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
