@@ -1,5 +1,23 @@
 # matfree
 Randomised and deterministic matrix-free methods for trace estimation, matrix functions, and/or matrix factorisations.
+Builds on [JAX](https://jax.readthedocs.io/en/latest/).
+
+## Installation
+
+To install the package, run
+
+```commandline
+pip install matfree
+```
+
+**Important:** This assumes you already have a working installation of JAX.
+To install JAX, [follow these instructions](https://github.com/google/jax#installation).
+To combine `matfree` with a CPU version of JAX, run
+
+```commandline
+pip install matfree[cpu]
+```
+which is equivalent to combining `pip install jax[cpu]` with `pip install matfree`.
 
 
 ## Minimal example
