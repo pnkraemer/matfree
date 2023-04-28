@@ -40,6 +40,11 @@ def frobeniusnorm_squared(matvec_fun, /, **kwargs):
     return stochastic_estimate(quadform, **kwargs)
 
 
+def diagonal_with_control_variate(Av, control, /, **kwargs):
+    """Estimate the diagonal of a matrix stochastically and with a control variate."""
+    return diagonal(lambda v: Av(v) - control * v, **kwargs) + control
+
+
 def diagonal(matvec_fun, /, **kwargs):
     """Estimate the diagonal of a matrix stochastically."""
 
@@ -60,8 +65,8 @@ def stochastic_estimate(
 
 
 class _EstState(containers.NamedTuple):
-    diagest: Any
-    num: int
+    diagonal_estimate: Any
+    key: Any
 
 
 def trace_and_diagonal(*args, **kwargs):
@@ -80,8 +85,9 @@ def trace_and_diagonal(*args, **kwargs):
     return np.sum(diagonal_estimate), diagonal_estimate
 
 
+# todo: implement this as multilevel(diagonal)(...)?
 def diagonal_multilevel(
-    matvec_fun,
+    Av,
     /,
     *,
     num_levels,
@@ -95,34 +101,30 @@ def diagonal_multilevel(
     The general idea is that a diagonal estimate serves as a control variate
     for the next step's diagonal estimate.
     """
-    keys = prng.split(key, num=num_levels)
+    kwargs = {
+        "num_batches": num_batches,
+        "num_samples_per_batch": num_samples_per_batch,
+        "sample_fun": sample_fun,
+    }
 
-    diagonal_fun = func.partial(
-        diagonal,
-        num_samples_per_batch=num_samples_per_batch,
-        num_batches=num_batches,
-        sample_fun=sample_fun,
-    )
+    def update_fun(level, x):
+        """Update the diagonal estimate."""
+        diag, k = x
 
-    # todo: use fori_loop and repeated split()s instead of a scan?
-    def body(carry, k):
-        diagest, num = carry
+        _, subkey = prng.split(k, num=2)
+        update = diagonal_with_control_variate(Av, diag, key=subkey, **kwargs)
 
-        def Av(v):
-            return matvec_fun(v) - diagest * v
+        diag = _incr(diag, level, update)
+        return _EstState(diag, subkey)
 
-        update = diagonal_fun(Av, key=k)
-        diagest = _incr(diagest, num, update + diagest)
-        return _EstState(diagest=diagest, num=num + 1), ()
+    # Todo: ask for this initial estimate?
+    sample_dummy = func.eval_shape(sample_fun, key)
+    diagonal_estimate = np.zeros(shape=sample_dummy.shape, dtype=sample_dummy.dtype)
+    state = _EstState(diagonal_estimate=diagonal_estimate, key=key)
 
-    sample_dummy = func.eval_shape(sample_fun, keys[0])
-    zeros = np.zeros(shape=sample_dummy.shape, dtype=sample_dummy.dtype)
-    state = _EstState(diagest=zeros, num=0)
-
-    state, _ = control_flow.scan(body, init=state, xs=keys)
-
-    (diag_final, _) = state
-    return diag_final
+    state = control_flow.fori_loop(0, num_levels, body_fun=update_fun, init_val=state)
+    (final, *_) = state
+    return final
 
 
 def _incr(old, count, incoming):

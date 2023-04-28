@@ -71,10 +71,10 @@ Here is how to use it:
 ```python
 >>> trace, diagonal = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
-510.0
+507.0
 
 >>> print(jnp.round(diagonal))
-[222. 288.]
+[221. 287.]
 
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
@@ -91,14 +91,16 @@ Why is the argument called `num_levels`? Because under the hood,
 ```python
 >>> _, diagonal_1 = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
 >>> diagonal_2 = hutch.diagonal_multilevel(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+
 >>> print(jnp.round(diagonal_1, 4))
-[222.04669 287.86218]
+[220.54979 286.7476 ]
+
 >>> print(jnp.round(diagonal_2, 4))
-[222.04669 287.86218]
+[220.54979 286.7476 ]
 
 >>> diagonal = hutch.diagonal_multilevel(matvec, key=key, num_levels=10, num_samples_per_batch=1000, num_batches=10, sample_fun=sample_fun)
 >>> print(jnp.round(diagonal))
-[221. 286.]
+[219. 285.]
 
 ```
 
