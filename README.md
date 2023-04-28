@@ -99,7 +99,7 @@ Why is the argument called `num_levels`? Because under the hood,
 >>> print(jnp.round(diagonal_2, 4))
 [220.54979 286.7476 ]
 
->>> diagonal = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10, num_samples_per_batch=1000, num_batches=10, sample_fun=sample_fun)
+>>> diagonal = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10, num_samples_per_batch=1000, num_batches_per_level=10, sample_fun=sample_fun)
 >>> print(jnp.round(diagonal))
 [219. 285.]
 
