@@ -69,7 +69,7 @@ Jointly estimating traces and diagonals improves performance.
 Here is how to use it:
 
 ```python
->>> keys = jax.random.split(key, num=10_000)  
+>>> keys = jax.random.split(key, num=10_000)
 >>> trace, diagonal = hutch.trace_and_diagonal(matvec, keys=keys, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
 509.0
@@ -89,7 +89,7 @@ Here is how to use it:
 
 ## Contributing
 
-Contributions are absolutely welcome! 
+Contributions are absolutely welcome!
 Most contributions start with an issue.
 Please don't hesitate to create issues in which you
 ask for features, give feedback on performances, or simply want to reach out.
