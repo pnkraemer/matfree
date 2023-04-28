@@ -1,5 +1,20 @@
 """NumPy-style API."""
 
+# In here, we loosely follow the Array API:
+#
+# https://data-apis.org/array-api/2022.12/
+#
+# But deviate in a few points:
+# * The functions here do not have all the arguments specified in the API
+#   (we only wrap the arguments we need)
+# * Our current version of diag/diagonal is slightly different
+# * We do not use methods on Array types, e.g. shape(), dtype(). Instead
+#   these are functions. (Not all backends might always follow this method interface.)
+# * We do not implement any constants (e.g. NaN, Pi). Instead, these are methods.
+# * We implement some linear algebra content (e.g. trace()) here (todo!) instead of in
+#   backend.linalg.
+
+
 import jax.numpy as jnp
 
 # Creation functions:
