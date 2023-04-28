@@ -24,4 +24,3 @@ doc:
 
 run-benchmarks:
 	python docs/benchmarks/*.py
-
