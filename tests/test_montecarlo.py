@@ -52,7 +52,7 @@ def test_mean_many_nans(key, mean_fun):
     """Assert that NaNs are captured (in an all-NaN situtation)."""
 
     def f(x):
-        return np.nan * np.ones_like(x)
+        return np.nan() * np.ones_like(x)
 
     f_mc = montecarlo.montecarlo(f, sample_fun=prng.normal)
     f_mc_mean = mean_fun(f_mc, 10_000)
@@ -69,7 +69,7 @@ def test_mean_many_nans_nested(key, mean_fun1, mean_fun2, mean_fun3):
     """Assert that nested mean-computation captures NaNs (in an all-Nan situation)."""
 
     def f(x):
-        return np.nan * np.ones_like(x)
+        return np.nan() * np.ones_like(x)
 
     n1, n2, n3 = 3, 4, 5
     f_mc = montecarlo.montecarlo(f, sample_fun=prng.normal)
