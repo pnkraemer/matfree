@@ -33,7 +33,7 @@ def test_logdet(A, order):
 def _logdet(A, order, key):
     n, _ = np.shape(A)
     fun = montecarlo.normal(shape=(n,))
-    received, num_nans = slq.trace_of_matfun(
+    return slq.trace_of_matfun(
         np.log,
         lambda v: A @ v,
         order,
@@ -42,4 +42,3 @@ def _logdet(A, order, key):
         num_batches=1,
         sample_fun=fun,
     )
-    return received

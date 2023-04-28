@@ -15,7 +15,7 @@ def montecarlo(f, /, *, sample_fun):
 
     def f_mc(key, /):
         sample = sample_fun(key)
-        return f(sample), 0
+        return f(sample)
 
     return f_mc
 
@@ -25,8 +25,8 @@ def mean_vmap(f, num, /):
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
-        fx_values, how_many_previously = func.vmap(f)(subkeys)
-        return _filter_nan_and_mean(fx_values, how_many_previously)
+        fx_values = func.vmap(f)(subkeys)
+        return np.nanmean(fx_values, axis=0)
 
     return f_mean
 
@@ -36,23 +36,15 @@ def mean_map(f, num, /):
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
-        fx_values, how_many_previously = control_flow.map(f, subkeys)
-        return _filter_nan_and_mean(fx_values, how_many_previously)
+        fx_values = control_flow.map(f, subkeys)
+        return np.nanmean(fx_values, axis=0)
 
     return f_mean
-
-
-def _filter_nan_and_mean(fx_values, how_many_previously):
-    is_nan = np.any(np.isnan(fx_values))
-    how_many = np.sum(np.where(is_nan, np.maximum(1, how_many_previously), 0))
-    mean = np.nanmean(fx_values, axis=0)
-    return mean, how_many
 
 
 class _MState(containers.NamedTuple):
     mean: Any
     key: Any
-    num_nans: Any
 
 
 def mean_loop(f, num, /):
@@ -60,17 +52,17 @@ def mean_loop(f, num, /):
 
     def f_mean(key, /):
         # Initialise
-        fx_shape = func.eval_shape(f, key)[0].shape
+        fx_shape = func.eval_shape(f, key).shape
         mean = np.zeros(fx_shape, dtype=float)
-        mstate = _MState(mean=mean, key=key, num_nans=0)
+        mstate = _MState(mean=mean, key=key)
 
         # Run for-loop
         increment = func.partial(_mean_increment, fun=f)
         mstate = control_flow.fori_loop(0, num, body_fun=increment, init_val=mstate)
-        mean, _key, num_nans = mstate  # todo: why not return key?
+        mean, _key = mstate  # todo: why not return key?
 
         # Return results
-        return mean, num_nans
+        return mean
 
     return f_mean
 
@@ -78,20 +70,15 @@ def mean_loop(f, num, /):
 def _mean_increment(i, mstate: _MState, fun) -> _MState:
     """Increment the current mean-estimate."""
     # Read and split key
-    mean, key, num_nans = mstate
+    mean, key = mstate
     _, subkey = prng.split(key)
 
     # Evaluate function
-    fx_values, how_many_previously = fun(subkey)
-
-    # Update NaN-count
-    how_many_max = np.maximum(1, np.sum(how_many_previously))
-    fx_is_nan = np.any(np.isnan(fx_values))
-    num_nans_new = num_nans + fx_is_nan * how_many_max
+    fx_values = fun(subkey)
 
     # Update mean estimate
     mean_new = np.sum(np.asarray([mean * i, fx_values]), axis=0) / (i + 1)
-    return _MState(mean=mean_new, key=subkey, num_nans=num_nans_new)
+    return _MState(mean=mean_new, key=subkey)
 
 
 def normal(*, shape, dtype=float):
