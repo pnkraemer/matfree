@@ -52,5 +52,4 @@ extra:
       name: Nico
   generator: false
 copyright: Copyright &copy; 2023 Nicholas Krämer
-markdown_extensions:
-  - pymdownx.superfences
+markdown_extensions: [pymdownx.superfences]

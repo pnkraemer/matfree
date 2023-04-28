@@ -37,7 +37,7 @@ Imports:
 
 Estimate traces as such:
 ```python
->>> sample_fun = montecarlo.normal(shape=(2,), dtype=float)
+>>> sample_fun = montecarlo.normal(shape=(2,))
 >>> matvec = lambda x: a.T @ (a @ x)
 >>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
