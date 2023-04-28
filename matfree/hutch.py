@@ -21,6 +21,16 @@ def trace(matvec_fun, /, **kwargs):
     return stochastic_estimate(quadform, **kwargs)
 
 
+def frobeniusnorm_squared(matvec_fun, /, **kwargs):
+    """Estimate the squared Frobenius norm of a matrix stochastically."""
+
+    def quadform(vec):
+        Av = matvec_fun(vec)
+        return np.vecdot(Av, Av)
+
+    return stochastic_estimate(quadform, **kwargs)
+
+
 def diagonal(matvec_fun, /, **kwargs):
     """Estimate the diagonal of a matrix stochastically."""
 
