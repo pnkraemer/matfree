@@ -1,27 +1,30 @@
-"""Hutchinson-style trace and diagonal estimation.
-
-See e.g.
-
-http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learning.html
-
-"""
+"""Hutchinson-style trace and diagonal estimation."""
 
 
 from matfree import montecarlo
 from matfree.backend import containers, control_flow, func, np, prng
-from matfree.backend.typing import Any
+from matfree.backend.typing import Any, Array, Callable
 
 
-def trace(matvec_fun, /, **kwargs):
-    """Estimate the trace of a matrix stochastically."""
+def trace(Av: Callable, /, **kwargs) -> Array:
+    """Estimate the trace of a matrix stochastically.
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    **kwargs:
+        Keyword-arguments to be passed to
+        [stochastic_estimate()][matfree.hutch.stochastic_estimate].
+    """
 
     def quadform(vec):
-        return np.vecdot(vec, matvec_fun(vec))
+        return np.vecdot(vec, Av(vec))
 
     return stochastic_estimate(quadform, **kwargs)
 
 
-def frobeniusnorm_squared(matvec_fun, /, **kwargs):
+def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
     r"""Estimate the squared Frobenius norm of a matrix stochastically.
 
     The Frobenius norm of a matrix $A$ is defined as
@@ -31,40 +34,94 @@ def frobeniusnorm_squared(matvec_fun, /, **kwargs):
     $$
 
     so computing squared Frobenius norms amounts to trace estimation.
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    **kwargs:
+        Keyword-arguments to be passed to
+        [stochastic_estimate()][matfree.hutch.stochastic_estimate].
+
     """
 
     def quadform(vec):
-        Av = matvec_fun(vec)
-        return np.vecdot(Av, Av)
+        x = Av(vec)
+        return np.vecdot(x, x)
 
     return stochastic_estimate(quadform, **kwargs)
 
 
-def diagonal_with_control_variate(Av, control, /, **kwargs):
-    """Estimate the diagonal of a matrix stochastically and with a control variate."""
+def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> Array:
+    """Estimate the diagonal of a matrix stochastically and with a control variate.
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    control:
+        Control variate.
+        This should be the best-possible estimate of the diagonal of the matrix.
+    **kwargs:
+        Keyword-arguments to be passed to
+        [stochastic_estimate()][matfree.hutch.stochastic_estimate].
+
+    """
     return diagonal(lambda v: Av(v) - control * v, **kwargs) + control
 
 
-def diagonal(matvec_fun, /, **kwargs):
-    """Estimate the diagonal of a matrix stochastically."""
+def diagonal(Av: Callable, /, **kwargs) -> Array:
+    """Estimate the diagonal of a matrix stochastically.
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    **kwargs:
+        Keyword-arguments to be passed to
+        [stochastic_estimate()][matfree.hutch.stochastic_estimate].
+
+    """
 
     def quadform(vec):
-        return vec * matvec_fun(vec)
+        return vec * Av(vec)
 
     return stochastic_estimate(quadform, **kwargs)
 
 
 def stochastic_estimate(
-    fun, /, *, key, sample_fun, num_batches=1, num_samples_per_batch=10_000
-):
-    """Hutchinson-style stochastic estimation."""
+    fun: Callable,
+    /,
+    *,
+    key: Array,
+    sample_fun: Callable,
+    num_batches: int = 1,
+    num_samples_per_batch: int = 10_000,
+) -> Array:
+    """Hutchinson-style stochastic estimation.
+
+    Parameters
+    ----------
+    fun:
+        Function whose expected value shall be estimated.
+    key:
+        Pseudo-random number generator key.
+    sample_fun:
+        Sampling function.
+        Usually, either [montecarlo.normal][matfree.montecarlo.normal]
+        or [montecarlo.rademacher][matfree.montecarlo.normal].
+    num_batches:
+        Number of batches when computing arithmetic means.
+    num_samples_per_batch:
+        Number of samples per batch.
+    """
     fun_mc = montecarlo.montecarlo(fun, sample_fun=sample_fun)
     fun_single_batch = montecarlo.mean_vmap(fun_mc, num_samples_per_batch)
     fun_batched = montecarlo.mean_loop(fun_single_batch, num_batches)
     return fun_batched(key)
 
 
-def trace_and_diagonal(Av, /, *, sample_fun, key, **kwargs):
+def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **kwargs):
     """Jointly estimate the trace and the diagonal stochastically.
 
     The advantage of computing both quantities simultaneously is
@@ -72,6 +129,21 @@ def trace_and_diagonal(Av, /, *, sample_fun, key, **kwargs):
     may serve as a control variate for the trace estimate,
     thus reducing the variance of the estimator
     (and thereby accelerating convergence.)
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    sample_fun:
+        Sampling function.
+        Usually, either [montecarlo.normal][matfree.montecarlo.normal]
+        or [montecarlo.rademacher][matfree.montecarlo.normal].
+    key:
+        Pseudo-random number generator key.
+    **kwargs:
+        Keyword-arguments to be passed to
+        [diagonal_multilevel()][matfree.hutch.diagonal_multilevel].
+
 
     See:
     Adams et al., Estimating the Spectral Density of Large Implicit Matrices, 2018.
@@ -88,25 +160,46 @@ class _EstState(containers.NamedTuple):
 
 
 def diagonal_multilevel(
-    Av,
-    init,
+    Av: Callable,
+    init: Array,
     /,
     *,
-    num_levels,
-    sample_fun,
-    key,
-    num_batches=1,
-    num_samples_per_batch=1,
-):
+    key: Array,
+    sample_fun: Callable,
+    num_levels: int,
+    num_batches_per_level: int = 1,
+    num_samples_per_batch: int = 1,
+) -> Array:
     """Estimate the diagonal in a multilevel framework.
 
     The general idea is that a diagonal estimate serves as a control variate
     for the next step's diagonal estimate.
+
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    init:
+        Initial guess.
+    key:
+        Pseudo-random number generator key.
+    sample_fun:
+        Sampling function.
+        Usually, either [montecarlo.normal][matfree.montecarlo.normal]
+        or [montecarlo.rademacher][matfree.montecarlo.normal].
+    num_levels:
+        Number of levels.
+    num_batches_per_level:
+        Number of batches per level.
+    num_samples_per_batch:
+        Number of samples per batch (per level).
+
     """
     kwargs = {
-        "num_batches": num_batches,
-        "num_samples_per_batch": num_samples_per_batch,
         "sample_fun": sample_fun,
+        "num_batches": num_batches_per_level,
+        "num_samples_per_batch": num_samples_per_batch,
     }
 
     def update_fun(level: int, x: _EstState) -> _EstState:
