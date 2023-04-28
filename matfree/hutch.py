@@ -8,7 +8,7 @@ http://www.nowozin.net/sebastian/blog/thoughts-on-trace-estimation-in-deep-learn
 
 
 from matfree import montecarlo
-from matfree.backend import containers, control_flow, func, np
+from matfree.backend import containers, control_flow, func, np, prng
 from matfree.backend.typing import Any
 
 
@@ -64,7 +64,7 @@ class _EstState(containers.NamedTuple):
     num: int
 
 
-def trace_and_diagonal(matvec_fun, /, *, sample_fun, keys):
+def trace_and_diagonal(*args, **kwargs):
     """Jointly estimate the trace and the diagonal stochastically.
 
     The advantage of computing both quantities simultaneously is
@@ -76,27 +76,53 @@ def trace_and_diagonal(matvec_fun, /, *, sample_fun, keys):
     See:
     Adams et al., Estimating the Spectral Density of Large Implicit Matrices, 2018.
     """
+    diagonal_estimate = diagonal_multilevel(*args, **kwargs)
+    return np.sum(diagonal_estimate), diagonal_estimate
+
+
+def diagonal_multilevel(
+    matvec_fun,
+    /,
+    *,
+    num_levels,
+    sample_fun,
+    key,
+    num_batches=1,
+    num_samples_per_batch=1,
+):
+    """Estimate the diagonal in a multilevel framework.
+
+    The general idea is that a diagonal estimate serves as a control variate
+    for the next step's diagonal estimate.
+    """
+    keys = prng.split(key, num=num_levels)
+
+    diagonal_fun = func.partial(
+        diagonal,
+        num_samples_per_batch=num_samples_per_batch,
+        num_batches=num_batches,
+        sample_fun=sample_fun,
+    )
+
+    # todo: use fori_loop and repeated split()s instead of a scan?
+    def body(carry, k):
+        diagest, num = carry
+
+        def Av(v):
+            return matvec_fun(v) - diagest * v
+
+        update = diagonal_fun(Av, key=k)
+        diagest = _incr(diagest, num, update + diagest)
+        return _EstState(diagest=diagest, num=num + 1), ()
+
     sample_dummy = func.eval_shape(sample_fun, keys[0])
     zeros = np.zeros(shape=sample_dummy.shape, dtype=sample_dummy.dtype)
     state = _EstState(diagest=zeros, num=0)
 
-    body_fun = func.partial(_update, sample_fun=sample_fun, matvec_fun=matvec_fun)
-    state, _ = control_flow.scan(body_fun, init=state, xs=keys)
+    state, _ = control_flow.scan(body, init=state, xs=keys)
 
     (diag_final, _) = state
-    return np.sum(diag_final), diag_final
-
-
-def _update(carry, key, *, sample_fun, matvec_fun):
-    diagest, num = carry
-
-    vec_sample = sample_fun(key)
-    quadform_value = vec_sample * (matvec_fun(vec_sample) - diagest * vec_sample)
-
-    # todo: allow batch-mode.
-    diagest = _incr(diagest, num, quadform_value + diagest)
-
-    return _EstState(diagest=diagest, num=num + 1), ()
+    return diag_final
 
 
 def _incr(old, count, incoming):
