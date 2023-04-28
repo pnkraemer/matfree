@@ -63,6 +63,10 @@ def cos(x, /):
     return jnp.cos(x)
 
 
+def sqrt(x, /):
+    return jnp.sqrt(x)
+
+
 # Linear algebra functions
 # Todo: move to backend.linalg?
 
@@ -93,6 +97,14 @@ def allclose(x1, x2, /, *, rtol=1e-5, atol=1e-8):
 # Statistical functions
 
 
+def mean(x, /, axis=None):
+    return jnp.mean(x, axis)
+
+
+def std(x, /, axis=None):
+    return jnp.std(x, axis)
+
+
 def sum(x, /, axis=None):  # noqa: A001
     return jnp.sum(x, axis)
 
@@ -121,6 +133,10 @@ def reshape(x, /, shape):
 
 def flip(x, /):
     return jnp.flip(x)
+
+
+def roll(x, /, shift):
+    return jnp.roll(x, shift)
 
 
 # Functional implementation of methods
