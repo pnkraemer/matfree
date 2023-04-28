@@ -70,8 +70,9 @@ if __name__ == "__main__":
     @func.partial(func.jit, static_argnums=0)
     def fun2(num, key):
         """Estimate trace and diagonal jointly and discard the diagonal."""
-        keys = prng.split(key, num=num)
-        trace2, _ = hutch.trace_and_diagonal(Av, keys=keys, sample_fun=sample_fun)
+        trace2, _ = hutch.trace_and_diagonal(
+            Av, key=key, num_levels=num, sample_fun=sample_fun
+        )
         return trace2
 
     errors1, stds1, times1 = [], [], []

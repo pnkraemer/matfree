@@ -69,13 +69,12 @@ Jointly estimating traces and diagonals improves performance.
 Here is how to use it:
 
 ```python
->>> keys = jax.random.split(key, num=10_000)
->>> trace, diagonal = hutch.trace_and_diagonal(matvec, keys=keys, sample_fun=sample_fun)
+>>> trace, diagonal = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
-509.0
+510.0
 
 >>> print(jnp.round(diagonal))
-[222. 287.]
+[222. 288.]
 
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
@@ -86,6 +85,24 @@ Here is how to use it:
 
 
 ```
+
+Why is the argument called `num_levels`? Because under the hood,
+`trace_and_diagonal` implements a multilevel diagonal-estimation scheme:
+```python
+>>> _, diagonal_1 = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> diagonal_2 = hutch.diagonal_multilevel(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> print(jnp.round(diagonal_1, 4))
+[222.04669 287.86218]
+>>> print(jnp.round(diagonal_2, 4))
+[222.04669 287.86218]
+
+>>> diagonal = hutch.diagonal_multilevel(matvec, key=key, num_levels=10, num_samples_per_batch=1000, num_batches=10, sample_fun=sample_fun)
+>>> print(jnp.round(diagonal))
+[221. 286.]
+
+```
+
+Does the multilevel scheme help? That is not always clear; but [here](https://github.com/pnkraemer/matfree/blob/main/docs/benchmarks/control_variates.py) is a benchmark.
 
 ### Determinants
 
