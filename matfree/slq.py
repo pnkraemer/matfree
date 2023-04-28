@@ -4,11 +4,17 @@ from matfree import decomp, hutch
 from matfree.backend import func, linalg, np
 
 
-def trace_of_matfun(matfun, Av, order, /, **kwargs):
-    """Compute the trace of the function of a matrix.
+def logdet(*args, **kwargs):
+    """Estimate the log-determinant of a matrix."""
+    return trace_of_matfun(np.log, *args, **kwargs)
 
-    For example, logdet(M) = trace(log(M)) ~ trace(U log(D) Ut) = E[v U log(D) Ut vt].
-    """
+
+# todo: nuclear norm, schatten-p norms.
+#  But for this we should use bi-diagonalisation
+
+
+def trace_of_matfun(matfun, Av, order, /, **kwargs):
+    """Compute the trace of the function of a matrix."""
     quadratic_form = quadratic_form_slq(matfun, Av, order)
     return hutch.stochastic_estimate(quadratic_form, **kwargs)
 
@@ -24,9 +30,9 @@ def quadratic_form_slq(matfun, Av, order, /):
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
         #  does not hurt too much...
-        dense_matrix = (
-            np.diagonal(diag) + np.diagonal(off_diag, -1) + np.diagonal(off_diag, 1)
-        )
+        diag = np.diagonal(diag)
+        offdiags = np.diagonal(off_diag, -1) + np.diagonal(off_diag, 1)
+        dense_matrix = diag + offdiags
         eigvals, eigvecs = linalg.eigh(dense_matrix)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],

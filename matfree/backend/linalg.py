@@ -11,3 +11,5 @@ slogdet = jnp.linalg.slogdet
 tridiagonal = jax.lax.linalg.tridiagonal
 eigh_tridiagonal = jax.scipy.linalg.eigh_tridiagonal
 qr = jnp.linalg.qr
+matrix_power = jnp.linalg.matrix_power
+sqrtm = jax.scipy.linalg.sqrtm

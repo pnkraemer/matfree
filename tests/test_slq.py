@@ -8,7 +8,7 @@ from matfree.backend import linalg, np, prng, testing
 def A(n, num_significant_eigvals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
-    d = np.arange(n) + 10.0
+    d = np.arange(n) / n + 1.0
     d = d.at[num_significant_eigvals:].set(0.001)
 
     return test_util.generate_symmetric_matrix_from_eigvals(d)
@@ -24,8 +24,7 @@ def test_logdet(A, order):
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     fun = montecarlo.normal(shape=(n,))
-    received = slq.trace_of_matfun(
-        np.log,
+    received = slq.logdet(
         lambda v: A @ v,
         order,
         key=key,
