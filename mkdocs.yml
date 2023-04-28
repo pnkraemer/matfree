@@ -39,11 +39,12 @@ plugins:
       handlers:
         python:
           options:
-            show_root_members_full_path: true
+            show_root_members_full_path: false
             show_category_heading: false
             docstring_style: numpy
             show_if_no_docstring: true
             show_signature_annotations: true
+            members_order: source
 watch: [matfree]
 extra:
   social:
@@ -52,5 +53,4 @@ extra:
       name: Nico
   generator: false
 copyright: Copyright &copy; 2023 Nicholas Krämer
-markdown_extensions:
-  - pymdownx.superfences
+markdown_extensions: [pymdownx.superfences]

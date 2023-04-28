@@ -18,7 +18,7 @@ def trace(matvec_fun, /, **kwargs):
     def quadform(vec):
         return np.vecdot(vec, matvec_fun(vec))
 
-    return _stochastic_estimate(quadform, **kwargs)
+    return stochastic_estimate(quadform, **kwargs)
 
 
 def diagonal(matvec_fun, /, **kwargs):
@@ -27,10 +27,10 @@ def diagonal(matvec_fun, /, **kwargs):
     def quadform(vec):
         return vec * matvec_fun(vec)
 
-    return _stochastic_estimate(quadform, **kwargs)
+    return stochastic_estimate(quadform, **kwargs)
 
 
-def _stochastic_estimate(
+def stochastic_estimate(
     fun, /, *, key, sample_fun, num_batches=1, num_samples_per_batch=10_000
 ):
     """Hutchinson-style stochastic estimation."""

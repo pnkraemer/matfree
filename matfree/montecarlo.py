@@ -94,7 +94,7 @@ def _mean_increment(i, mstate: _MState, fun) -> _MState:
     return _MState(mean=mean_new, key=subkey, num_nans=num_nans_new)
 
 
-def normal(*, shape, dtype):
+def normal(*, shape, dtype=float):
     """Construct a function that samples from a standard normal distribution."""
 
     def fun(key):
@@ -103,7 +103,7 @@ def normal(*, shape, dtype):
     return fun
 
 
-def rademacher(*, shape, dtype):
+def rademacher(*, shape, dtype=float):
     """Normalised Rademacher distributions."""
 
     def fun(key):
