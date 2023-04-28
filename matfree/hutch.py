@@ -56,8 +56,7 @@ def stochastic_estimate(
     fun_mc = montecarlo.montecarlo(fun, sample_fun=sample_fun)
     fun_single_batch = montecarlo.mean_vmap(fun_mc, num_samples_per_batch)
     fun_batched = montecarlo.mean_loop(fun_single_batch, num_batches)
-    mean, _ = fun_batched(key)
-    return mean
+    return fun_batched(key)
 
 
 class _EstState(containers.NamedTuple):

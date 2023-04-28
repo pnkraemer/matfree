@@ -96,7 +96,7 @@ Estimate log-determinants as such:
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> matvec = lambda x: a.T @ (a @ x) + x
 >>> order = 3
->>> logdet, _ = slq.trace_of_matfun(jnp.log, matvec, order, key=key, sample_fun=sample_fun)
+>>> logdet = slq.trace_of_matfun(jnp.log, matvec, order, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(logdet))
 3.0
 >>> # for comparison:

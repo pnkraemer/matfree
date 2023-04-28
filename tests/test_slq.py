@@ -24,7 +24,7 @@ def test_logdet(A, order):
     n, _ = np.shape(A)
     key = prng.PRNGKey(1)
     fun = montecarlo.normal(shape=(n,))
-    received, num_nans = slq.trace_of_matfun(
+    received = slq.trace_of_matfun(
         np.log,
         lambda v: A @ v,
         order,
