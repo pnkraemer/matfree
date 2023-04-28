@@ -60,7 +60,6 @@ def stochastic_estimate(
 
 
 class _EstState(containers.NamedTuple):
-    traceest: float
     diagest: Any
     num: int
 
@@ -79,27 +78,25 @@ def trace_and_diagonal(matvec_fun, /, *, sample_fun, keys):
     """
     sample_dummy = func.eval_shape(sample_fun, keys[0])
     zeros = np.zeros(shape=sample_dummy.shape, dtype=sample_dummy.dtype)
-    state = _EstState(traceest=0.0, diagest=zeros, num=0)
+    state = _EstState(diagest=zeros, num=0)
 
     body_fun = func.partial(_update, sample_fun=sample_fun, matvec_fun=matvec_fun)
     state, _ = control_flow.scan(body_fun, init=state, xs=keys)
 
-    (trace_final, diag_final, _) = state
-    return trace_final, diag_final
+    (diag_final, _) = state
+    return np.sum(diag_final), diag_final
 
 
-# todo: use fori_loop.
 def _update(carry, key, *, sample_fun, matvec_fun):
-    traceest, diagest, num = carry
+    diagest, num = carry
 
     vec_sample = sample_fun(key)
     quadform_value = vec_sample * (matvec_fun(vec_sample) - diagest * vec_sample)
 
     # todo: allow batch-mode.
-    traceest = _incr(traceest, num, np.sum(quadform_value) + sum(diagest))
     diagest = _incr(diagest, num, quadform_value + diagest)
 
-    return _EstState(traceest=traceest, diagest=diagest, num=num + 1), ()
+    return _EstState(diagest=diagest, num=num + 1), ()
 
 
 def _incr(old, count, incoming):
