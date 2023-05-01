@@ -119,7 +119,7 @@ def _lanczos_extract(state: _LanczosState, /):
 
 
 def _normalise(vec):
-    length = linalg.norm(vec)
+    length = linalg.vector_norm(vec)
     return vec / length, length
 
 
@@ -129,6 +129,6 @@ def _gram_schmidt_orthogonalise_set(vec, vectors):  # Gram-Schmidt
 
 
 def _gram_schmidt_orthogonalise(vec1, vec2):
-    coeff = np.vecdot(vec1, vec2)
+    coeff = linalg.vecdot(vec1, vec2)
     vec_ortho = vec1 - coeff * vec2
     return vec_ortho, coeff

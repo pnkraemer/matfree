@@ -11,8 +11,6 @@
 # * We do not use methods on Array types, e.g. shape(), dtype(). Instead
 #   these are functions. (Not all backends might always follow this method interface.)
 # * We do not implement any constants (e.g. NaN, Pi). Instead, these are methods.
-# * We implement some linear algebra content (e.g. trace()) here (todo!) instead of in
-#   backend.linalg.
 
 
 import jax.numpy as jnp
@@ -65,22 +63,6 @@ def cos(x, /):
 
 def sqrt(x, /):
     return jnp.sqrt(x)
-
-
-# Linear algebra functions
-# Todo: move to backend.linalg?
-
-
-def vecdot(x1, x2, /):
-    return jnp.dot(x1, x2)
-
-
-def diagonal(x, /, offset=0):
-    return jnp.diag(x, offset)
-
-
-def trace(x, /):
-    return jnp.trace(x)
 
 
 # Utility functions
@@ -139,7 +121,7 @@ def roll(x, /, shift):
     return jnp.roll(x, shift)
 
 
-# Functional implementation of methods
+# Functional implementation of what are usually array-methods
 
 
 def shape(x, /):
