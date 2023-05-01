@@ -91,7 +91,12 @@ def sum(x, /, axis=None):  # noqa: A001
     return jnp.sum(x, axis)
 
 
-def maximum(x1, x2):  # todo: call max()
+# todo: change amax and maximum to array_max, elementwise_max
+def amin(x, /):
+    return jnp.amin(x)
+
+
+def maximum(x1, x2):  # todo: call this max()
     return jnp.maximum(x1, x2)
 
 
@@ -137,3 +142,10 @@ def dtype(x, /):
 
 def nan():
     return jnp.nan
+
+
+# Others
+
+
+def convolve(a, b, /, mode="full"):
+    return jnp.convolve(a, b, mode=mode)
