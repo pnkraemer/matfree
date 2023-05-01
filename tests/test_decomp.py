@@ -4,7 +4,7 @@ from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
-@testing.fixture
+@testing.fixture()
 def A(n, num_significant_eigvals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
@@ -19,7 +19,7 @@ def A(n, num_significant_eigvals):
 def test_tridiagonal_error_for_too_high_order(A):
     """Assert graceful failure if the depth matches or exceeds the number of columns."""
     n, _ = np.shape(A)
-    key = prng.PRNGKey(1)
+    key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     with testing.raises(ValueError):
         alg = decomp.lanczos(n + 10)
@@ -35,7 +35,7 @@ def test_tridiagonal_max_order(A):
     """If m == n, the matrix should be equal to the full tridiagonal."""
     n, _ = np.shape(A)
     order = n - 1
-    key = prng.PRNGKey(1)
+    key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     alg = decomp.lanczos(order)
     Q, (d_m, e_m) = decomp.decompose_fori_loop(
@@ -78,7 +78,7 @@ def test_tridiagonal_max_order(A):
 def test_tridiagonal(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     n, _ = np.shape(A)
-    key = prng.PRNGKey(1)
+    key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     alg = decomp.lanczos(order)
     Q, tridiag = decomp.decompose_fori_loop(0, order + 1, lambda v: A @ v, v0, alg=alg)

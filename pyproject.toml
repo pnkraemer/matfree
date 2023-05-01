@@ -30,6 +30,12 @@ ignore = [
 
 [tool.ruff.per-file-ignores]
 # We don't write docstrings for the backend
-"matfree/backend/np.py" = ["D103"]
-"matfree/backend/linalg.py" = ["D103"]
+"matfree/backend/control_flow.py" = ["D103"]
 "matfree/backend/func.py" = ["D103"]
+"matfree/backend/linalg.py" = ["D103"]
+"matfree/backend/np.py" = ["D103"]
+"matfree/backend/plt.py" = ["D103"]
+"matfree/backend/prng.py" = ["D103"]
+"matfree/backend/progressbar.py" = ["D103"]
+"matfree/backend/testing.py" = ["D103"]
+"matfree/backend/time.py" = ["D103"]

@@ -20,10 +20,10 @@ def error_and_time(fun, error_fun):
         _ = fun(*args, **kwargs)
 
         # Execute and time
-        t0 = time.clock()
+        t0 = time.perf_counter()
         result = fun(*args, **kwargs)
         result.block_until_ready()
-        t1 = time.clock()
+        t1 = time.perf_counter()
         return error_fun(result), (t1 - t0)
 
     return fun_wrapped
@@ -38,7 +38,7 @@ def problem(n):
     def f(x):
         return np.sin(np.roll(np.sin(np.flip(np.cos(x)) + 1) ** 2, 1)) * np.sin(x**2)
 
-    key = prng.PRNGKey(seed=2)
+    key = prng.prng_key(seed=2)
     x0 = prng.uniform(key, shape=(n,))
 
     _, jvp = func.linearize(f, x0)
