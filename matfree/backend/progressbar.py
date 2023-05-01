@@ -2,4 +2,6 @@
 
 import tqdm
 
-progressbar = tqdm.tqdm
+
+def progressbar(x, /):
+    return tqdm.tqdm(x)

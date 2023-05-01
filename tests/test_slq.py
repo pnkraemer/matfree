@@ -22,7 +22,7 @@ def A(n, num_significant_eigvals):
 def test_logdet(A, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
-    key = prng.PRNGKey(1)
+    key = prng.prng_key(1)
     fun = montecarlo.normal(shape=(n,))
     received = slq.logdet(
         lambda v: A @ v,

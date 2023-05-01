@@ -17,7 +17,7 @@ def fixture_fun():
 @testing.fixture(name="key")
 def fixture_key():
     """Fix a pseudo-random number generator."""
-    return prng.PRNGKey(seed=1)
+    return prng.prng_key(seed=1)
 
 
 @testing.parametrize("num_batches", [1_000])

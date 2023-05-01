@@ -15,7 +15,7 @@ def test_van_der_corput():
     assert np.allclose(received, expected)
 
 
-@testing.parametrize("key", [prng.PRNGKey(1)])
+@testing.parametrize("key", [prng.prng_key(1)])
 @testing.parametrize("num_batches, num_samples", [[1, 10_000], [10_000, 1], [100, 100]])
 def test_mean(key, num_batches, num_samples):
     """Assert that the mean estimate is accurate."""

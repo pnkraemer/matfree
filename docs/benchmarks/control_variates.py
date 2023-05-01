@@ -38,7 +38,7 @@ def problem(n):
     def f(x):
         return np.sin(np.roll(np.sin(np.flip(np.cos(x)) + 1) ** 2, 1)) * np.sin(x**2)
 
-    key = prng.PRNGKey(seed=2)
+    key = prng.prng_key(seed=2)
     x0 = prng.uniform(key, shape=(n,))
 
     _, jvp = func.linearize(f, x0)
