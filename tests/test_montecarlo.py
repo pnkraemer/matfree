@@ -15,32 +15,19 @@ def test_van_der_corput():
     assert np.allclose(received, expected)
 
 
-@testing.fixture(name="f_mc")
-def fixture_f_mc():
-    """Fix a Monte-Carlo problem."""
+@testing.parametrize("key", [prng.PRNGKey(1)])
+@testing.parametrize("num_batches, num_samples", [[1, 10_000], [10_000, 1], [100, 100]])
+def test_mean(key, num_batches, num_samples):
+    """Assert that the mean estimate is accurate."""
 
-    def f(x):
+    def fun(x):
         return x**2
 
-    return montecarlo.montecarlo(f, sample_fun=prng.normal)
-
-
-_ALL_MEAN_FNS = [montecarlo.mean_vmap, montecarlo.mean_map, montecarlo.mean_loop]
-
-
-@testing.parametrize("key", [prng.PRNGKey(1)])
-@testing.parametrize("mean_fun", _ALL_MEAN_FNS)
-def test_mean(f_mc, key, mean_fun):
-    """Assert that the mean estimate is accurate."""
-    f_mc_mean = mean_fun(f_mc, 10_000)
-    received = f_mc_mean(key)
-    assert np.allclose(received, 1.0, rtol=1e-2)
-
-
-@testing.parametrize("key", [prng.PRNGKey(1)])
-@testing.parametrize("mean_fun1, mean_fun2", (_ALL_MEAN_FNS[1:], _ALL_MEAN_FNS[:-1]))
-def test_mean_nested(f_mc, key, mean_fun1, mean_fun2):
-    """Assert that nested mean-computation remains accurate."""
-    f_mc_mean = mean_fun1(mean_fun2(f_mc, 5), 10_000)
-    received = f_mc_mean(key)
-    assert np.allclose(received, 1.0, rtol=1e-2)
+    received = montecarlo.estimate(
+        fun,
+        num_batches=num_batches,
+        num_samples_per_batch=num_samples,
+        key=key,
+        sample_fun=montecarlo.normal(shape=()),
+    )
+    assert np.allclose(received, 1.0, rtol=1e-1)

@@ -16,7 +16,7 @@ def logdet(*args, **kwargs):
 def trace_of_matfun(matfun, Av, order, /, **kwargs):
     """Compute the trace of the function of a matrix."""
     quadratic_form = quadratic_form_slq(matfun, Av, order)
-    return montecarlo.stochastic_estimate(quadratic_form, **kwargs)
+    return montecarlo.estimate(quadratic_form, **kwargs)
 
 
 def quadratic_form_slq(matfun, Av, order, /):
