@@ -5,21 +5,21 @@ from matfree.backend import func, linalg, np
 
 
 def logdet(*args, **kwargs):
-    """Estimate the log-determinant of a matrix."""
-    return trace_of_matfun(np.log, *args, **kwargs)
+    """Estimate the log-determinant of a symmetric, positive definite matrix."""
+    return trace_of_matfun_symmetric(np.log, *args, **kwargs)
 
 
 # todo: nuclear norm, schatten-p norms.
 #  But for this we should use bi-diagonalisation
 
 
-def trace_of_matfun(matfun, Av, order, /, **kwargs):
-    """Compute the trace of the function of a matrix."""
-    quadratic_form = quadratic_form_slq(matfun, Av, order)
+def trace_of_matfun_symmetric(matfun, Av, order, /, **kwargs):
+    """Compute the trace of the function of a symmetric matrix."""
+    quadratic_form = quadratic_form_slq_symmetric(matfun, Av, order)
     return montecarlo.estimate(quadratic_form, **kwargs)
 
 
-def quadratic_form_slq(matfun, Av, order, /):
+def quadratic_form_slq_symmetric(matfun, Av, order, /):
     """Approximate quadratic form for stochastic Lanczos quadrature."""
 
     def quadform(v0, /):
