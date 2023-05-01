@@ -15,13 +15,13 @@ def trace(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [montecarlo.stochastic_estimate()][matfree.montecarlo.stochastic_estimate].
+        [montecarlo.estimate()][matfree.montecarlo.estimate].
     """
 
     def quadform(vec):
         return np.vecdot(vec, Av(vec))
 
-    return montecarlo.stochastic_estimate(quadform, **kwargs)
+    return montecarlo.estimate(quadform, **kwargs)
 
 
 def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
@@ -41,7 +41,7 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [montecarlo.stochastic_estimate()][matfree.montecarlo.stochastic_estimate].
+        [montecarlo.estimate()][matfree.montecarlo.estimate].
 
     """
 
@@ -49,7 +49,7 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
         x = Av(vec)
         return np.vecdot(x, x)
 
-    return montecarlo.stochastic_estimate(quadform, **kwargs)
+    return montecarlo.estimate(quadform, **kwargs)
 
 
 def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> Array:
@@ -64,7 +64,7 @@ def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> 
         This should be the best-possible estimate of the diagonal of the matrix.
     **kwargs:
         Keyword-arguments to be passed to
-        [montecarlo.stochastic_estimate()][matfree.montecarlo.stochastic_estimate].
+        [montecarlo.estimate()][matfree.montecarlo.estimate].
 
     """
     return diagonal(lambda v: Av(v) - control * v, **kwargs) + control
@@ -79,14 +79,14 @@ def diagonal(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [montecarlo.stochastic_estimate()][matfree.montecarlo.stochastic_estimate].
+        [montecarlo.estimate()][matfree.montecarlo.estimate].
 
     """
 
     def quadform(vec):
         return vec * Av(vec)
 
-    return montecarlo.stochastic_estimate(quadform, **kwargs)
+    return montecarlo.estimate(quadform, **kwargs)
 
 
 def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **kwargs):

@@ -1,10 +1,10 @@
-"""A million ways of computing arithmetic means."""
+"""Monte-Carlo estimation."""
 
 from matfree.backend import containers, control_flow, func, np, prng
 from matfree.backend.typing import Any, Array, Callable
 
 
-def stochastic_estimate(
+def estimate(
     fun: Callable,
     /,
     *,
@@ -13,7 +13,7 @@ def stochastic_estimate(
     num_batches: int = 1,
     num_samples_per_batch: int = 10_000,
 ) -> Array:
-    """Monte-Carlo estimation.
+    """Monte-Carlo estimation: Compute the expected value of a function.
 
     Parameters
     ----------
@@ -23,20 +23,21 @@ def stochastic_estimate(
         Pseudo-random number generator key.
     sample_fun:
         Sampling function.
-        Usually, either [montecarlo.normal][matfree.montecarlo.normal]
-        or [montecarlo.rademacher][matfree.montecarlo.normal].
+        For trace-estimation, use
+        either [montecarlo.normal(...)][matfree.montecarlo.normal]
+        or [montecarlo.rademacher(...)][matfree.montecarlo.normal].
     num_batches:
         Number of batches when computing arithmetic means.
     num_samples_per_batch:
         Number of samples per batch.
     """
-    fun_mc = montecarlo(fun, sample_fun=sample_fun)
-    fun_single_batch = mean_vmap(fun_mc, num_samples_per_batch)
-    fun_batched = mean_loop(fun_single_batch, num_batches)
+    fun_mc = _montecarlo(fun, sample_fun=sample_fun)
+    fun_single_batch = _mean_vmap(fun_mc, num_samples_per_batch)
+    fun_batched = _mean_loop(fun_single_batch, num_batches)
     return fun_batched(key)
 
 
-def montecarlo(f, /, *, sample_fun):
+def _montecarlo(f, /, *, sample_fun):
     """Turn a function into a Monte-Carlo problem.
 
     More specifically, f(x) becomes g(key) = f(h(key)),
@@ -52,7 +53,7 @@ def montecarlo(f, /, *, sample_fun):
     return f_mc
 
 
-def mean_vmap(f, num, /):
+def _mean_vmap(f, num, /):
     """Compute a batch-mean via jax.vmap."""
 
     def f_mean(key, /):
@@ -63,23 +64,12 @@ def mean_vmap(f, num, /):
     return f_mean
 
 
-def mean_map(f, num, /):
-    """Compute a batch-mean via jax.lax.map."""
-
-    def f_mean(key, /):
-        subkeys = prng.split(key, num)
-        fx_values = control_flow.map(f, subkeys)
-        return np.nanmean(fx_values, axis=0)
-
-    return f_mean
-
-
 class _MState(containers.NamedTuple):
     mean: Any
     key: Any
 
 
-def mean_loop(f, num, /):
+def _mean_loop(f, num, /):
     """Compute an on-the-fly mean via a for-loop."""
 
     def f_mean(key, /):
@@ -123,7 +113,7 @@ def normal(*, shape, dtype=float):
 
 
 def rademacher(*, shape, dtype=float):
-    """Normalised Rademacher distributions."""
+    """Construct a function that samples from a Rademacher distribution."""
 
     def fun(key):
         return prng.rademacher(key, shape=shape, dtype=dtype)
