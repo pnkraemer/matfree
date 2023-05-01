@@ -1,7 +1,39 @@
 """A million ways of computing arithmetic means."""
 
 from matfree.backend import containers, control_flow, func, np, prng
-from matfree.backend.typing import Any
+from matfree.backend.typing import Any, Array, Callable
+
+
+def stochastic_estimate(
+    fun: Callable,
+    /,
+    *,
+    key: Array,
+    sample_fun: Callable,
+    num_batches: int = 1,
+    num_samples_per_batch: int = 10_000,
+) -> Array:
+    """Monte-Carlo estimation.
+
+    Parameters
+    ----------
+    fun:
+        Function whose expected value shall be estimated.
+    key:
+        Pseudo-random number generator key.
+    sample_fun:
+        Sampling function.
+        Usually, either [montecarlo.normal][matfree.montecarlo.normal]
+        or [montecarlo.rademacher][matfree.montecarlo.normal].
+    num_batches:
+        Number of batches when computing arithmetic means.
+    num_samples_per_batch:
+        Number of samples per batch.
+    """
+    fun_mc = montecarlo(fun, sample_fun=sample_fun)
+    fun_single_batch = mean_vmap(fun_mc, num_samples_per_batch)
+    fun_batched = mean_loop(fun_single_batch, num_batches)
+    return fun_batched(key)
 
 
 def montecarlo(f, /, *, sample_fun):
