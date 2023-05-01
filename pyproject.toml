@@ -34,3 +34,4 @@ ignore = [
 "matfree/backend/func.py" = ["D103"]
 "matfree/backend/linalg.py" = ["D103"]
 "matfree/backend/np.py" = ["D103"]
+"matfree/backend/plt.py" = ["D103"]
