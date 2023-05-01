@@ -4,7 +4,7 @@ from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
-@testing.fixture
+@testing.fixture()
 def A(n, num_significant_eigvals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
