@@ -38,3 +38,4 @@ ignore = [
 "matfree/backend/prng.py" = ["D103"]
 "matfree/backend/progressbar.py" = ["D103"]
 "matfree/backend/testing.py" = ["D103"]
+"matfree/backend/time.py" = ["D103"]

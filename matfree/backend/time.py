@@ -2,4 +2,6 @@
 
 import time
 
-clock = time.perf_counter
+
+def perf_counter():
+    return time.perf_counter()
