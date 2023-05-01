@@ -26,7 +26,7 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutch, montecarlo
+>>> from matfree import hutch, montecarlo, slq
 
 >>> a = jnp.reshape(jnp.arange(12.), (6, 2))
 >>> key = jax.random.PRNGKey(1)
@@ -69,13 +69,12 @@ Jointly estimating traces and diagonals improves performance.
 Here is how to use it:
 
 ```python
->>> keys = jax.random.split(key, num=10_000)
->>> trace, diagonal = hutch.trace_and_diagonal(matvec, keys=keys, sample_fun=sample_fun)
+>>> trace, diagonal = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
-509.0
+507.0
 
 >>> print(jnp.round(diagonal))
-[222. 287.]
+[221. 287.]
 
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
@@ -84,6 +83,45 @@ Here is how to use it:
 >>> print(jnp.round(jnp.diagonal(a.T @ a)))
 [220. 286.]
 
+
+```
+
+Why is the argument called `num_levels`? Because under the hood,
+`trace_and_diagonal` implements a multilevel diagonal-estimation scheme:
+```python
+>>> _, diagonal_1 = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> init = jnp.zeros(shape=(2,), dtype=float)
+>>> diagonal_2 = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun)
+
+>>> print(jnp.round(diagonal_1, 4))
+[220.54979 286.7476 ]
+
+>>> print(jnp.round(diagonal_2, 4))
+[220.54979 286.7476 ]
+
+>>> diagonal = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10, num_samples_per_batch=1000, num_batches_per_level=10, sample_fun=sample_fun)
+>>> print(jnp.round(diagonal))
+[219. 285.]
+
+```
+
+Does the multilevel scheme help? That is not always clear; but [here](https://github.com/pnkraemer/matfree/blob/main/docs/benchmarks/control_variates.py) is a benchmark.
+
+### Determinants
+
+
+Estimate log-determinants as such:
+```python
+>>> a = jnp.reshape(jnp.arange(36.), (6, 6)) / 36
+>>> sample_fun = montecarlo.normal(shape=(6,))
+>>> matvec = lambda x: a.T @ (a @ x) + x
+>>> order = 3
+>>> logdet = slq.logdet(matvec, order, key=key, sample_fun=sample_fun)
+>>> print(jnp.round(logdet))
+3.0
+>>> # for comparison:
+>>> print(jnp.round(jnp.linalg.slogdet(a.T @ a + jnp.eye(6))[1]))
+3.0
 
 ```
 

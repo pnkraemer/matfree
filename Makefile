@@ -7,6 +7,7 @@ lint:
 
 test:
 	python -m doctest README.md
+	python -m doctest docs/index.md
 	pytest -x -v
 
 
