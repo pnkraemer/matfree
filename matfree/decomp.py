@@ -124,7 +124,7 @@ def _normalise(vec):
 
 
 def _gram_schmidt_orthogonalise_set(vec, vectors):  # Gram-Schmidt
-    vec, coeffs = control_flow.scan(_gram_schmidt_orthogonalise, init=vec, xs=vectors)
+    vec, coeffs = control_flow.scan(_gram_schmidt_orthogonalise, vec, xs=vectors)
     return vec, coeffs
 
 
