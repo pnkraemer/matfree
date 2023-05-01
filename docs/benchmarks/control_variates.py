@@ -3,30 +3,8 @@
 Runtime: ~10 seconds.
 """
 
-from matfree import hutch, montecarlo
-from matfree.backend import func, linalg, np, plt, prng, progressbar, time
-
-
-def rmse_relative(received, *, expected):
-    """Compute the relative root-mean-square error."""
-    return linalg.vector_norm((received - expected) / expected) / np.sqrt(expected.size)
-
-
-def error_and_time(fun, error_fun):
-    """Compute error and runtime of a function with a single outputs."""
-
-    def fun_wrapped(*args, **kwargs):
-        # Execute once for compilation
-        _ = fun(*args, **kwargs)
-
-        # Execute and time
-        t0 = time.perf_counter()
-        result = fun(*args, **kwargs)
-        result.block_until_ready()
-        t1 = time.perf_counter()
-        return error_fun(result), (t1 - t0)
-
-    return fun_wrapped
+from matfree import benchmark_util, hutch, montecarlo
+from matfree.backend import func, linalg, np, plt, prng, progressbar
 
 
 def problem(n):
@@ -56,9 +34,9 @@ if __name__ == "__main__":
 
     (Av, trace, J), (k, sample_fun) = problem(dim)
 
-    error_fun = func.partial(rmse_relative, expected=trace)
+    error_fun = func.partial(benchmark_util.rmse_relative, expected=trace)
 
-    @func.partial(error_and_time, error_fun=error_fun)
+    @func.partial(benchmark_util.error_and_time, error_fun=error_fun)
     @func.partial(func.jit, static_argnums=0)
     def fun1(num, key):
         """Estimate the trace conventionally."""
@@ -66,7 +44,7 @@ if __name__ == "__main__":
             Av, key=key, sample_fun=sample_fun, num_batches=num, num_samples_per_batch=1
         )
 
-    @func.partial(error_and_time, error_fun=error_fun)
+    @func.partial(benchmark_util.error_and_time, error_fun=error_fun)
     @func.partial(func.jit, static_argnums=0)
     def fun2(num, key):
         """Estimate trace and diagonal jointly and discard the diagonal."""
