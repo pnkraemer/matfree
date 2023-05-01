@@ -22,4 +22,5 @@ doc:
 	mkdocs build
 
 run-benchmarks:
-	python docs/benchmarks/*.py
+	python docs/benchmarks/control_variates.py
+	python docs/benchmarks/jacobian_squared.py
