@@ -1,6 +1,6 @@
 """Benchmark utilities."""
 
-from matfree.backend import linalg, np, time
+from matfree.backend import func, linalg, np, time
 
 
 def rmse_relative(received, *, expected):
@@ -11,6 +11,7 @@ def rmse_relative(received, *, expected):
 def error_and_time(fun, error_fun):
     """Compute error and runtime of a function with a single outputs."""
 
+    @func.wraps(fun)
     def fun_wrapped(*args, **kwargs):
         # Execute once for compilation
         _ = fun(*args, **kwargs)

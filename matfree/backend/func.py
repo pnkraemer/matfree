@@ -23,6 +23,10 @@ def partial(func, /, *args, **kwargs):
     return functools.partial(func, *args, **kwargs)
 
 
+def wraps(func, /):
+    return functools.wraps(func)
+
+
 # Algorithmic differentiation
 
 
