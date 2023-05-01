@@ -2,7 +2,7 @@
 
 
 from matfree import montecarlo
-from matfree.backend import containers, control_flow, func, np, prng
+from matfree.backend import containers, control_flow, func, linalg, np, prng
 from matfree.backend.typing import Any, Array, Callable
 
 
@@ -19,7 +19,7 @@ def trace(Av: Callable, /, **kwargs) -> Array:
     """
 
     def quadform(vec):
-        return np.vecdot(vec, Av(vec))
+        return linalg.vecdot(vec, Av(vec))
 
     return montecarlo.estimate(quadform, **kwargs)
 
@@ -47,7 +47,7 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
 
     def quadform(vec):
         x = Av(vec)
-        return np.vecdot(x, x)
+        return linalg.vecdot(x, x)
 
     return montecarlo.estimate(quadform, **kwargs)
 

@@ -30,9 +30,10 @@ def quadratic_form_slq(matfun, Av, order, /):
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
         #  does not hurt too much...
-        diag = np.diagonal(diag)
-        offdiags = np.diagonal(off_diag, -1) + np.diagonal(off_diag, 1)
-        dense_matrix = diag + offdiags
+        diag = linalg.diagonal_matrix(diag)
+        offdiag1 = linalg.diagonal_matrix(off_diag, -1)
+        offdiag2 = linalg.diagonal_matrix(off_diag, 1)
+        dense_matrix = diag + offdiag1 + offdiag2
         eigvals, eigvecs = linalg.eigh(dense_matrix)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
@@ -40,6 +41,6 @@ def quadratic_form_slq(matfun, Av, order, /):
         (dim,) = v0.shape
 
         fx_eigvals = func.vmap(matfun)(eigvals)
-        return dim * np.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
+        return dim * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform

@@ -42,7 +42,7 @@ def test_frobeniusnorm_squared(
         num_samples_per_batch=num_samples_per_batch,
         sample_fun=fun,
     )
-    truth = np.trace(J.T @ J)
+    truth = linalg.trace(J.T @ J)
     assert np.allclose(estimate, truth, rtol=1e-2)
 
 
@@ -66,7 +66,7 @@ def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
         num_samples_per_batch=num_samples_per_batch,
         sample_fun=fun,
     )
-    truth = np.trace(J)
+    truth = linalg.trace(J)
     assert np.allclose(estimate, truth, rtol=1e-2)
 
 
@@ -90,7 +90,7 @@ def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun)
         num_samples_per_batch=num_samples_per_batch,
         sample_fun=fun,
     )
-    truth = np.diagonal(J)
+    truth = linalg.diagonal(J)
     assert np.allclose(estimate, truth, rtol=1e-2)
 
 
@@ -111,7 +111,7 @@ def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     )
 
     # Print errors if test fails
-    error_diag = linalg.norm(diag - np.diagonal(J))
-    error_trace = linalg.norm(trace - np.trace(J))
-    assert np.allclose(diag, np.diagonal(J), rtol=1e-2), error_diag
-    assert np.allclose(trace, np.trace(J), rtol=1e-2), error_trace
+    error_diag = linalg.vector_norm(diag - linalg.diagonal(J))
+    error_trace = linalg.vector_norm(trace - linalg.trace(J))
+    assert np.allclose(diag, linalg.diagonal(J), rtol=1e-2), error_diag
+    assert np.allclose(trace, linalg.trace(J), rtol=1e-2), error_trace

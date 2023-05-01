@@ -9,7 +9,7 @@ from matfree.backend import func, linalg, np, plt, prng, progressbar, time
 
 def rmse_relative(received, *, expected):
     """Compute the relative root-mean-square error."""
-    return linalg.norm((received - expected) / expected) / np.sqrt(expected.size)
+    return linalg.vector_norm((received - expected) / expected) / np.sqrt(expected.size)
 
 
 def error_and_time(fun, error_fun):
@@ -43,7 +43,7 @@ def problem(n):
 
     _, jvp = func.linearize(f, x0)
     J = func.jacfwd(f)(x0)
-    trace = np.trace(J)
+    trace = linalg.trace(J)
     sample_fun = montecarlo.normal(shape=(n,), dtype=float)
 
     return (jvp, trace, J), (key, sample_fun)
