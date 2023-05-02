@@ -125,6 +125,29 @@ Estimate log-determinants as such:
 
 ```
 
+
+### Variances
+
+We can compute means and variances (or other summary statistics) in a single sweep:
+```python
+>>> mean, m2nd, amax = hutch.trace(
+...     matvec,
+...     key=key,
+...     sample_fun=sample_fun,
+...     stats_per_batch=[jnp.mean, lambda x, axis: jnp.mean(x**2, axis), jnp.amax],
+...     stats_accumulate=[jnp.mean, jnp.mean, jnp.amax],
+... )
+>>> std = jnp.sqrt(m2nd - mean**2)
+>>> print(jnp.round(mean))
+17.0
+
+>>> print(jnp.round(std))
+18.0
+
+>>> print(jnp.round(amax))
+180.0
+
+```
 ## Contributing
 
 Contributions are absolutely welcome!

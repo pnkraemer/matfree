@@ -21,7 +21,10 @@ def trace(Av: Callable, /, **kwargs) -> Array:
     def quadform(vec):
         return linalg.vecdot(vec, Av(vec))
 
-    return montecarlo.estimate(quadform, **kwargs)
+    estimate = montecarlo.estimate(quadform, **kwargs)
+    if len(estimate) == 1:
+        return estimate[0]
+    return estimate
 
 
 def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
@@ -49,7 +52,10 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
         x = Av(vec)
         return linalg.vecdot(x, x)
 
-    return montecarlo.estimate(quadform, **kwargs)
+    estimate = montecarlo.estimate(quadform, **kwargs)
+    if len(estimate) == 1:
+        return estimate[0]
+    return estimate
 
 
 def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> Array:
@@ -86,7 +92,10 @@ def diagonal(Av: Callable, /, **kwargs) -> Array:
     def quadform(vec):
         return vec * Av(vec)
 
-    return montecarlo.estimate(quadform, **kwargs)
+    estimate = montecarlo.estimate(quadform, **kwargs)
+    if len(estimate) == 1:
+        return estimate[0]
+    return estimate
 
 
 def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **kwargs):

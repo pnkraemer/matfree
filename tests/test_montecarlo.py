@@ -23,7 +23,7 @@ def test_mean(key, num_batches, num_samples):
     def fun(x):
         return x**2
 
-    received = montecarlo.estimate(
+    (received,) = montecarlo.estimate(
         fun,
         num_batches=num_batches,
         num_samples_per_batch=num_samples,
@@ -31,3 +31,26 @@ def test_mean(key, num_batches, num_samples):
         sample_fun=montecarlo.normal(shape=()),
     )
     assert np.allclose(received, 1.0, rtol=1e-1)
+
+
+@testing.parametrize("key", [prng.prng_key(1)])
+@testing.parametrize("num_batches, num_samples", [[1, 10_000], [10_000, 1], [100, 100]])
+def test_mean_and_std(key, num_batches, num_samples):
+    """Assert that the mean estimate is accurate."""
+
+    def fun(x):
+        return x
+
+    mean, moment_second = montecarlo.estimate(
+        fun,
+        num_batches=num_batches,
+        num_samples_per_batch=num_samples,
+        key=key,
+        sample_fun=montecarlo.normal(shape=()),
+        stats_per_batch=[np.mean, lambda x, axis: np.mean(x**2, axis=axis)],
+        stats_accumulate=[np.mean, np.mean],
+    )
+    std = np.sqrt(moment_second - mean**2)
+
+    assert np.allclose(mean, 0.0, atol=1e-1, rtol=1e-1)
+    assert np.allclose(std, 1.0, atol=1e-1, rtol=1e-1)

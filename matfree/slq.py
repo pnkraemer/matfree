@@ -16,7 +16,10 @@ def logdet(*args, **kwargs):
 def trace_of_matfun_symmetric(matfun, Av, order, /, **kwargs):
     """Compute the trace of the function of a symmetric matrix."""
     quadratic_form = quadratic_form_slq_symmetric(matfun, Av, order)
-    return montecarlo.estimate(quadratic_form, **kwargs)
+    estimate = montecarlo.estimate(quadratic_form, **kwargs)
+    if len(estimate) == 1:
+        return estimate[0]
+    return estimate
 
 
 def quadratic_form_slq_symmetric(matfun, Av, order, /):

@@ -96,6 +96,10 @@ def amin(x, /):
     return jnp.amin(x)
 
 
+def array_max(x, /, axis=None):
+    return jnp.amax(x, axis=axis)
+
+
 def maximum(x1, x2):  # todo: call this max()
     return jnp.maximum(x1, x2)
 
