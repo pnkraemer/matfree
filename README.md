@@ -41,7 +41,7 @@ Estimate traces as such:
 >>> matvec = lambda x: a.T @ (a @ x)
 >>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
-515.0
+514.0
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
 506.0
@@ -56,7 +56,7 @@ Determine the number of samples per batch as follows.
 ```python
 >>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun, num_batches=10)
 >>> print(jnp.round(trace))
-507.0
+508.0
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
 506.0
@@ -71,10 +71,10 @@ Here is how to use it:
 ```python
 >>> trace, diagonal = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
-507.0
+497.0
 
 >>> print(jnp.round(diagonal))
-[221. 287.]
+[216. 281.]
 
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(a.T @ a)))
@@ -94,14 +94,14 @@ Why is the argument called `num_levels`? Because under the hood,
 >>> diagonal_2 = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun)
 
 >>> print(jnp.round(diagonal_1, 4))
-[220.54979 286.7476 ]
+[215.7592 281.245 ]
 
 >>> print(jnp.round(diagonal_2, 4))
-[220.54979 286.7476 ]
+[215.7592 281.245 ]
 
 >>> diagonal = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10, num_samples_per_batch=1000, num_batches_per_level=10, sample_fun=sample_fun)
 >>> print(jnp.round(diagonal))
-[219. 285.]
+[220. 286.]
 
 ```
 

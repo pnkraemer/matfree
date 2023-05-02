@@ -22,3 +22,7 @@ def fori_loop(lower, upper, body_fun, init_val):
 
 def while_loop(cond_fun, body_fun, init_val):
     return jax.lax.while_loop(cond_fun, body_fun, init_val)
+
+
+def map(fun, /, xs):  # noqa: A001
+    return jax.lax.map(fun, xs)
