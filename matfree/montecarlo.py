@@ -51,6 +51,7 @@ def _montecarlo(f, /, *, sample_fun):
     This can then be evaluated and averaged in batches, loops, and compositions thereof.
     """
     # todo: what about randomised QMC? How do we best implement this?
+    # todo: vmapping over keys feels less efficient than computing N samples at once.
 
     def f_mc(key, /):
         sample = sample_fun(key)
@@ -75,7 +76,7 @@ def _stats_via_map(f, num, /, target_fun):
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
-        fx_values = control_flow.map(f, subkeys)
+        fx_values = control_flow.array_map(f, subkeys)
         return target_fun(fx_values, axis=0)
 
     return f_mean

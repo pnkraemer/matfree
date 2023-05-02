@@ -24,5 +24,5 @@ def while_loop(cond_fun, body_fun, init_val):
     return jax.lax.while_loop(cond_fun, body_fun, init_val)
 
 
-def map(fun, /, xs):  # noqa: A001
+def array_map(fun, /, xs):
     return jax.lax.map(fun, xs)
