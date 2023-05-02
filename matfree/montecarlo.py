@@ -1,7 +1,7 @@
 """Monte-Carlo estimation."""
 
 from matfree.backend import containers, control_flow, func, np, prng
-from matfree.backend.typing import Any, Array, Callable
+from matfree.backend.typing import Array, Callable
 
 
 def estimate(
@@ -12,6 +12,7 @@ def estimate(
     sample_fun: Callable,
     num_batches: int = 1,
     num_samples_per_batch: int = 10_000,
+    target_fun=np.nanmean,
 ) -> Array:
     """Monte-Carlo estimation: Compute the expected value of a function.
 
@@ -30,10 +31,15 @@ def estimate(
         Number of batches when computing arithmetic means.
     num_samples_per_batch:
         Number of samples per batch.
+    target_fun:
+        The target function to compute. Usually, this is np.mean. But any other
+        statistical function with a signature like
+        [those](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
+        would work. The default is np.nanmean.
     """
     fun_mc = _montecarlo(fun, sample_fun=sample_fun)
-    fun_single_batch = _mean_vmap(fun_mc, num_samples_per_batch)
-    fun_batched = _mean_loop(fun_single_batch, num_batches)
+    fun_single_batch = _stats_via_vmap(fun_mc, num_samples_per_batch, target_fun)
+    fun_batched = _stats_via_map(fun_single_batch, num_batches, target_fun)
     return fun_batched(key)
 
 
@@ -53,54 +59,26 @@ def _montecarlo(f, /, *, sample_fun):
     return f_mc
 
 
-def _mean_vmap(f, num, /):
-    """Compute a batch-mean via jax.vmap."""
+def _stats_via_vmap(f, num, /, target_fun):
+    """Compute summary statistics via jax.vmap."""
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = func.vmap(f)(subkeys)
-        return np.nanmean(fx_values, axis=0)
+        return target_fun(fx_values, axis=0)
 
     return f_mean
 
 
-class _MState(containers.NamedTuple):
-    mean: Any
-    key: Any
-
-
-def _mean_loop(f, num, /):
-    """Compute an on-the-fly mean via a for-loop."""
+def _stats_via_map(f, num, /, target_fun):
+    """Compute summary statistics via jax.lax.map."""
 
     def f_mean(key, /):
-        # Initialise
-        fx_shape = func.eval_shape(f, key).shape
-        mean = np.zeros(fx_shape, dtype=float)
-        mstate = _MState(mean=mean, key=key)
-
-        # Run for-loop
-        increment = func.partial(_mean_increment, fun=f)
-        mstate = control_flow.fori_loop(0, num, body_fun=increment, init_val=mstate)
-        mean, _key = mstate  # todo: why not return key?
-
-        # Return results
-        return mean
+        subkeys = prng.split(key, num)
+        fx_values = control_flow.map(f, subkeys)
+        return target_fun(fx_values, axis=0)
 
     return f_mean
-
-
-def _mean_increment(i, mstate: _MState, fun) -> _MState:
-    """Increment the current mean-estimate."""
-    # Read and split key
-    mean, key = mstate
-    _, subkey = prng.split(key)
-
-    # Evaluate function
-    fx_values = fun(subkey)
-
-    # Update mean estimate
-    mean_new = np.sum(np.asarray([mean * i, fx_values]), axis=0) / (i + 1)
-    return _MState(mean=mean_new, key=subkey)
 
 
 def normal(*, shape, dtype=float):
