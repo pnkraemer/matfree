@@ -16,7 +16,7 @@ def A(n, num_significant_eigvals):
 
 @testing.parametrize("n", [6])
 @testing.parametrize("num_significant_eigvals", [4])
-def test_tridiagonal_error_for_too_high_order(A):
+def test_lanczos_tridiagonal_error_for_too_high_order(A):
     """Assert graceful failure if the depth matches or exceeds the number of columns."""
     n, _ = np.shape(A)
     key = prng.prng_key(1)
@@ -31,7 +31,7 @@ def test_tridiagonal_error_for_too_high_order(A):
 
 @testing.parametrize("n", [6])
 @testing.parametrize("num_significant_eigvals", [6])
-def test_tridiagonal_max_order(A):
+def test_lanczos_tridiagonal_max_order(A):
     """If m == n, the matrix should be equal to the full tridiagonal."""
     n, _ = np.shape(A)
     order = n - 1
@@ -75,7 +75,7 @@ def test_tridiagonal_max_order(A):
 @testing.parametrize("n", [50])
 @testing.parametrize("num_significant_eigvals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_tridiagonal(A, order):
+def test_lanczos_tridiagonal(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     n, _ = np.shape(A)
     key = prng.prng_key(1)
