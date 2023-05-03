@@ -104,8 +104,45 @@ def test_lanczos_tridiagonal(A, order):
     assert np.allclose(QAQt, T, **tols_decomp)
 
 
+@testing.parametrize("n", [50])
+@testing.parametrize("num_significant_eigvals", [4])
+@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
+def test_golub_kahan_lanczos_bidiagonal(A, order):
+    """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
+    n, _ = np.shape(A)
+    key = prng.prng_key(1)
+    v0 = prng.normal(key, shape=(n,))
+    alg = decomp.golub_kahan_lanczos_bidiagonal(order)
+    Q, bidiag = decomp.decompose_fori_loop(0, order + 1, lambda v: A @ v, v0, alg=alg)
+    (d_m, e_m) = bidiag
+
+    # Lanczos is not stable.
+    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
+
+    assert np.shape(Q) == (order + 1, n)
+    assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_decomp), Q @ Q.T
+
+    # T = Q A Qt
+    T = _bidiagonal_dense(d_m, e_m)
+    QAQt = Q @ A @ Q.T
+    assert np.shape(T) == (order + 1, order + 1)
+
+    # Fail early if the (off)diagonals don't coincide
+    assert np.allclose(linalg.diagonal(QAQt), d_m, **tols_decomp)
+    assert np.allclose(linalg.diagonal(QAQt, 1), e_m, **tols_decomp)
+
+    # Test the full decompoisition
+    assert np.allclose(QAQt, T, **tols_decomp)
+
+
 def _sym_tridiagonal_dense(d, e):
     diag = linalg.diagonal_matrix(d)
     offdiag1 = linalg.diagonal_matrix(e, 1)
     offdiag2 = linalg.diagonal_matrix(e, -1)
     return diag + offdiag1 + offdiag2
+
+
+def _bidiagonal_dense(d, e):
+    diag = linalg.diagonal_matrix(d)
+    offdiag = linalg.diagonal_matrix(e, 1)
+    return diag + offdiag

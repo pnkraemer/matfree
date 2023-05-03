@@ -75,7 +75,6 @@ def _lanczos_tridiagonal_init(depth: int, init_vec: Array) -> _LanczosState:
     if depth >= ncols or depth < 1:
         raise ValueError
 
-    (ncols,) = init_vec.shape
     diag = np.zeros((depth + 1,))
     offdiag = np.zeros((depth,))
     basis = np.zeros((depth + 1, ncols))
@@ -114,6 +113,40 @@ def _lanczos_tridiagonal_apply(state: _LanczosState, Av: Callable) -> _LanczosSt
 
 
 def _lanczos_tridiagonal_extract(state: _LanczosState, /):
+    _, basis, (diag, offdiag), _ = state
+    return basis, (diag, offdiag)
+
+
+def golub_kahan_lanczos_bidiagonal(depth, /):
+    """Golub-Kahan-Lanczos bidiagonalisation."""
+    return DecompAlg(
+        init=func.partial(_gkl_bidiagonal_init, depth),
+        step=_gkl_bidiagonal_apply,
+        extract=_gkl_bidiagonal_extract,
+    )
+
+
+class _GKLState(containers.NamedTuple):
+    i: int
+    basis: Any
+    bidiag: Any
+    q: Any
+
+
+def _gkl_bidiagonal_init(depth: int, init_vec: Array) -> _GKLState:
+    (ncols,) = np.shape(init_vec)
+    diag = np.zeros((depth + 1,))
+    offdiag = np.zeros((depth,))
+    basis = np.zeros((depth + 1, ncols))
+    return _GKLState(0, basis, (diag, offdiag), init_vec)
+
+
+def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable) -> _GKLState:
+    i, basis, (diag, offdiag), vec = state
+    return _GKLState(i + 1, basis, (diag, offdiag), vec)
+
+
+def _gkl_bidiagonal_extract(state: _GKLState, /):
     _, basis, (diag, offdiag), _ = state
     return basis, (diag, offdiag)
 
