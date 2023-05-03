@@ -37,7 +37,7 @@ def decompose_fori_loop(lower, upper, Av, v0, /, alg: DecompAlg):
     return alg.extract(result)
 
 
-def lanczos(depth, /) -> DecompAlg:
+def lanczos_tridiagonal(depth, /) -> DecompAlg:
     r"""Lanczos' algorithm with pre-allocation and re-orthogonalisation.
 
     Decompose a matrix into a product orthogonal-tridiagonal-orthogonal matrix.
@@ -57,9 +57,9 @@ def lanczos(depth, /) -> DecompAlg:
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
     return DecompAlg(
-        init=func.partial(_lanczos_init, depth),
-        step=_lanczos_apply,
-        extract=_lanczos_extract,
+        init=func.partial(_lanczos_tridiagonal_init, depth),
+        step=_lanczos_tridiagonal_apply,
+        extract=_lanczos_tridiagonal_extract,
     )
 
 
@@ -70,7 +70,7 @@ class _LanczosState(containers.NamedTuple):
     q: Any
 
 
-def _lanczos_init(depth: int, init_vec: Array) -> _LanczosState:
+def _lanczos_tridiagonal_init(depth: int, init_vec: Array) -> _LanczosState:
     (ncols,) = np.shape(init_vec)
     if depth >= ncols or depth < 1:
         raise ValueError
@@ -83,7 +83,7 @@ def _lanczos_init(depth: int, init_vec: Array) -> _LanczosState:
     return _LanczosState(0, basis, (diag, offdiag), init_vec)
 
 
-def _lanczos_apply(state: _LanczosState, Av: Callable) -> _LanczosState:
+def _lanczos_tridiagonal_apply(state: _LanczosState, Av: Callable) -> _LanczosState:
     i, basis, (diag, offdiag), vec = state
 
     # This one is a hack:
@@ -113,7 +113,7 @@ def _lanczos_apply(state: _LanczosState, Av: Callable) -> _LanczosState:
     return _LanczosState(i + 1, basis, (diag, offdiag), vec)
 
 
-def _lanczos_extract(state: _LanczosState, /):
+def _lanczos_tridiagonal_extract(state: _LanczosState, /):
     _, basis, (diag, offdiag), _ = state
     return basis, (diag, offdiag)
 
