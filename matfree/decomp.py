@@ -8,50 +8,48 @@ class DecompAlg(containers.NamedTuple):
     """Matrix decomposition algorithm."""
 
     init: Callable
+    """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
+
     step: Callable
+    """Compute the next iteration."""
+
     extract: Callable
+    """Extract the solution from the state of the algorithm."""
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(lower, upper, Av, v0, /, alg: DecompAlg):
+def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: DecompAlg):
     r"""Decompose a matrix purely based on matvec-products with A.
 
-    The semantics of this function are practically equivalent to
+    This behaviour of this function is equivalent to
 
     ```python
-    def decompose(lower, upper, Av, v0, alg):
+    def decompose(lower, upper, v0, *matvec_funs, alg):
         state = alg.init(v0)
         for _ in range(lower, upper):
-            state = alg.step(state, Av)
+            state = alg.step(state, *matvec_funs)
         return alg.extract(state)
     ```
 
     but the implementation uses JAX' fori_loop.
     """
+    # todo: turn the "practically equivalent" bit above into a doctest.
     init_val = alg.init(v0)
 
     def body_fun(_, s):
-        return alg.step(s, Av=Av)
+        return alg.step(s, *matvec_funs)
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return alg.extract(result)
 
 
 def lanczos_tridiagonal(depth, /) -> DecompAlg:
-    r"""Lanczos' algorithm with pre-allocation and re-orthogonalisation.
+    """**Lanczos** algorithm with pre-allocation and re-orthogonalisation.
 
-    Decompose a matrix into a product orthogonal-tridiagonal-orthogonal matrix.
+    Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
+    Use this algorithm for approximate **eigenvalue** decompositions.
 
-    More specifically, Lanczos' algorithm orthogonally projects the original
-    matrix onto the (n+1)-deep Krylov subspace
-
-    \{ v, Av, A^2v, ..., A^n v \}
-
-    using the Gram-Schmidt procedure.
-
-    The spectrum of the resulting tridiagonal matrix
-    approximates the spectrum of the original matrix.
-    (More specifically, the spectrum tends to the 'most extreme' eigenvalues.)
+    Lanczos' algorithm assumes a symmetric matrix.
     """
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
@@ -75,7 +73,6 @@ def _lanczos_tridiagonal_init(depth: int, init_vec: Array) -> _LanczosState:
     if depth >= ncols or depth < 1:
         raise ValueError
 
-    (ncols,) = init_vec.shape
     diag = np.zeros((depth + 1,))
     offdiag = np.zeros((depth,))
     basis = np.zeros((depth + 1, ncols))
@@ -116,6 +113,64 @@ def _lanczos_tridiagonal_apply(state: _LanczosState, Av: Callable) -> _LanczosSt
 def _lanczos_tridiagonal_extract(state: _LanczosState, /):
     _, basis, (diag, offdiag), _ = state
     return basis, (diag, offdiag)
+
+
+def golub_kahan_lanczos_bidiagonal(depth, /) -> DecompAlg:
+    """**Golub-Kahan-Lanczos** algorithm with pre-allocation and re-orthogonalisation.
+
+    Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
+    Use this algorithm for approximate **singular value** decompositions.
+    """
+    return DecompAlg(
+        init=func.partial(_gkl_bidiagonal_init, depth),
+        step=_gkl_bidiagonal_apply,
+        extract=_gkl_bidiagonal_extract,
+    )
+
+
+class _GKLState(containers.NamedTuple):
+    i: int
+    Us: Any
+    Vs: Any
+    alphas: Any
+    betas: Any
+    beta: Any
+    vk: Any
+
+
+def _gkl_bidiagonal_init(depth: int, init_vec: Array) -> _GKLState:
+    (ncols,) = np.shape(init_vec)
+    alphas = np.zeros((depth + 1,))
+    betas = np.zeros((depth + 1,))
+    Us = np.zeros((depth + 1, ncols))
+    Vs = np.zeros((depth + 1, ncols))
+    v0, _ = _normalise(init_vec)
+    return _GKLState(0, Us, Vs, alphas, betas, 0.0, v0)
+
+
+def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLState:
+    i, Us, Vs, alphas, betas, beta, vk = state
+    Vs = Vs.at[i].set(vk)
+    betas = betas.at[i].set(beta)
+
+    uk = Av(vk) - beta * Us[i - 1]
+    uk, alpha = _normalise(uk)
+    uk, _ = _gram_schmidt_orthogonalise_set(uk, Us)  # hack
+    uk, _ = _normalise(uk)  # hack
+    Us = Us.at[i].set(uk)
+    alphas = alphas.at[i].set(alpha)
+
+    vk = vA(uk) - alpha * vk
+    vk, beta = _normalise(vk)
+    vk, _ = _gram_schmidt_orthogonalise_set(vk, Vs)  # hack
+    vk, _ = _normalise(vk)  # hack
+
+    return _GKLState(i + 1, Us, Vs, alphas, betas, beta, vk)
+
+
+def _gkl_bidiagonal_extract(state: _GKLState, /):
+    _, uk_all, vk_all, alphas, betas, *_ = state
+    return uk_all, (alphas, betas[1:]), vk_all
 
 
 def _normalise(vec):
