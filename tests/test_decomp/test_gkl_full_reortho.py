@@ -18,12 +18,12 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("ncols", [49])
 @testing.parametrize("num_significant_singular_vals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_golub_kahan_lanczos_bidiagonal(A, order):
+def test_gkl_full_reortho(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
-    alg = decomp.golub_kahan_lanczos_bidiagonal(order, matrix_shape=np.shape(A))
+    alg = decomp.gkl_full_reortho(order, matrix_shape=np.shape(A))
 
     def Av(v):
         return A @ v

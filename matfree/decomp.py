@@ -23,7 +23,7 @@ def svd(v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[i
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    alg = golub_kahan_lanczos_bidiagonal(depth, matrix_shape=matrix_shape)
+    alg = gkl_full_reortho(depth, matrix_shape=matrix_shape)
     u, (d, e), vt, _ = decompose_fori_loop(0, depth + 1, v0, Av, vA, alg=alg)
 
     # Compute SVD of factorisation
@@ -79,8 +79,8 @@ def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: DecompAlg):
     return alg.extract(result)
 
 
-def lanczos_tridiagonal(depth, /) -> DecompAlg:
-    """**Lanczos** algorithm with pre-allocation and re-orthogonalisation.
+def lanczos_full_reortho(depth, /) -> DecompAlg:
+    """**Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
@@ -91,9 +91,9 @@ def lanczos_tridiagonal(depth, /) -> DecompAlg:
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
     return DecompAlg(
-        init=func.partial(_lanczos_tridiagonal_init, depth),
-        step=_lanczos_tridiagonal_apply,
-        extract=_lanczos_tridiagonal_extract,
+        init=func.partial(_lanczos_full_reortho_init, depth),
+        step=_lanczos_full_reortho_apply,
+        extract=_lanczos_full_reortho_extract,
     )
 
 
@@ -104,7 +104,7 @@ class _LanczosState(containers.NamedTuple):
     q: Any
 
 
-def _lanczos_tridiagonal_init(depth: int, init_vec: Array) -> _LanczosState:
+def _lanczos_full_reortho_init(depth: int, init_vec: Array) -> _LanczosState:
     (ncols,) = np.shape(init_vec)
     if depth >= ncols or depth < 1:
         raise ValueError
@@ -116,11 +116,9 @@ def _lanczos_tridiagonal_init(depth: int, init_vec: Array) -> _LanczosState:
     return _LanczosState(0, basis, (diag, offdiag), init_vec)
 
 
-def _lanczos_tridiagonal_apply(state: _LanczosState, Av: Callable) -> _LanczosState:
+def _lanczos_full_reortho_apply(state: _LanczosState, Av: Callable) -> _LanczosState:
     i, basis, (diag, offdiag), vec = state
 
-    # This one is a hack:
-    #
     # Re-orthogonalise against ALL basis elements before storing.
     # Note: we re-orthogonalise against ALL columns of Q, not just
     # the ones we have already computed. This increases the complexity
@@ -146,21 +144,21 @@ def _lanczos_tridiagonal_apply(state: _LanczosState, Av: Callable) -> _LanczosSt
     return _LanczosState(i + 1, basis, (diag, offdiag), vec)
 
 
-def _lanczos_tridiagonal_extract(state: _LanczosState, /):
+def _lanczos_full_reortho_extract(state: _LanczosState, /):
     _, basis, (diag, offdiag), _ = state
     return basis, (diag, offdiag)
 
 
-def golub_kahan_lanczos_bidiagonal(depth, /, matrix_shape) -> DecompAlg:
-    """**Golub-Kahan-Lanczos** algorithm with pre-allocation and re-orthogonalisation.
+def gkl_full_reortho(depth, /, matrix_shape) -> DecompAlg:
+    """**Golub-Kahan-Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
     """
     return DecompAlg(
-        init=func.partial(_gkl_bidiagonal_init, depth, matrix_shape),
-        step=_gkl_bidiagonal_apply,
-        extract=_gkl_bidiagonal_extract,
+        init=func.partial(_gkl_full_reortho_init, depth, matrix_shape),
+        step=_gkl_full_reortho_apply,
+        extract=_gkl_full_reortho_extract,
     )
 
 
@@ -174,7 +172,7 @@ class _GKLState(containers.NamedTuple):
     vk: Any
 
 
-def _gkl_bidiagonal_init(depth: int, matrix_shape, init_vec: Array) -> _GKLState:
+def _gkl_full_reortho_init(depth: int, matrix_shape, init_vec: Array) -> _GKLState:
     nrows, ncols = matrix_shape
     alphas = np.zeros((depth + 1,))
     betas = np.zeros((depth + 1,))
@@ -184,27 +182,27 @@ def _gkl_bidiagonal_init(depth: int, matrix_shape, init_vec: Array) -> _GKLState
     return _GKLState(0, Us, Vs, alphas, betas, 0.0, v0)
 
 
-def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLState:
+def _gkl_full_reortho_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLState:
     i, Us, Vs, alphas, betas, beta, vk = state
     Vs = Vs.at[i].set(vk)
     betas = betas.at[i].set(beta)
 
     uk = Av(vk) - beta * Us[i - 1]
     uk, alpha = _normalise(uk)
-    uk, _ = _gram_schmidt_orthogonalise_set(uk, Us)  # hack
-    uk, _ = _normalise(uk)  # hack
+    uk, _ = _gram_schmidt_orthogonalise_set(uk, Us)  # full reorthogonalisation
+    uk, _ = _normalise(uk)
     Us = Us.at[i].set(uk)
     alphas = alphas.at[i].set(alpha)
 
     vk = vA(uk) - alpha * vk
     vk, beta = _normalise(vk)
-    vk, _ = _gram_schmidt_orthogonalise_set(vk, Vs)  # hack
-    vk, _ = _normalise(vk)  # hack
+    vk, _ = _gram_schmidt_orthogonalise_set(vk, Vs)  # full reorthogonalisation
+    vk, _ = _normalise(vk)
 
     return _GKLState(i + 1, Us, Vs, alphas, betas, beta, vk)
 
 
-def _gkl_bidiagonal_extract(state: _GKLState, /):
+def _gkl_full_reortho_extract(state: _GKLState, /):
     _, uk_all, vk_all, alphas, betas, beta, vk = state
     return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 

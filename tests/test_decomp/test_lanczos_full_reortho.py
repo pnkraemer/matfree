@@ -22,10 +22,10 @@ def test_error_for_too_high_order(A):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     with testing.raises(ValueError):
-        alg = decomp.lanczos_tridiagonal(n + 10)
+        alg = decomp.lanczos_full_reortho(n + 10)
         _ = decomp.decompose_fori_loop(0, n + 10, v0, lambda v: A @ v, alg=alg)
     with testing.raises(ValueError):
-        alg = decomp.lanczos_tridiagonal(n)
+        alg = decomp.lanczos_full_reortho(n)
         _ = decomp.decompose_fori_loop(0, n + 1, v0, lambda v: A @ v, alg=alg)
 
 
@@ -37,7 +37,7 @@ def test_max_order(A):
     order = n - 1
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
-    alg = decomp.lanczos_tridiagonal(order)
+    alg = decomp.lanczos_full_reortho(order)
     Q, (d_m, e_m) = decomp.decompose_fori_loop(
         0, order + 1, v0, lambda v: A @ v, alg=alg
     )
@@ -80,7 +80,7 @@ def test_identity(A, order):
     n, _ = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
-    alg = decomp.lanczos_tridiagonal(order)
+    alg = decomp.lanczos_full_reortho(order)
     Q, tridiag = decomp.decompose_fori_loop(0, order + 1, v0, lambda v: A @ v, alg=alg)
     (d_m, e_m) = tridiag
 
