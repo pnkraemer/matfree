@@ -12,7 +12,7 @@ def estimate(
     sample_fun: Callable,
     num_batches: int = 1,
     num_samples_per_batch: int = 10_000,
-    target_fun=np.nanmean,
+    target_fun=np.mean,
 ) -> Array:
     """Monte-Carlo estimation: Compute the expected value of a function.
 
@@ -37,13 +37,38 @@ def estimate(
         [those](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
         would work. The default is np.nanmean.
     """
-    fun_mc = _montecarlo(fun, sample_fun=sample_fun)
-    fun_single_batch = _stats_via_vmap(fun_mc, num_samples_per_batch, target_fun)
-    fun_batched = _stats_via_map(fun_single_batch, num_batches, target_fun)
+    [result] = multiestimate(
+        fun,
+        key=key,
+        sample_fun=sample_fun,
+        num_batches=num_batches,
+        num_samples_per_batch=num_samples_per_batch,
+        stats_per_batch=[target_fun],
+        stats_combine_batches=[target_fun],
+    )
+    return result
+
+
+def multiestimate(
+    fun: Callable,
+    /,
+    *,
+    key: Array,
+    sample_fun: Callable,
+    num_batches: int = 1,
+    num_samples_per_batch: int = 10_000,
+    stats_per_batch=(np.mean,),
+    stats_combine_batches=(np.mean,),
+) -> Array:
+    """Compute a Monte-Carlo estimate with multiple summary statistics."""
+    assert len(stats_per_batch) == len(stats_combine_batches)
+    fun_mc = _montecarlo(fun, sample_fun=sample_fun, num_stats=len(stats_per_batch))
+    fun_single_batch = _stats_via_vmap(fun_mc, num_samples_per_batch, stats_per_batch)
+    fun_batched = _stats_via_map(fun_single_batch, num_batches, stats_combine_batches)
     return fun_batched(key)
 
 
-def _montecarlo(f, /, *, sample_fun):
+def _montecarlo(f, /, sample_fun, num_stats):
     """Turn a function into a Monte-Carlo problem.
 
     More specifically, f(x) becomes g(key) = f(h(key)),
@@ -54,29 +79,29 @@ def _montecarlo(f, /, *, sample_fun):
 
     def f_mc(key, /):
         sample = sample_fun(key)
-        return f(sample)
+        return [f(sample)] * num_stats
 
     return f_mc
 
 
-def _stats_via_vmap(f, num, /, target_fun):
+def _stats_via_vmap(f, num, /, target_funs):
     """Compute summary statistics via jax.vmap."""
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = func.vmap(f)(subkeys)
-        return target_fun(fx_values, axis=0)
+        return [sfun(fx, axis=0) for sfun, fx in zip(target_funs, fx_values)]
 
     return f_mean
 
 
-def _stats_via_map(f, num, /, target_fun):
+def _stats_via_map(f, num, /, target_funs):
     """Compute summary statistics via jax.lax.map."""
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = control_flow.map(f, subkeys)
-        return target_fun(fx_values, axis=0)
+        return [sfun(fx, axis=0) for sfun, fx in zip(target_funs, fx_values)]
 
     return f_mean
 
