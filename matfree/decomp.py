@@ -4,14 +4,18 @@ from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Any, Array, Callable
 
 
-def svd(v0, depth, *matvec_funs, matrix_shape, **svd_kwargs):
+def svd(v0, depth, *matvec_funs, matrix_shape):
     """Approximate singular value decomposition."""
+    # Factorise the matrix
     alg = golub_kahan_lanczos_bidiagonal(depth, matrix_shape=matrix_shape)
-    Us, (d, e), Vs, _ = decompose_fori_loop(0, depth + 1, v0, *matvec_funs, alg=alg)
+    u, (d, e), vt, _ = decompose_fori_loop(0, depth + 1, v0, *matvec_funs, alg=alg)
+
+    # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
-    U, S, Vt = linalg.svd(B, **svd_kwargs)
-    # todo: transpose U and Vs in gkl_extract.
-    return Us @ U, S, Vt @ Vs
+    U, S, Vt = linalg.svd(B, full_matrices=False)
+
+    # Combine orthogonal transformations
+    return u @ U, S, Vt @ vt
 
 
 def _bidiagonal_dense(d, e):
