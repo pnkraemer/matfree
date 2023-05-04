@@ -1,7 +1,43 @@
 """Matrix decomposition algorithms."""
 
 from matfree.backend import containers, control_flow, func, linalg, np
-from matfree.backend.typing import Any, Array, Callable
+from matfree.backend.typing import Any, Array, Callable, Tuple
+
+
+def svd(v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int]):
+    """Approximate singular value decomposition.
+
+    Parameters
+    ----------
+    v0:
+        Initial vector for Golub-Kahan-Lanczos bidiagonalisation.
+    depth:
+        Depth of the Krylov space constructed by Golub-Kahan-Lanczos bidiagonalisation.
+        Choosing `depth = min(nrows, ncols) - 1` would yield behaviour similar to
+        e.g. `np.linalg.svd`.
+    Av:
+        Matrix-vector product function.
+    vA:
+        Vector-matrix product function.
+    matrix_shape:
+        Shape of the matrix involved in matrix-vector and vector-matrix products.
+    """
+    # Factorise the matrix
+    alg = golub_kahan_lanczos_bidiagonal(depth, matrix_shape=matrix_shape)
+    u, (d, e), vt, _ = decompose_fori_loop(0, depth + 1, v0, Av, vA, alg=alg)
+
+    # Compute SVD of factorisation
+    B = _bidiagonal_dense(d, e)
+    U, S, Vt = linalg.svd(B, full_matrices=False)
+
+    # Combine orthogonal transformations
+    return u @ U, S, Vt @ vt
+
+
+def _bidiagonal_dense(d, e):
+    diag = linalg.diagonal_matrix(d)
+    offdiag = linalg.diagonal_matrix(e, 1)
+    return diag + offdiag
 
 
 class DecompAlg(containers.NamedTuple):
@@ -115,14 +151,14 @@ def _lanczos_tridiagonal_extract(state: _LanczosState, /):
     return basis, (diag, offdiag)
 
 
-def golub_kahan_lanczos_bidiagonal(depth, /) -> DecompAlg:
+def golub_kahan_lanczos_bidiagonal(depth, /, matrix_shape) -> DecompAlg:
     """**Golub-Kahan-Lanczos** algorithm with pre-allocation and re-orthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
     """
     return DecompAlg(
-        init=func.partial(_gkl_bidiagonal_init, depth),
+        init=func.partial(_gkl_bidiagonal_init, depth, matrix_shape),
         step=_gkl_bidiagonal_apply,
         extract=_gkl_bidiagonal_extract,
     )
@@ -138,11 +174,11 @@ class _GKLState(containers.NamedTuple):
     vk: Any
 
 
-def _gkl_bidiagonal_init(depth: int, init_vec: Array) -> _GKLState:
-    (ncols,) = np.shape(init_vec)
+def _gkl_bidiagonal_init(depth: int, matrix_shape, init_vec: Array) -> _GKLState:
+    nrows, ncols = matrix_shape
     alphas = np.zeros((depth + 1,))
     betas = np.zeros((depth + 1,))
-    Us = np.zeros((depth + 1, ncols))
+    Us = np.zeros((depth + 1, nrows))
     Vs = np.zeros((depth + 1, ncols))
     v0, _ = _normalise(init_vec)
     return _GKLState(0, Us, Vs, alphas, betas, 0.0, v0)
@@ -170,7 +206,7 @@ def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLS
 
 def _gkl_bidiagonal_extract(state: _GKLState, /):
     _, uk_all, vk_all, alphas, betas, beta, vk = state
-    return uk_all, (alphas, betas[1:]), vk_all, (beta, vk)
+    return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
 
 def _normalise(vec):

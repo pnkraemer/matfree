@@ -3,7 +3,7 @@
 from matfree.backend import linalg, np
 
 
-def generate_symmetric_matrix_from_eigvals(eigvals, /):
+def symmetric_matrix_from_eigenvalues(eigvals, /):
     """Generate a symmetric matrix with prescribed eigenvalues."""
     (n,) = eigvals.shape
 
@@ -20,3 +20,11 @@ def generate_symmetric_matrix_from_eigvals(eigvals, /):
     # return Q D Q.T.
     # This matrix will be dense, symmetric, and have a given spectrum.
     return Q @ (eigvals[:, None] * Q.T)
+
+
+def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
+    """Generate an asymmetric matrix with specific singular values."""
+    A = np.reshape(np.arange(1.0, nrows * ncols + 1.0), (nrows, ncols))
+    A /= nrows * ncols
+    U, S, Vt = linalg.svd(A, full_matrices=False)
+    return U @ linalg.diagonal(vals) @ Vt

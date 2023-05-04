@@ -11,7 +11,7 @@ def A(n, num_significant_eigvals):
     d = np.arange(n) / n + 1.0
     d = d.at[num_significant_eigvals:].set(0.001)
 
-    return test_util.generate_symmetric_matrix_from_eigvals(d)
+    return test_util.symmetric_matrix_from_eigenvalues(d)
 
 
 @testing.parametrize("n", [200])

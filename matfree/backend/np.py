@@ -38,6 +38,10 @@ def zeros(shape, *, dtype=None):
     return jnp.zeros(shape, dtype=dtype)
 
 
+def ones(shape, *, dtype=None):
+    return jnp.ones(shape, dtype=dtype)
+
+
 # Element-wise functions
 
 
@@ -63,6 +67,10 @@ def cos(x, /):
 
 def sqrt(x, /):
     return jnp.sqrt(x)
+
+
+def sign(x, /):
+    return jnp.sign(x)
 
 
 # Utility functions
