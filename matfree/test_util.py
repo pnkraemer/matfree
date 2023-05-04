@@ -3,8 +3,7 @@
 from matfree.backend import linalg, np
 
 
-# todo: removec "generate_" from function name
-def generate_symmetric_matrix_from_eigvals(eigvals, /):
+def symmetric_matrix_from_eigenvalues(eigvals, /):
     """Generate a symmetric matrix with prescribed eigenvalues."""
     (n,) = eigvals.shape
 

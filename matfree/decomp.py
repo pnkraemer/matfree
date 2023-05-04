@@ -1,14 +1,30 @@
 """Matrix decomposition algorithms."""
 
 from matfree.backend import containers, control_flow, func, linalg, np
-from matfree.backend.typing import Any, Array, Callable
+from matfree.backend.typing import Any, Array, Callable, Tuple
 
 
-def svd(v0, depth, *matvec_funs, matrix_shape):
-    """Approximate singular value decomposition."""
+def svd(v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int]):
+    """Approximate singular value decomposition.
+
+    Parameters
+    ----------
+    v0:
+        Initial vector for Golub-Kahan-Lanczos bidiagonalisation.
+    depth:
+        Depth of the Krylov space constructed by Golub-Kahan-Lanczos bidiagonalisation.
+        Choosing `depth = min(nrows, ncols) - 1` would yield behaviour similar to
+        e.g. `np.linalg.svd`.
+    Av:
+        Matrix-vector product function.
+    vA:
+        Vector-matrix product function.
+    matrix_shape:
+        Shape of the matrix involved in matrix-vector and vector-matrix products.
+    """
     # Factorise the matrix
     alg = golub_kahan_lanczos_bidiagonal(depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = decompose_fori_loop(0, depth + 1, v0, *matvec_funs, alg=alg)
+    u, (d, e), vt, _ = decompose_fori_loop(0, depth + 1, v0, Av, vA, alg=alg)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
