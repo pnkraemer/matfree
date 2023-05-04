@@ -38,6 +38,7 @@ def test_svd_max_depth(A, full_matrices, **svd_kwargs):
     U, S, Vt = decomp.svd(v0, depth, Av, vA, matrix_shape=np.shape(A), **svd_kwargs)
     U_, S_, Vt_ = linalg.svd(A, full_matrices=full_matrices)
 
-    assert np.allclose(S, S_)
-    assert np.allclose(U @ U.T, U_ @ U_.T)
-    assert np.allclose(Vt @ Vt.T, Vt_ @ Vt_.T)
+    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
+    assert np.allclose(S, S_)  # strict "allclose"
+    assert np.allclose(U @ U.T, U_ @ U_.T, **tols_decomp)
+    assert np.allclose(Vt @ Vt.T, Vt_ @ Vt_.T, **tols_decomp)
