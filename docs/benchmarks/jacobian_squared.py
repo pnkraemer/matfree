@@ -37,7 +37,7 @@ def evaluate_all(fun, outer_loop, inner_loop):
 
         errors.append(np.mean(err))
         stds.append(np.std(err))
-        times.append(np.amin(tim))
+        times.append(np.array_min(tim))
 
     return np.asarray(errors), np.asarray(stds), np.asarray(times)
 

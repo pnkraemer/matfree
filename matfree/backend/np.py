@@ -11,7 +11,8 @@
 # * We do not use methods on Array types, e.g. shape(), dtype(). Instead
 #   these are functions. (Not all backends might always follow this method interface.)
 # * We do not implement any constants (e.g. NaN, Pi). Instead, these are methods.
-
+# * We call max/min/amax/amin array_max and elementwise_max.
+#   This is more verbose than what the array API suggests.
 
 import jax.numpy as jnp
 
@@ -99,12 +100,15 @@ def sum(x, /, axis=None):  # noqa: A001
     return jnp.sum(x, axis)
 
 
-# todo: change amax and maximum to array_max, elementwise_max
-def amin(x, /):
+def array_min(x, /):
     return jnp.amin(x)
 
 
-def maximum(x1, x2):  # todo: call this max()
+def array_max(x, /, axis=None):
+    return jnp.amax(x, axis=axis)
+
+
+def elementwise_max(x1, x2, /):
     return jnp.maximum(x1, x2)
 
 
