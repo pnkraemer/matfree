@@ -90,7 +90,7 @@ def multiestimate(
     num_samples_per_batch:
         Same as in [montecarlo.estimate(...)][matfree.montecarlo.estimate].
     statistics_batch:
-        List of tuple of summary statistics to compute on batch-level.
+        List or tuple of summary statistics to compute on batch-level.
     statistics_combine:
         List or tuple of summary statistics to combine batches.
 
@@ -124,7 +124,7 @@ def _stats_via_vmap(f, num, /, statistics: Sequence[Callable]):
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = func.vmap(f)(subkeys)
-        return [sfun(fx, axis=0) for sfun, fx in zip(statistics, fx_values)]
+        return [stat(fx, axis=0) for stat, fx in zip(statistics, fx_values)]
 
     return f_mean
 
@@ -135,7 +135,7 @@ def _stats_via_map(f, num, /, statistics: Sequence[Callable]):
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = control_flow.array_map(f, subkeys)
-        return [sfun(fx, axis=0) for sfun, fx in zip(statistics, fx_values)]
+        return [stat(fx, axis=0) for stat, fx in zip(statistics, fx_values)]
 
     return f_mean
 

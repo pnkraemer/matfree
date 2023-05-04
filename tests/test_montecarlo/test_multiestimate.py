@@ -6,7 +6,7 @@ from matfree.backend import np, prng, testing
 
 @testing.parametrize("key", [prng.prng_key(1)])
 @testing.parametrize("num_batches, num_samples", [[1, 10_000], [10_000, 1], [100, 100]])
-def test_mean(key, num_batches, num_samples):
+def test_mean_and_max(key, num_batches, num_samples):
     """Assert that the mean estimate is accurate."""
 
     def fun(x):
