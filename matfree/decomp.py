@@ -169,8 +169,8 @@ def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLS
 
 
 def _gkl_bidiagonal_extract(state: _GKLState, /):
-    _, uk_all, vk_all, alphas, betas, *_ = state
-    return uk_all, (alphas, betas[1:]), vk_all
+    _, uk_all, vk_all, alphas, betas, beta, vk = state
+    return uk_all, (alphas, betas[1:]), vk_all, (beta, vk)
 
 
 def _normalise(vec):
