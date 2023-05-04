@@ -23,7 +23,7 @@ def quadratic_form_slq_symmetric(matfun, Av, order, /):
     """Approximate quadratic form for stochastic Lanczos quadrature."""
 
     def quadform(v0, /):
-        algorithm = decomp.lanczos_tridiagonal(order)
+        algorithm = decomp.lanczos_full_reortho(order)
         _, tridiag = decomp.decompose_fori_loop(0, order + 1, v0, Av, alg=algorithm)
         (diag, off_diag) = tridiag
 
