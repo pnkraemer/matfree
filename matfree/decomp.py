@@ -11,7 +11,7 @@ def svd(v0, depth, *matvec_funs, matrix_shape, **svd_kwargs):
     B = _bidiagonal_dense(d, e)
     U, S, Vt = linalg.svd(B, **svd_kwargs)
     # todo: transpose U and Vs in gkl_extract.
-    return Us.T @ U, S, Vt @ Vs
+    return Us @ U, S, Vt @ Vs
 
 
 def _bidiagonal_dense(d, e):
@@ -186,7 +186,7 @@ def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLS
 
 def _gkl_bidiagonal_extract(state: _GKLState, /):
     _, uk_all, vk_all, alphas, betas, beta, vk = state
-    return uk_all, (alphas, betas[1:]), vk_all, (beta, vk)
+    return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
 
 def _normalise(vec):

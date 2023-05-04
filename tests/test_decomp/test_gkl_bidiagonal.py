@@ -36,13 +36,13 @@ def test_golub_kahan_lanczos_bidiagonal(A, order):
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
 
-    assert np.shape(Us) == (order + 1, nrows)
-    assert np.allclose(Us @ Us.T, np.eye(order + 1), **tols_decomp), Us @ Us.T
+    assert np.shape(Us) == (nrows, order + 1)
+    assert np.allclose(Us.T @ Us, np.eye(order + 1), **tols_decomp), Us.T @ Us
 
     assert np.shape(Vs) == (order + 1, ncols)
     assert np.allclose(Vs @ Vs.T, np.eye(order + 1), **tols_decomp), Vs @ Vs.T
 
-    UAVt = Us @ A @ Vs.T
+    UAVt = Us.T @ A @ Vs.T
     assert np.allclose(linalg.diagonal(UAVt), d_m, **tols_decomp)
     assert np.allclose(linalg.diagonal(UAVt, 1), e_m, **tols_decomp)
 
@@ -52,8 +52,8 @@ def test_golub_kahan_lanczos_bidiagonal(A, order):
 
     em = np.eye(order + 1)[:, -1]
     AVt = A @ Vs.T
-    UtB = Us.T @ B
-    AtUt = A.T @ Us.T
+    UtB = Us @ B
+    AtUt = A.T @ Us
     VtBtb_plus_bve = Vs.T @ B.T + b * v[:, None] @ em[None, :]
     assert np.allclose(AVt, UtB, **tols_decomp)
     assert np.allclose(AtUt, VtBtb_plus_bve, **tols_decomp)
