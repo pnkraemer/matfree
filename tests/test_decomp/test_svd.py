@@ -22,7 +22,8 @@ def A(nrows, ncols, num_significant_singular_vals):
 def test_svd_max_depth(A, full_matrices, **svd_kwargs):
     """The output of full-depth SVD should be equal (*) to linalg.svd().
 
-    (*) Note: The orthogonal matrices should be equal up to orthogonal transformations.
+    (*) Note: The singular values should be identical,
+    and the orthogonal matrices should be orthogonal. They are not unique.
     """
     nrows, ncols = np.shape(A)
     depth = min(nrows, ncols) - 1
@@ -39,6 +40,4 @@ def test_svd_max_depth(A, full_matrices, **svd_kwargs):
 
     assert np.allclose(S, S_)
     assert np.allclose(U @ U.T, U_ @ U_.T)
-    assert np.allclose(U.T @ U, U_.T @ U_)
     assert np.allclose(Vt @ Vt.T, Vt_ @ Vt_.T)
-    assert np.allclose(Vt.T @ Vt, Vt_.T @ Vt_)
