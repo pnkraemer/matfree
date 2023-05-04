@@ -100,7 +100,7 @@ def _stats_via_map(f, num, /, target_funs):
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
-        fx_values = control_flow.map(f, subkeys)
+        fx_values = control_flow.array_map(f, subkeys)
         return [sfun(fx, axis=0) for sfun, fx in zip(target_funs, fx_values)]
 
     return f_mean
