@@ -13,7 +13,7 @@ class DecompAlg(containers.NamedTuple):
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(lower, upper, Av, v0, /, alg: DecompAlg):
+def decompose_fori_loop(lower, upper, Av, vA, v0, /, alg: DecompAlg):
     r"""Decompose a matrix purely based on matvec-products with A.
 
     The semantics of this function are practically equivalent to
@@ -31,7 +31,7 @@ def decompose_fori_loop(lower, upper, Av, v0, /, alg: DecompAlg):
     init_val = alg.init(v0)
 
     def body_fun(_, s):
-        return alg.step(s, Av=Av)
+        return alg.step(s, Av=Av, vA=vA)
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return alg.extract(result)
@@ -128,27 +128,47 @@ def golub_kahan_lanczos_bidiagonal(depth, /):
 
 class _GKLState(containers.NamedTuple):
     i: int
-    basis: Any
-    bidiag: Any
-    q: Any
+    Us: Any
+    Vs: Any
+    alphas: Any
+    betas: Any
+    beta: Any
+    vk: Any
 
 
 def _gkl_bidiagonal_init(depth: int, init_vec: Array) -> _GKLState:
     (ncols,) = np.shape(init_vec)
-    diag = np.zeros((depth + 1,))
-    offdiag = np.zeros((depth,))
-    basis = np.zeros((depth + 1, ncols))
-    return _GKLState(0, basis, (diag, offdiag), init_vec)
+    alphas = np.zeros((depth + 1,))
+    betas = np.zeros((depth + 1,))
+    Us = np.zeros((depth + 1, ncols))
+    Vs = np.zeros((depth + 1, ncols))
+    v0, _ = _normalise(init_vec)
+    return _GKLState(0, Us, Vs, alphas, betas, 0.0, v0)
 
 
-def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable) -> _GKLState:
-    i, basis, (diag, offdiag), vec = state
-    return _GKLState(i + 1, basis, (diag, offdiag), vec)
+def _gkl_bidiagonal_apply(state: _GKLState, Av: Callable, vA: Callable) -> _GKLState:
+    i, Us, Vs, alphas, betas, beta, vk = state
+    Vs = Vs.at[i].set(vk)
+    betas = betas.at[i].set(beta)
+
+    uk = Av(vk) - beta * Us[i - 1]
+    uk, alpha = _normalise(uk)
+    uk, _ = _gram_schmidt_orthogonalise_set(uk, Us)  # hack
+    uk, _ = _normalise(uk)  # hack
+    Us = Us.at[i].set(uk)
+    alphas = alphas.at[i].set(alpha)
+
+    vk = vA(uk) - alpha * vk
+    vk, beta = _normalise(vk)
+    vk, _ = _gram_schmidt_orthogonalise_set(vk, Vs)  # hack
+    vk, _ = _normalise(vk)  # hack
+
+    return _GKLState(i + 1, Us, Vs, alphas, betas, beta, vk)
 
 
 def _gkl_bidiagonal_extract(state: _GKLState, /):
-    _, basis, (diag, offdiag), _ = state
-    return basis, (diag, offdiag)
+    _, uk_all, vk_all, alphas, betas, *_ = state
+    return uk_all, (alphas, betas[1:]), vk_all
 
 
 def _normalise(vec):
