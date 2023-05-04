@@ -18,8 +18,8 @@ def test_mean(key, num_batches, num_samples):
         num_samples_per_batch=num_samples,
         key=key,
         sample_fun=montecarlo.normal(shape=()),
-        stats_per_batch=[np.mean, np.array_max],
-        stats_combine_batches=[np.mean, np.array_max],
+        statistics_batch=[np.mean, np.array_max],
+        statistics_combine=[np.mean, np.array_max],
     )
 
     assert np.allclose(mean, 1.0, rtol=1e-1)

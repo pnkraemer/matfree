@@ -46,6 +46,8 @@ plugins:
             show_signature_annotations: true
             members_order: alphabetical
             docstring_section_style: list
+            separate_signature: false
+            annotations_path: source
 watch: [matfree]
 extra:
   social:

@@ -1,7 +1,7 @@
 """Monte-Carlo estimation."""
 
 from matfree.backend import containers, control_flow, func, np, prng
-from matfree.backend.typing import Array, Callable
+from matfree.backend.typing import Array, Callable, Sequence
 
 
 def estimate(
@@ -12,7 +12,8 @@ def estimate(
     sample_fun: Callable,
     num_batches: int = 1,
     num_samples_per_batch: int = 10_000,
-    target_fun=np.mean,
+    statistic_batch: Callable = np.mean,
+    statistic_combine: Callable = np.mean,
 ) -> Array:
     """Monte-Carlo estimation: Compute the expected value of a function.
 
@@ -31,11 +32,18 @@ def estimate(
         Number of batches when computing arithmetic means.
     num_samples_per_batch:
         Number of samples per batch.
-    target_fun:
-        The target function to compute. Usually, this is np.mean. But any other
+    statistic_batch:
+        The summary statistic to compute on batch-level.
+        Usually, this is np.mean. But any other
         statistical function with a signature like
-        [those](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
-        would work. The default is np.nanmean.
+        [one of these functions](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
+        would work.
+    statistic_combine:
+        The summary statistic to combine batch-results.
+        Usually, this is np.mean. But any other
+        statistical function with a signature like
+        [one of these functions](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
+        would work.
     """
     [result] = multiestimate(
         fun,
@@ -43,8 +51,8 @@ def estimate(
         sample_fun=sample_fun,
         num_batches=num_batches,
         num_samples_per_batch=num_samples_per_batch,
-        stats_per_batch=[target_fun],
-        stats_combine_batches=[target_fun],
+        statistics_batch=[statistic_batch],
+        statistics_combine=[statistic_combine],
     )
     return result
 
@@ -57,14 +65,40 @@ def multiestimate(
     sample_fun: Callable,
     num_batches: int = 1,
     num_samples_per_batch: int = 10_000,
-    stats_per_batch=(np.mean,),
-    stats_combine_batches=(np.mean,),
+    statistics_batch: Sequence[Callable] = (np.mean,),
+    statistics_combine: Sequence[Callable] = (np.mean,),
 ) -> Array:
-    """Compute a Monte-Carlo estimate with multiple summary statistics."""
-    assert len(stats_per_batch) == len(stats_combine_batches)
-    fun_mc = _montecarlo(fun, sample_fun=sample_fun, num_stats=len(stats_per_batch))
-    fun_single_batch = _stats_via_vmap(fun_mc, num_samples_per_batch, stats_per_batch)
-    fun_batched = _stats_via_map(fun_single_batch, num_batches, stats_combine_batches)
+    """Compute a Monte-Carlo estimate with multiple summary statistics.
+
+    The signature of this function is almost identical to
+    [montecarlo.estimate(...)][matfree.montecarlo.estimate].
+    The only difference is that statistics_batch and statistics_combine are iterables
+    of summary statistics (of equal lengths).
+
+    The result of this function is an iterable of matching length.
+
+    Parameters
+    ----------
+    fun:
+        Same as in [montecarlo.estimate(...)][matfree.montecarlo.estimate].
+    key:
+        Same as in [montecarlo.estimate(...)][matfree.montecarlo.estimate].
+    sample_fun:
+        Same as in [montecarlo.estimate(...)][matfree.montecarlo.estimate].
+    num_batches:
+        Same as in [montecarlo.estimate(...)][matfree.montecarlo.estimate].
+    num_samples_per_batch:
+        Same as in [montecarlo.estimate(...)][matfree.montecarlo.estimate].
+    statistics_batch:
+        List of tuple of summary statistics to compute on batch-level.
+    statistics_combine:
+        List or tuple of summary statistics to combine batches.
+
+    """
+    assert len(statistics_batch) == len(statistics_combine)
+    fun_mc = _montecarlo(fun, sample_fun=sample_fun, num_stats=len(statistics_batch))
+    fun_single_batch = _stats_via_vmap(fun_mc, num_samples_per_batch, statistics_batch)
+    fun_batched = _stats_via_map(fun_single_batch, num_batches, statistics_combine)
     return fun_batched(key)
 
 
@@ -84,24 +118,24 @@ def _montecarlo(f, /, sample_fun, num_stats):
     return f_mc
 
 
-def _stats_via_vmap(f, num, /, target_funs):
+def _stats_via_vmap(f, num, /, statistics: Sequence[Callable]):
     """Compute summary statistics via jax.vmap."""
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = func.vmap(f)(subkeys)
-        return [sfun(fx, axis=0) for sfun, fx in zip(target_funs, fx_values)]
+        return [sfun(fx, axis=0) for sfun, fx in zip(statistics, fx_values)]
 
     return f_mean
 
 
-def _stats_via_map(f, num, /, target_funs):
+def _stats_via_map(f, num, /, statistics: Sequence[Callable]):
     """Compute summary statistics via jax.lax.map."""
 
     def f_mean(key, /):
         subkeys = prng.split(key, num)
         fx_values = control_flow.array_map(f, subkeys)
-        return [sfun(fx, axis=0) for sfun, fx in zip(target_funs, fx_values)]
+        return [sfun(fx, axis=0) for sfun, fx in zip(statistics, fx_values)]
 
     return f_mean
 
