@@ -20,7 +20,7 @@ def A(n, num_significant_eigvals):
 @testing.parametrize("order", [10])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet(A, order):
+def test_check_grads(A, order):
     """Assert that log-determinant computation admits valid VJPs and JVPs."""
     key = prng.prng_key(1)
 
