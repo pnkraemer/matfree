@@ -8,50 +8,48 @@ class DecompAlg(containers.NamedTuple):
     """Matrix decomposition algorithm."""
 
     init: Callable
+    """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
+
     step: Callable
+    """Compute the next iteration."""
+
     extract: Callable
+    """Extract the solution from the state of the algorithm."""
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(lower, upper, Av, vA, v0, /, alg: DecompAlg):
+def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: DecompAlg):
     r"""Decompose a matrix purely based on matvec-products with A.
 
-    The semantics of this function are practically equivalent to
+    This behaviour of this function is equivalent to
 
     ```python
-    def decompose(lower, upper, Av, v0, alg):
+    def decompose(lower, upper, v0, *matvec_funs, alg):
         state = alg.init(v0)
         for _ in range(lower, upper):
-            state = alg.step(state, Av)
+            state = alg.step(state, *matvec_funs)
         return alg.extract(state)
     ```
 
     but the implementation uses JAX' fori_loop.
     """
+    # todo: turn the "practically equivalent" bit above into a doctest.
     init_val = alg.init(v0)
 
     def body_fun(_, s):
-        return alg.step(s, Av=Av, vA=vA)
+        return alg.step(s, *matvec_funs)
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return alg.extract(result)
 
 
 def lanczos_tridiagonal(depth, /) -> DecompAlg:
-    r"""Lanczos' algorithm with pre-allocation and re-orthogonalisation.
+    """**Lanczos** algorithm with pre-allocation and re-orthogonalisation.
 
-    Decompose a matrix into a product orthogonal-tridiagonal-orthogonal matrix.
+    Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
+    Use this algorithm for approximate **eigenvalue** decompositions.
 
-    More specifically, Lanczos' algorithm orthogonally projects the original
-    matrix onto the (n+1)-deep Krylov subspace
-
-    \{ v, Av, A^2v, ..., A^n v \}
-
-    using the Gram-Schmidt procedure.
-
-    The spectrum of the resulting tridiagonal matrix
-    approximates the spectrum of the original matrix.
-    (More specifically, the spectrum tends to the 'most extreme' eigenvalues.)
+    Lanczos' algorithm assumes a symmetric matrix.
     """
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
@@ -117,8 +115,12 @@ def _lanczos_tridiagonal_extract(state: _LanczosState, /):
     return basis, (diag, offdiag)
 
 
-def golub_kahan_lanczos_bidiagonal(depth, /):
-    """Golub-Kahan-Lanczos bidiagonalisation."""
+def golub_kahan_lanczos_bidiagonal(depth, /) -> DecompAlg:
+    """**Golub-Kahan-Lanczos** algorithm with pre-allocation and re-orthogonalisation.
+
+    Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
+    Use this algorithm for approximate **singular value** decompositions.
+    """
     return DecompAlg(
         init=func.partial(_gkl_bidiagonal_init, depth),
         step=_gkl_bidiagonal_apply,

@@ -24,7 +24,7 @@ def quadratic_form_slq_symmetric(matfun, Av, order, /):
 
     def quadform(v0, /):
         algorithm = decomp.lanczos_tridiagonal(order)
-        _, tridiag = decomp.decompose_fori_loop(0, order + 1, Av, v0, alg=algorithm)
+        _, tridiag = decomp.decompose_fori_loop(0, order + 1, v0, Av, alg=algorithm)
         (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),

@@ -23,10 +23,10 @@ def test_lanczos_tridiagonal_error_for_too_high_order(A):
     v0 = prng.normal(key, shape=(n,))
     with testing.raises(ValueError):
         alg = decomp.lanczos_tridiagonal(n + 10)
-        _ = decomp.decompose_fori_loop(0, n + 10, lambda v: A @ v, v0, alg=alg)
+        _ = decomp.decompose_fori_loop(0, n + 10, v0, lambda v: A @ v, alg=alg)
     with testing.raises(ValueError):
         alg = decomp.lanczos_tridiagonal(n)
-        _ = decomp.decompose_fori_loop(0, n + 1, lambda v: A @ v, v0, alg=alg)
+        _ = decomp.decompose_fori_loop(0, n + 1, v0, lambda v: A @ v, alg=alg)
 
 
 @testing.parametrize("n", [6])
@@ -39,7 +39,7 @@ def test_lanczos_tridiagonal_max_order(A):
     v0 = prng.normal(key, shape=(n,))
     alg = decomp.lanczos_tridiagonal(order)
     Q, (d_m, e_m) = decomp.decompose_fori_loop(
-        0, order + 1, lambda v: A @ v, v0, alg=alg
+        0, order + 1, v0, lambda v: A @ v, alg=alg
     )
 
     # Lanczos is not stable.
@@ -81,7 +81,7 @@ def test_lanczos_tridiagonal(A, order):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     alg = decomp.lanczos_tridiagonal(order)
-    Q, tridiag = decomp.decompose_fori_loop(0, order + 1, lambda v: A @ v, v0, alg=alg)
+    Q, tridiag = decomp.decompose_fori_loop(0, order + 1, v0, lambda v: A @ v, alg=alg)
     (d_m, e_m) = tridiag
 
     # Lanczos is not stable.
@@ -127,7 +127,7 @@ def test_golub_kahan_lanczos_bidiagonal(A, order):
     def vA(v):
         return v @ A
 
-    Us, (d_m, e_m), Vs = decomp.decompose_fori_loop(0, order + 1, Av, vA, v0, alg=alg)
+    Us, (d_m, e_m), Vs = decomp.decompose_fori_loop(0, order + 1, v0, Av, vA, alg=alg)
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
 
