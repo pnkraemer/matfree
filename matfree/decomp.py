@@ -7,6 +7,9 @@ from matfree.backend.typing import Any, Array, Callable, Tuple
 def svd(v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int]):
     """Approximate singular value decomposition.
 
+    Uses GKL with full reorthogonalisation to bi-diagonalise the target matrix
+    and computes the full SVD of the (small) bidiagonal matrix.
+
     Parameters
     ----------
     v0:
