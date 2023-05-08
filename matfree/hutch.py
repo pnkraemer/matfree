@@ -24,6 +24,33 @@ def trace(Av: Callable, /, **kwargs) -> Array:
     return montecarlo.estimate(quadform, **kwargs)
 
 
+def trace_with_variance(Av: Callable, /, **kwargs) -> Array:
+    """Estimate the trace of a matrix and the variance of the estimator.
+
+    Parameters
+    ----------
+    Av:
+        Matrix-vector product function.
+    **kwargs:
+        Keyword-arguments to be passed to
+        [montecarlo.estimate()][matfree.montecarlo.estimate].
+    """
+
+    def quadform(vec):
+        return linalg.vecdot(vec, Av(vec))
+
+    def mean_squared_fun(x, axis):
+        return np.mean(x**2, axis=axis)
+
+    mean, second_moment = montecarlo.multiestimate(
+        quadform,
+        statistics_batch=[np.mean, mean_squared_fun],
+        statistics_combine=[np.mean, np.mean],
+        **kwargs,
+    )
+    return mean, second_moment - mean**2
+
+
 def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
     r"""Estimate the squared Frobenius norm of a matrix stochastically.
 

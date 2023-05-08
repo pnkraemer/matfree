@@ -3,6 +3,10 @@
 from matfree.backend import containers, control_flow, func, np, prng
 from matfree.backend.typing import Array, Callable, Sequence
 
+# todo: allow a fun() that returns pytrees instead of arrays.
+#  why? Because then we rival trace_and_variance as
+#  trace_and_frobeniusnorm(): y=Ax; return (x@y, y@y)
+
 
 def estimate(
     fun: Callable,
