@@ -40,7 +40,7 @@ This implementation computes the divergence of a vector field:
 ...     """A scalar valued function."""
 ...     return jnp.dot(x, x)**2
 ...
->>> x0 = jnp.arange(1., 4.)
+>>> x0 = jnp.arange(1.0, 4.0)
 >>> gradient = jax.grad(fun)
 >>> laplacian = divergence_dense(gradient)
 >>> print(jax.hessian(fun)(x0))
@@ -68,7 +68,6 @@ to approximate divergences and Laplacians without forming full Jacobians:
 ...     """Compute the divergence of a vector field only using matrix-vector products."""
 ...
 ...     def div_fn(x):
-...
 ...         def jvp(v):
 ...             _vf_value, jvp_value = jax.jvp(fun=vf, primals=(x,), tangents=(v,))
 ...             return jvp_value
@@ -76,6 +75,7 @@ to approximate divergences and Laplacians without forming full Jacobians:
 ...         return hutch.trace(jvp, key=key, sample_fun=sample_fun)
 ...
 ...     return div_fn
+...
 
 ```
 The difference to the above implementation is that `divergence_matfree` does not form dense Jacobians.
@@ -85,7 +85,9 @@ For large-scale problems, it may be the only way of computing Laplacians reliabl
 ```python
 >>> sample_fun = montecarlo.normal(shape=(3,))
 >>> laplacian_dense = divergence_dense(gradient)
->>> laplacian_matfree = divergence_matfree(gradient, key=jax.random.PRNGKey(1), sample_fun=sample_fun)
+>>> laplacian_matfree = divergence_matfree(
+...     gradient, key=jax.random.PRNGKey(1), sample_fun=sample_fun
+... )
 >>>
 >>> print(jnp.round(laplacian_dense(x0), 1))
 280.0

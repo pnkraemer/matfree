@@ -20,7 +20,7 @@ repos:
       - id: isort
         name: isort
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.263
+    rev: v0.0.265
     hooks:
       - id: ruff
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -32,3 +32,7 @@ repos:
     rev: 1.9.0
     hooks:
       - id: yamlfix
+  - repo: https://github.com/keewis/blackdoc/
+    rev: v0.3.8
+    hooks:
+      - id: blackdoc

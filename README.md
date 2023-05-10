@@ -28,7 +28,7 @@ Imports:
 >>> import jax.numpy as jnp
 >>> from matfree import hutch, montecarlo, slq
 
->>> a = jnp.reshape(jnp.arange(12.), (6, 2))
+>>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
 
 ```
@@ -69,7 +69,9 @@ Jointly estimating traces and diagonals improves performance.
 Here is how to use it:
 
 ```python
->>> trace, diagonal = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> trace, diagonal = hutch.trace_and_diagonal(
+...     matvec, key=key, num_levels=10_000, sample_fun=sample_fun
+... )
 >>> print(jnp.round(trace))
 497.0
 
@@ -89,9 +91,13 @@ Here is how to use it:
 Why is the argument called `num_levels`? Because under the hood,
 `trace_and_diagonal` implements a multilevel diagonal-estimation scheme:
 ```python
->>> _, diagonal_1 = hutch.trace_and_diagonal(matvec, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> _, diagonal_1 = hutch.trace_and_diagonal(
+...     matvec, key=key, num_levels=10_000, sample_fun=sample_fun
+... )
 >>> init = jnp.zeros(shape=(2,), dtype=float)
->>> diagonal_2 = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun)
+>>> diagonal_2 = hutch.diagonal_multilevel(
+...     matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun
+... )
 
 >>> print(jnp.round(diagonal_1, 4))
 [215.7592 281.245 ]
@@ -99,7 +105,15 @@ Why is the argument called `num_levels`? Because under the hood,
 >>> print(jnp.round(diagonal_2, 4))
 [215.7592 281.245 ]
 
->>> diagonal = hutch.diagonal_multilevel(matvec, init, key=key, num_levels=10, num_samples_per_batch=1000, num_batches_per_level=10, sample_fun=sample_fun)
+>>> diagonal = hutch.diagonal_multilevel(
+...     matvec,
+...     init,
+...     key=key,
+...     num_levels=10,
+...     num_samples_per_batch=1000,
+...     num_batches_per_level=10,
+...     sample_fun=sample_fun,
+... )
 >>> print(jnp.round(diagonal))
 [220. 286.]
 
@@ -112,7 +126,7 @@ Does the multilevel scheme help? That is not always clear; but [here](https://gi
 
 Estimate log-determinants as such:
 ```python
->>> a = jnp.reshape(jnp.arange(36.), (6, 6)) / 36
+>>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> matvec = lambda x: a.T @ (a @ x) + x
 >>> order = 3
@@ -132,7 +146,7 @@ Sometimes, second and higher moments of a random variable are interesting.
 Compute them as such
 
 ```python
->>> a = jnp.reshape(jnp.arange(36.), (6, 6)) / 36
+>>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> matvec = lambda x: a.T @ (a @ x) + x
 >>> first, second = hutch.trace_moments(matvec, key=key, sample_fun=sample_fun)
@@ -149,8 +163,8 @@ For normal-style samples, we know that the variance is twice the squared Frobeni
 >>> print(jnp.round(second - first**2, 1))
 326.9
 
->>> A = a.T @ a+jnp.eye(6)
->>> print(jnp.round(2*jnp.linalg.norm(A, ord="fro")**2, 1))
+>>> A = a.T @ a + jnp.eye(6)
+>>> print(jnp.round(2 * jnp.linalg.norm(A, ord="fro") ** 2, 1))
 321.80002
 
 ```
@@ -164,11 +178,18 @@ divided by the number of samples.
 Implement this as follows:
 
 ```python
->>> a = jnp.reshape(jnp.arange(36.), (6, 6)) / 36
+>>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> num_samples = 10_000
 >>> matvec = lambda x: a.T @ (a @ x) + x
->>> first, second = hutch.trace_moments(matvec, key=key, sample_fun=sample_fun, moments=(1, 2), num_batches=1, num_samples_per_batch=num_samples)
+>>> first, second = hutch.trace_moments(
+...     matvec,
+...     key=key,
+...     sample_fun=sample_fun,
+...     moments=(1, 2),
+...     num_batches=1,
+...     num_samples_per_batch=num_samples,
+... )
 >>> variance = (second - first**2) / num_samples
 >>> print(jnp.round(variance, 2))
 0.03
