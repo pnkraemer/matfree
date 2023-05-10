@@ -3,7 +3,7 @@
 
 from matfree import montecarlo
 from matfree.backend import containers, control_flow, func, linalg, np, prng
-from matfree.backend.typing import Any, Array, Callable
+from matfree.backend.typing import Any, Array, Callable, Sequence
 
 
 def trace(Av: Callable, /, **kwargs) -> Array:
@@ -24,28 +24,33 @@ def trace(Av: Callable, /, **kwargs) -> Array:
     return montecarlo.estimate(quadform, **kwargs)
 
 
-def trace_with_variance(Av: Callable, /, **kwargs) -> Array:
+def trace_moments(Av: Callable, /, moments: Sequence[int] = (1, 2), **kwargs) -> Array:
     """Estimate the trace of a matrix and the variance of the estimator.
 
     Parameters
     ----------
     Av:
         Matrix-vector product function.
+    moments:
+        Which moments to compute. For example, selection `moments=(1,2)` computes
+        the first and second moment.
     **kwargs:
         Keyword-arguments to be passed to
-        [montecarlo.estimate()][matfree.montecarlo.estimate].
+        [montecarlo.multiestimate(...)][matfree.montecarlo.multiestimate].
     """
 
     def quadform(vec):
         return linalg.vecdot(vec, Av(vec))
 
-    def mean_squared_fun(x, axis):
-        return np.mean(x**2, axis=axis)
+    def moment(x, axis, *, power):
+        return np.mean(x**power, axis=axis)
 
+    statistics_batch = [func.partial(moment, power=m) for m in moments]
+    statistics_combine = [np.mean] * len(moments)
     return montecarlo.multiestimate(
         quadform,
-        statistics_batch=[np.mean, mean_squared_fun],
-        statistics_combine=[np.mean, np.mean],
+        statistics_batch=statistics_batch,
+        statistics_combine=statistics_combine,
         **kwargs,
     )
 

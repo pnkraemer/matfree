@@ -14,8 +14,10 @@ test:
 clean:
 	rm -rf .pytest_cache
 	rm -rf .ruff_cache
+	rm -rf .mypy_cache
+	rm -rf .coverage
 	rm -rf *.egg-info
-	rm -rf dist site build
+	rm -rf dist site build htmlcov
 	rm -rf *.ipynb_checkpoints
 
 doc:
