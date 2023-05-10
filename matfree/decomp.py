@@ -28,8 +28,8 @@ def svd(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    alg = gkl_full_reortho(depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = decompose_fori_loop(0, depth + 1, v0, Av, vA, alg=alg)
+    algorithm = gkl_full_reortho(depth, matrix_shape=matrix_shape)
+    u, (d, e), vt, _ = decompose_fori_loop(v0, Av, vA, algorithm=algorithm)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
@@ -57,16 +57,27 @@ class _DecompAlg(containers.NamedTuple):
     extract: Callable
     """Extract the solution from the state of the algorithm."""
 
+    lower_upper: Tuple[int, int]
+    """Range of the for-loop used to decompose a matrix."""
+
+
+AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
+"""Decomposition algorithm type.
+
+For example, the output of
+[matfree.decomp.lanczos_full_reortho(...)][matfree.decomp.lanczos_full_reortho].
+"""
+
 
 # all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: Tuple[Callable, ...]):
+def decompose_fori_loop(v0, *matvec_funs, algorithm: AlgorithmType):
     r"""Decompose a matrix purely based on matvec-products with A.
 
-    This behaviour of this function is equivalent to
+    The behaviour of this function is equivalent to
 
     ```python
-    def decompose(lower, upper, v0, *matvec_funs, alg):
-        init, step, extract = alg
+    def decompose(v0, *matvec_funs, algorithm):
+        init, step, extract, (lower, upper) = algorithm
         state = init(v0)
         for _ in range(lower, upper):
             state = step(state, *matvec_funs)
@@ -76,7 +87,7 @@ def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: Tuple[Callable, ...
     but the implementation uses JAX' fori_loop.
     """
     # todo: turn the "practically equivalent" bit above into a doctest.
-    init, step, extract = alg
+    init, step, extract, (lower, upper) = algorithm
     init_val = init(v0)
 
     def body_fun(_, s):
@@ -86,7 +97,7 @@ def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: Tuple[Callable, ...
     return extract(result)
 
 
-def lanczos_full_reortho(depth, /) -> Tuple[Callable, ...]:
+def lanczos_full_reortho(depth, /) -> AlgorithmType:
     """**Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
@@ -101,6 +112,7 @@ def lanczos_full_reortho(depth, /) -> Tuple[Callable, ...]:
         init=func.partial(_lanczos_full_reortho_init, depth),
         step=_lanczos_full_reortho_apply,
         extract=_lanczos_full_reortho_extract,
+        lower_upper=(0, depth + 1),
     )
 
 
@@ -156,7 +168,7 @@ def _lanczos_full_reortho_extract(state: _LanczosState, /):
     return basis, (diag, offdiag)
 
 
-def gkl_full_reortho(depth, /, matrix_shape) -> Tuple[Callable, ...]:
+def gkl_full_reortho(depth, /, matrix_shape) -> AlgorithmType:
     """**Golub-Kahan-Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
@@ -166,6 +178,7 @@ def gkl_full_reortho(depth, /, matrix_shape) -> Tuple[Callable, ...]:
         init=func.partial(_gkl_full_reortho_init, depth, matrix_shape),
         step=_gkl_full_reortho_apply,
         extract=_gkl_full_reortho_extract,
+        lower_upper=(0, depth + 1),
     )
 
 
