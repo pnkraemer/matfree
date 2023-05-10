@@ -3,7 +3,13 @@ site_name: matfree documentation
 repo_url: https://github.com/pnkraemer/matfree
 repo_name: pnkraemer/matfree
 nav:
-  - Get started: [index.md, vector_calculus.md]
+  - Get started:
+      - index.md
+      - Tutorials:
+          - control_variates.md
+          - log_determinants.md
+          - higher_moments.md
+          - vector_calculus.md
   - API documentation:
       - api/montecarlo.md
       - api/decomp.md

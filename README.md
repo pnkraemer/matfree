@@ -33,8 +33,6 @@ Imports:
 
 ```
 
-### Traces
-
 Estimate traces as such:
 ```python
 >>> sample_fun = montecarlo.normal(shape=(2,))
@@ -63,138 +61,10 @@ Determine the number of samples per batch as follows.
 
 ```
 
-### Traces and diagonals
 
-Jointly estimating traces and diagonals improves performance.
-Here is how to use it:
+## More examples
 
-```python
->>> trace, diagonal = hutch.trace_and_diagonal(
-...     matvec, key=key, num_levels=10_000, sample_fun=sample_fun
-... )
->>> print(jnp.round(trace))
-497.0
-
->>> print(jnp.round(diagonal))
-[216. 281.]
-
->>> # for comparison:
->>> print(jnp.round(jnp.trace(a.T @ a)))
-506.0
-
->>> print(jnp.round(jnp.diagonal(a.T @ a)))
-[220. 286.]
-
-
-```
-
-Why is the argument called `num_levels`? Because under the hood,
-`trace_and_diagonal` implements a multilevel diagonal-estimation scheme:
-```python
->>> _, diagonal_1 = hutch.trace_and_diagonal(
-...     matvec, key=key, num_levels=10_000, sample_fun=sample_fun
-... )
->>> init = jnp.zeros(shape=(2,), dtype=float)
->>> diagonal_2 = hutch.diagonal_multilevel(
-...     matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun
-... )
-
->>> print(jnp.round(diagonal_1, 4))
-[215.7592 281.245 ]
-
->>> print(jnp.round(diagonal_2, 4))
-[215.7592 281.245 ]
-
->>> diagonal = hutch.diagonal_multilevel(
-...     matvec,
-...     init,
-...     key=key,
-...     num_levels=10,
-...     num_samples_per_batch=1000,
-...     num_batches_per_level=10,
-...     sample_fun=sample_fun,
-... )
->>> print(jnp.round(diagonal))
-[220. 286.]
-
-```
-
-Does the multilevel scheme help? That is not always clear; but [here](https://github.com/pnkraemer/matfree/blob/main/docs/benchmarks/control_variates.py) is a benchmark.
-
-### Determinants
-
-
-Estimate log-determinants as such:
-```python
->>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
->>> sample_fun = montecarlo.normal(shape=(6,))
->>> matvec = lambda x: a.T @ (a @ x) + x
->>> order = 3
->>> logdet = slq.logdet(matvec, order, key=key, sample_fun=sample_fun)
->>> print(jnp.round(logdet))
-3.0
->>> # for comparison:
->>> print(jnp.round(jnp.linalg.slogdet(a.T @ a + jnp.eye(6))[1]))
-3.0
-
-```
-
-### Higher moments
-
-Trace estimation involves estimating expected values of random variables.
-Sometimes, second and higher moments of a random variable are interesting.
-Compute them as such
-
-```python
->>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
->>> sample_fun = montecarlo.normal(shape=(6,))
->>> matvec = lambda x: a.T @ (a @ x) + x
->>> first, second = hutch.trace_moments(matvec, key=key, sample_fun=sample_fun)
->>> print(jnp.round(first, 1))
-17.5
->>> print(jnp.round(second, 1))
-631.7
-
-```
-
-For normal-style samples, we know that the variance is twice the squared Frobenius norm:
-
-```python
->>> print(jnp.round(second - first**2, 1))
-326.9
-
->>> A = a.T @ a + jnp.eye(6)
->>> print(jnp.round(2 * jnp.linalg.norm(A, ord="fro") ** 2, 1))
-321.80002
-
-```
-
-
-### Uncertainty quantification
-
-Variance estimation leads to uncertainty quantification:
-The variance of the estimator is equal to the variance of the random variable
-divided by the number of samples.
-Implement this as follows:
-
-```python
->>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
->>> sample_fun = montecarlo.normal(shape=(6,))
->>> num_samples = 10_000
->>> matvec = lambda x: a.T @ (a @ x) + x
->>> first, second = hutch.trace_moments(
-...     matvec,
-...     key=key,
-...     sample_fun=sample_fun,
-...     moments=(1, 2),
-...     num_batches=1,
-...     num_samples_per_batch=num_samples,
-... )
->>> variance = (second - first**2) / num_samples
->>> print(jnp.round(variance, 2))
-0.03
-
-```
+- **Control variates:** [abc](docs/trace_and_diagonal.md)
 
 
 
