@@ -1,5 +1,8 @@
 matfree/_version.py
 
+# Don't version jupyter notebooks. Track synced markdown files.
+*.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
