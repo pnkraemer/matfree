@@ -1,5 +1,5 @@
 """What is the fastest way of computing trace(A^5)."""
-from matfree import benchmark_util, hutch, montecarlo, slq
+from matfree import benchmark_util, hutchinson, montecarlo, slq
 from matfree.backend import func, linalg, np, plt, prng
 from matfree.backend.progressbar import progressbar
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     (matfun, jvp, Av, trace, JJ), (k, sample_fun) = problem(dim)
 
-    x = hutch.trace(Av, key=k, sample_fun=sample_fun)
+    x = hutchinson.trace(Av, key=k, sample_fun=sample_fun)
     y = slq.trace_of_matfun_symmetric(matfun, jvp, 5, key=k, sample_fun=sample_fun)
     assert np.allclose(x, trace, atol=1e-1, rtol=1e-1), (x, trace)
     assert np.allclose(y, trace, atol=1e-1, rtol=1e-1), (y, trace)
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     @func.partial(func.jit, static_argnums=0)
     def matvec(num, key):
         """Matrix-vector mult."""
-        return hutch.trace(
+        return hutchinson.trace(
             Av, key=key, sample_fun=sample_fun, num_samples_per_batch=num
         )
 

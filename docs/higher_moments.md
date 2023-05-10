@@ -3,7 +3,7 @@
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutch, montecarlo, slq
+>>> from matfree import hutchinson, montecarlo, slq
 
 >>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
@@ -23,7 +23,7 @@ Compute them as such
 >>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> matvec = lambda x: a.T @ (a @ x) + x
->>> first, second = hutch.trace_moments(matvec, key=key, sample_fun=sample_fun)
+>>> first, second = hutchinson.trace_moments(matvec, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(first, 1))
 17.5
 >>> print(jnp.round(second, 1))
@@ -56,7 +56,7 @@ Implement this as follows:
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> num_samples = 10_000
 >>> matvec = lambda x: a.T @ (a @ x) + x
->>> first, second = hutch.trace_moments(
+>>> first, second = hutchinson.trace_moments(
 ...     matvec,
 ...     key=key,
 ...     sample_fun=sample_fun,

@@ -11,7 +11,7 @@ Here is how we can implement divergences and Laplacians without forming full Jac
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutch, montecarlo
+>>> from matfree import hutchinson, montecarlo
 
 ```
 
@@ -72,7 +72,7 @@ to approximate divergences and Laplacians without forming full Jacobians:
 ...             _vf_value, jvp_value = jax.jvp(fun=vf, primals=(x,), tangents=(v,))
 ...             return jvp_value
 ...
-...         return hutch.trace(jvp, key=key, sample_fun=sample_fun)
+...         return hutchinson.trace(jvp, key=key, sample_fun=sample_fun)
 ...
 ...     return div_fn
 ...

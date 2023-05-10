@@ -27,7 +27,7 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutch, montecarlo, slq
+>>> from matfree import hutchinson, montecarlo, slq
 
 >>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
@@ -38,7 +38,7 @@ Estimate traces as such:
 ```python
 >>> sample_fun = montecarlo.normal(shape=(2,))
 >>> matvec = lambda x: a.T @ (a @ x)
->>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun)
+>>> trace = hutchinson.trace(matvec, key=key, sample_fun=sample_fun)
 >>> print(jnp.round(trace))
 514.0
 >>> # for comparison:
@@ -53,7 +53,7 @@ Few large batches increases memory and runtime.
 Determine the number of samples per batch as follows.
 
 ```python
->>> trace = hutch.trace(matvec, key=key, sample_fun=sample_fun, num_batches=10)
+>>> trace = hutchinson.trace(matvec, key=key, sample_fun=sample_fun, num_batches=10)
 >>> print(jnp.round(trace))
 508.0
 >>> # for comparison:

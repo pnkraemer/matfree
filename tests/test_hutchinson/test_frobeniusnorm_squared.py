@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from matfree import hutch, montecarlo
+from matfree import hutchinson, montecarlo
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -24,8 +24,10 @@ def fixture_key():
 @testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
 @testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
-def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
-    """Assert that the estimated diagonal approximates the true diagonal accurately."""
+def test_frobeniusnorm_squared(
+    fun, key, num_batches, num_samples_per_batch, dim, sample_fun
+):
+    """Assert that the Frobenius norm estimate is accurate."""
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
     _, jvp = func.linearize(fun, x0)
@@ -33,12 +35,12 @@ def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun)
 
     # Estimate the trace
     fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
-    estimate = hutch.diagonal(
+    estimate = hutchinson.frobeniusnorm_squared(
         jvp,
         num_batches=num_batches,
         key=key,
         num_samples_per_batch=num_samples_per_batch,
         sample_fun=fun,
     )
-    truth = linalg.diagonal(J)
+    truth = linalg.trace(J.T @ J)
     assert np.allclose(estimate, truth, rtol=1e-2)

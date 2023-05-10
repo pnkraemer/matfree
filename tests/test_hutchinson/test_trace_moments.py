@@ -1,6 +1,6 @@
 """Tests for estimating traces."""
 
-from matfree import hutch, montecarlo
+from matfree import hutchinson, montecarlo
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -33,7 +33,7 @@ def test_variance_normal(J_and_jvp, key, num_batches, num_samples_per_batch, dim
     # Estimate the trace
     J, jvp = J_and_jvp
     fun = montecarlo.normal(shape=(dim,), dtype=float)
-    first, second = hutch.trace_moments(
+    first, second = hutchinson.trace_moments(
         jvp,
         key=key,
         num_batches=num_batches,
@@ -59,7 +59,7 @@ def test_variance_rademacher(J_and_jvp, key, num_batches, num_samples_per_batch,
     # Estimate the trace
     J, jvp = J_and_jvp
     fun = montecarlo.rademacher(shape=(dim,), dtype=float)
-    first, second = hutch.trace_moments(
+    first, second = hutchinson.trace_moments(
         jvp,
         key=key,
         num_batches=num_batches,
