@@ -10,10 +10,10 @@ nav:
       - higher_moments.md
       - vector_calculus.md
   - API documentation:
-      - api/montecarlo.md
-      - api/decomp.md
-      - api/hutch.md
-      - api/slq.md
+      - matfree.montecarlo: api/montecarlo.md
+      - matfree.decomp: api/decomp.md
+      - matfree.hutch: api/hutch.md
+      - matfree.slq: api/slq.md
   - Developer documentation: dev/index.md
   - Benchmarks: benchmarks/index.md
 theme:
@@ -37,14 +37,18 @@ theme:
         name: Switch to light mode
   font:
     text: Fira Sans
-  features: [navigation.sections, navigation.footer, navigation.indexes]
+  features: [navigation.tabs, navigation.footer]
 plugins:
   - search
   - mkdocstrings:
       handlers:
         python:
           options:
-            show_root_members_full_path: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_root_full_path: true
+            show_root_members_full_path: true
+            show_object_full_path: false
             show_category_heading: false
             docstring_style: numpy
             show_if_no_docstring: true

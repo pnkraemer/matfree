@@ -4,7 +4,9 @@ from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Any, Array, Callable, Tuple
 
 
-def svd(v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int]):
+def svd(
+    v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int, ...]
+):
     """Approximate singular value decomposition.
 
     Uses GKL with full reorthogonalisation to bi-diagonalise the target matrix
@@ -43,7 +45,7 @@ def _bidiagonal_dense(d, e):
     return diag + offdiag
 
 
-class DecompAlg(containers.NamedTuple):
+class _DecompAlg(containers.NamedTuple):
     """Matrix decomposition algorithm."""
 
     init: Callable
@@ -57,32 +59,34 @@ class DecompAlg(containers.NamedTuple):
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: DecompAlg):
+def decompose_fori_loop(lower, upper, v0, *matvec_funs, alg: Tuple[Callable, ...]):
     r"""Decompose a matrix purely based on matvec-products with A.
 
     This behaviour of this function is equivalent to
 
     ```python
     def decompose(lower, upper, v0, *matvec_funs, alg):
-        state = alg.init(v0)
+        init, step, extract = alg
+        state = init(v0)
         for _ in range(lower, upper):
-            state = alg.step(state, *matvec_funs)
-        return alg.extract(state)
+            state = step(state, *matvec_funs)
+        return extract(state)
     ```
 
     but the implementation uses JAX' fori_loop.
     """
     # todo: turn the "practically equivalent" bit above into a doctest.
-    init_val = alg.init(v0)
+    init, step, extract = alg
+    init_val = init(v0)
 
     def body_fun(_, s):
-        return alg.step(s, *matvec_funs)
+        return step(s, *matvec_funs)
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
-    return alg.extract(result)
+    return extract(result)
 
 
-def lanczos_full_reortho(depth, /) -> DecompAlg:
+def lanczos_full_reortho(depth, /) -> Tuple[Callable, ...]:
     """**Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
@@ -93,7 +97,7 @@ def lanczos_full_reortho(depth, /) -> DecompAlg:
     # this algorithm is massively unstable.
     # but despite this instability, quadrature might be stable?
     # https://www.sciencedirect.com/science/article/abs/pii/S0920563200918164
-    return DecompAlg(
+    return _DecompAlg(
         init=func.partial(_lanczos_full_reortho_init, depth),
         step=_lanczos_full_reortho_apply,
         extract=_lanczos_full_reortho_extract,
@@ -152,13 +156,13 @@ def _lanczos_full_reortho_extract(state: _LanczosState, /):
     return basis, (diag, offdiag)
 
 
-def gkl_full_reortho(depth, /, matrix_shape) -> DecompAlg:
+def gkl_full_reortho(depth, /, matrix_shape) -> Tuple[Callable, ...]:
     """**Golub-Kahan-Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
     """
-    return DecompAlg(
+    return _DecompAlg(
         init=func.partial(_gkl_full_reortho_init, depth, matrix_shape),
         step=_gkl_full_reortho_apply,
         extract=_gkl_full_reortho_extract,

@@ -1,3 +1,3 @@
-# matfree.slq
+# Stochastic Lanczos quadrature
 
 :::matfree.slq
