@@ -32,7 +32,3 @@ repos:
     rev: 1.9.0
     hooks:
       - id: yamlfix
-  - repo: https://github.com/keewis/blackdoc/
-    rev: v0.3.8
-    hooks:
-      - id: blackdoc

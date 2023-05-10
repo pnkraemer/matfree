@@ -38,7 +38,7 @@ This implementation computes the divergence of a vector field:
 ```python
 >>> def fun(x):
 ...     """A scalar valued function."""
-...     return jnp.dot(x, x)**2
+...     return jnp.dot(x, x) ** 2
 ...
 >>> x0 = jnp.arange(1.0, 4.0)
 >>> gradient = jax.grad(fun)
