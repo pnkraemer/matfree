@@ -9,7 +9,7 @@ def symmetric_matrix_from_eigenvalues(eigvals, /):
 
     # Need _some_ matrix to start with
     A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
-    A = A / linalg.matrix_norm(A)
+    A = A / linalg.matrix_norm(A, which="fro")
     X = A.T @ A + np.eye(n)
 
     # QR decompose. We need the orthogonal matrix.

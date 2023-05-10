@@ -7,8 +7,8 @@ def vector_norm(x, /):
     return jnp.linalg.norm(x)
 
 
-def matrix_norm(x, /):
-    return jnp.linalg.norm(x)
+def matrix_norm(x, /, which):
+    return jnp.linalg.norm(x, ord=which)
 
 
 def qr(x, /, *, mode="reduced"):

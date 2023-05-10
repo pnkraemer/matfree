@@ -23,7 +23,7 @@ def fixture_key():
 @testing.parametrize("num_batches", [1_000])
 @testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-def test_normal(fun, key, num_batches, num_samples_per_batch, dim):
+def test_variance_normal(fun, key, num_batches, num_samples_per_batch, dim):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
@@ -32,7 +32,7 @@ def test_normal(fun, key, num_batches, num_samples_per_batch, dim):
 
     # Estimate the trace
     fun = montecarlo.normal(shape=np.shape(x0), dtype=np.dtype(x0))
-    trace, variance = hutch.trace_with_variance(
+    first, second = hutch.trace_with_variance(
         jvp,
         key=key,
         num_batches=num_batches,
@@ -42,23 +42,17 @@ def test_normal(fun, key, num_batches, num_samples_per_batch, dim):
 
     # Assert the trace is correct
     truth = linalg.trace(J)
-    assert np.allclose(trace, truth, rtol=1e-2)
+    assert np.allclose(first, truth, rtol=1e-2)
 
     # Assert the variance is correct:
-    norm = hutch.frobeniusnorm_squared(
-        jvp,
-        key=key,
-        num_batches=num_batches,
-        num_samples_per_batch=num_samples_per_batch,
-        sample_fun=fun,
-    )
-    assert np.allclose(variance, norm * 2, rtol=1e-2)
+    norm = linalg.matrix_norm(J, which="fro") ** 2
+    assert np.allclose(second - first**2, norm * 2, rtol=1e-2)
 
 
 @testing.parametrize("num_batches", [1_000])
 @testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-def test_rademacher(fun, key, num_batches, num_samples_per_batch, dim):
+def test_variance_rademacher(fun, key, num_batches, num_samples_per_batch, dim):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Linearise function
     x0 = prng.uniform(key, shape=(dim,))  # random lin. point
@@ -67,7 +61,7 @@ def test_rademacher(fun, key, num_batches, num_samples_per_batch, dim):
 
     # Estimate the trace
     fun = montecarlo.rademacher(shape=np.shape(x0), dtype=np.dtype(x0))
-    trace, variance = hutch.trace_with_variance(
+    first, second = hutch.trace_with_variance(
         jvp,
         key=key,
         num_batches=num_batches,
@@ -77,15 +71,9 @@ def test_rademacher(fun, key, num_batches, num_samples_per_batch, dim):
 
     # Assert the trace is correct
     truth = linalg.trace(J)
-    assert np.allclose(trace, truth, rtol=1e-2)
+    assert np.allclose(first, truth, rtol=1e-2)
 
     # Assert the variance is correct:
-    norm = hutch.frobeniusnorm_squared(
-        jvp,
-        key=key,
-        num_batches=num_batches,
-        num_samples_per_batch=num_samples_per_batch,
-        sample_fun=fun,
-    )
+    norm = linalg.matrix_norm(J, which="fro") ** 2
     truth = 2 * (norm - linalg.trace(J**2))
-    assert np.allclose(variance, truth, atol=1e-2, rtol=1e-2)
+    assert np.allclose(second - first**2, truth, atol=1e-2, rtol=1e-2)

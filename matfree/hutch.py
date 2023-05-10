@@ -42,13 +42,12 @@ def trace_with_variance(Av: Callable, /, **kwargs) -> Array:
     def mean_squared_fun(x, axis):
         return np.mean(x**2, axis=axis)
 
-    mean, second_moment = montecarlo.multiestimate(
+    return montecarlo.multiestimate(
         quadform,
         statistics_batch=[np.mean, mean_squared_fun],
         statistics_combine=[np.mean, np.mean],
         **kwargs,
     )
-    return mean, second_moment - mean**2
 
 
 def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
