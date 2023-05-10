@@ -1,4 +1,5 @@
-# matfree
+# matfree: Matrix-free linear algebra in JAX
+
 Randomised and deterministic matrix-free methods for trace estimation, matrix functions, and/or matrix factorisations.
 Builds on [JAX](https://jax.readthedocs.io/en/latest/).
 
@@ -62,9 +63,12 @@ Determine the number of samples per batch as follows.
 ```
 
 
-## More examples
+## More tutorials
 
-- **Control variates:** [abc](docs/trace_and_diagonal.md)
+- **Control variates:** Use control variates and multilevel schemes to reduce variances.  [(LINK)](control_variates.md)
+- **Log-determinants:**  Use stochastic Lanczos quadrature to compute matrix functions. [(LINK)](log_determinants.md)
+- **Higher moments and UQ:** Compute means, variances, and other moments simultaneously. [(LINK)](higher_moments.md)
+- **Vector calculus:** Use matrix-free linear algebra to implement vector calculus. [(LINK)](vector_calculus.md)
 
 
 
