@@ -3,20 +3,19 @@ site_name: matfree documentation
 repo_url: https://github.com/pnkraemer/matfree
 repo_name: pnkraemer/matfree
 nav:
-  - Get started:
-      - index.md
-      - Tutorials:
-          - control_variates.md
-          - log_determinants.md
-          - higher_moments.md
-          - vector_calculus.md
+  - Get started: index.md
+  - Tutorials:
+      - control_variates.md
+      - log_determinants.md
+      - higher_moments.md
+      - vector_calculus.md
   - API documentation:
-      - api/montecarlo.md
-      - api/decomp.md
-      - api/hutch.md
-      - api/slq.md
-  - dev/index.md
-  - benchmarks/index.md
+      - matfree.montecarlo: api/montecarlo.md
+      - matfree.decomp: api/decomp.md
+      - matfree.hutch: api/hutch.md
+      - matfree.slq: api/slq.md
+  - Developer documentation: dev/index.md
+  - Benchmarks: benchmarks/index.md
 theme:
   name: material
   palette:
@@ -45,12 +44,19 @@ plugins:
       handlers:
         python:
           options:
-            show_root_members_full_path: false
-            show_category_heading: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_root_full_path: true
+            show_root_members_full_path: true
+            show_object_full_path: false
+            show_category_heading: true
             docstring_style: numpy
             show_if_no_docstring: true
-            show_signature_annotations: true
             members_order: alphabetical
+            annotations_path: brief
+            show_signature: true
+            show_signature_annotations: true
+            separate_signature: false
             docstring_section_style: list
 watch: [matfree]
 extra:

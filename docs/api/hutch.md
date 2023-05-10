@@ -1,3 +1,3 @@
-# matfree.hutch
+# Hutchinson-style trace estimation
 
 :::matfree.hutch

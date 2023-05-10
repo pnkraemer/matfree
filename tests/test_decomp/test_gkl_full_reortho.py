@@ -31,7 +31,7 @@ def test_gkl_full_reortho(A, order):
     def vA(v):
         return v @ A
 
-    Us, Bs, Vs, (b, v) = decomp.decompose_fori_loop(0, order + 1, v0, Av, vA, alg=alg)
+    Us, Bs, Vs, (b, v) = decomp.decompose_fori_loop(v0, Av, vA, algorithm=alg)
     (d_m, e_m) = Bs
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}

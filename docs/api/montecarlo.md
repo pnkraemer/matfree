@@ -1,3 +1,2 @@
-# matfree.montecarlo
-
+# Monte-Carlo estimation
 :::matfree.montecarlo

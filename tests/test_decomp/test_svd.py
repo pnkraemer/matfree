@@ -18,7 +18,7 @@ def A(nrows, ncols, num_significant_singular_vals):
     return test_util.asymmetric_matrix_from_singular_values(d, nrows=nrows, ncols=ncols)
 
 
-def test_max_depth(A):
+def test_equal_to_linalg_svd(A):
     """The output of full-depth SVD should be equal (*) to linalg.svd().
 
     (*) Note: The singular values should be identical,

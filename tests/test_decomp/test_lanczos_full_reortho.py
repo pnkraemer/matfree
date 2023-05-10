@@ -15,21 +15,6 @@ def A(n, num_significant_eigvals):
 
 
 @testing.parametrize("n", [6])
-@testing.parametrize("num_significant_eigvals", [4])
-def test_error_for_too_high_order(A):
-    """Assert graceful failure if the depth matches or exceeds the number of columns."""
-    n, _ = np.shape(A)
-    key = prng.prng_key(1)
-    v0 = prng.normal(key, shape=(n,))
-    with testing.raises(ValueError):
-        alg = decomp.lanczos_full_reortho(n + 10)
-        _ = decomp.decompose_fori_loop(0, n + 10, v0, lambda v: A @ v, alg=alg)
-    with testing.raises(ValueError):
-        alg = decomp.lanczos_full_reortho(n)
-        _ = decomp.decompose_fori_loop(0, n + 1, v0, lambda v: A @ v, alg=alg)
-
-
-@testing.parametrize("n", [6])
 @testing.parametrize("num_significant_eigvals", [6])
 def test_max_order(A):
     """If m == n, the matrix should be equal to the full tridiagonal."""
@@ -38,9 +23,7 @@ def test_max_order(A):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     alg = decomp.lanczos_full_reortho(order)
-    Q, (d_m, e_m) = decomp.decompose_fori_loop(
-        0, order + 1, v0, lambda v: A @ v, alg=alg
-    )
+    Q, (d_m, e_m) = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -81,7 +64,7 @@ def test_identity(A, order):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     alg = decomp.lanczos_full_reortho(order)
-    Q, tridiag = decomp.decompose_fori_loop(0, order + 1, v0, lambda v: A @ v, alg=alg)
+    Q, tridiag = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
     (d_m, e_m) = tridiag
 
     # Lanczos is not stable.
