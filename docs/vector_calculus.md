@@ -65,12 +65,12 @@ to approximate divergences and Laplacians without forming full Jacobians:
 ```python
 
 >>> def divergence_matfree(vf, *, key, sample_fun):
-...     """Compute the divergence of a vector field only using matrix-vector products."""
+...     """Estimate the divergence of a vector field."""
 ...
 ...     def div_fn(x):
 ...         def jvp(v):
-...             _vf_value, jvp_value = jax.jvp(fun=vf, primals=(x,), tangents=(v,))
-...             return jvp_value
+...             _vf_val, jvp_val = jax.jvp(fun=vf, primals=(x,), tangents=(v,))
+...             return jvp_val
 ...
 ...         return hutchinson.trace(jvp, key=key, sample_fun=sample_fun)
 ...
@@ -83,11 +83,11 @@ It requires $O(d)$ memory and  $O(d N)$ operations (for $N$ Monte-Carlo samples)
 For large-scale problems, it may be the only way of computing Laplacians reliably.
 
 ```python
->>> sample_fun = montecarlo.normal(shape=(3,))
 >>> laplacian_dense = divergence_dense(gradient)
->>> laplacian_matfree = divergence_matfree(
-...     gradient, key=jax.random.PRNGKey(1), sample_fun=sample_fun
-... )
+>>>
+>>> normal = montecarlo.normal(shape=(3,))
+>>> key = jax.random.PRNGKey(1)
+>>> laplacian_matfree = divergence_matfree(gradient, key=key, sample_fun=normal)
 >>>
 >>> print(jnp.round(laplacian_dense(x0), 1))
 280.0

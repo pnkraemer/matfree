@@ -36,9 +36,9 @@ Imports:
 
 Estimate traces as such:
 ```python
->>> sample_fun = montecarlo.normal(shape=(2,))
+>>> normal = montecarlo.normal(shape=(2,))
 >>> matvec = lambda x: a.T @ (a @ x)
->>> trace = hutchinson.trace(matvec, key=key, sample_fun=sample_fun)
+>>> trace = hutchinson.trace(matvec, key=key, sample_fun=normal)
 >>> print(jnp.round(trace))
 514.0
 >>> # for comparison:
@@ -53,7 +53,7 @@ Few large batches increases memory and runtime.
 Determine the number of samples per batch as follows.
 
 ```python
->>> trace = hutchinson.trace(matvec, key=key, sample_fun=sample_fun, num_batches=10)
+>>> trace = hutchinson.trace(matvec, key=key, sample_fun=normal, num_batches=10)
 >>> print(jnp.round(trace))
 508.0
 >>> # for comparison:
