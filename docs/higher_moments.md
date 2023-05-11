@@ -8,7 +8,7 @@
 >>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
 
->>> matvec = lambda x: a.T @ (a @ x)
+>>> mvp = lambda x: a.T @ (a @ x)
 >>> sample_fun = montecarlo.normal(shape=(2,))
 
 ```
@@ -21,9 +21,9 @@ Compute them as such
 
 ```python
 >>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
->>> sample_fun = montecarlo.normal(shape=(6,))
->>> matvec = lambda x: a.T @ (a @ x) + x
->>> first, second = hutchinson.trace_moments(matvec, key=key, sample_fun=sample_fun)
+>>> normal = montecarlo.normal(shape=(6,))
+>>> mvp = lambda x: a.T @ (a @ x) + x
+>>> first, second = hutchinson.trace_moments(mvp, key=key, sample_fun=normal)
 >>> print(jnp.round(first, 1))
 17.5
 >>> print(jnp.round(second, 1))
@@ -55,9 +55,9 @@ Implement this as follows:
 >>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
 >>> sample_fun = montecarlo.normal(shape=(6,))
 >>> num_samples = 10_000
->>> matvec = lambda x: a.T @ (a @ x) + x
+>>> mvp = lambda x: a.T @ (a @ x) + x
 >>> first, second = hutchinson.trace_moments(
-...     matvec,
+...     mvp,
 ...     key=key,
 ...     sample_fun=sample_fun,
 ...     moments=(1, 2),
