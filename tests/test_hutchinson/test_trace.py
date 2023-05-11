@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from matfree import hutch, montecarlo
+from matfree import hutchinson, montecarlo
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -33,7 +33,7 @@ def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
 
     # Estimate the trace
     fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
-    estimate = hutch.trace(
+    estimate = hutchinson.trace(
         jvp,
         num_batches=num_batches,
         key=key,

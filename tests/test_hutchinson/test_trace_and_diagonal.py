@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from matfree import hutch, montecarlo
+from matfree import hutchinson, montecarlo
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -32,7 +32,7 @@ def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
 
     # Estimate the trace
     fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
-    trace, diag = hutch.trace_and_diagonal(
+    trace, diag = hutchinson.trace_and_diagonal(
         jvp, key=key, num_levels=num_samples, sample_fun=fun
     )
 

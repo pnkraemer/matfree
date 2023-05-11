@@ -8,7 +8,7 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutch, montecarlo, slq
+>>> from matfree import hutchinson, montecarlo, slq
 
 >>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
@@ -19,7 +19,7 @@ Imports:
 ```
 
 ```python
->>> trace, diagonal = hutch.trace_and_diagonal(
+>>> trace, diagonal = hutchinson.trace_and_diagonal(
 ...     matvec, key=key, num_levels=10_000, sample_fun=sample_fun
 ... )
 >>> print(jnp.round(trace))
@@ -41,11 +41,11 @@ Imports:
 Why is the argument called `num_levels`? Because under the hood,
 `trace_and_diagonal` implements a multilevel diagonal-estimation scheme:
 ```python
->>> _, diagonal_1 = hutch.trace_and_diagonal(
+>>> _, diagonal_1 = hutchinson.trace_and_diagonal(
 ...     matvec, key=key, num_levels=10_000, sample_fun=sample_fun
 ... )
 >>> init = jnp.zeros(shape=(2,), dtype=float)
->>> diagonal_2 = hutch.diagonal_multilevel(
+>>> diagonal_2 = hutchinson.diagonal_multilevel(
 ...     matvec, init, key=key, num_levels=10_000, sample_fun=sample_fun
 ... )
 
@@ -55,7 +55,7 @@ Why is the argument called `num_levels`? Because under the hood,
 >>> print(jnp.round(diagonal_2, 4))
 [215.7592 281.245 ]
 
->>> diagonal = hutch.diagonal_multilevel(
+>>> diagonal = hutchinson.diagonal_multilevel(
 ...     matvec,
 ...     init,
 ...     key=key,
