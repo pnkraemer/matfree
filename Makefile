@@ -1,7 +1,7 @@
 format:
 	isort .  --quiet
 	black .  --quiet
-	blackdoc docs/*.md *.md
+	blackdoc docs/*.md *.md  --line-length 82
 
 lint:
 	pre-commit run --all-files
