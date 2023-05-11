@@ -141,7 +141,7 @@ def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **k
         Pseudo-random number generator key.
     **kwargs:
         Keyword-arguments to be passed to
-        [diagonal_multilevel()][matfree.hutch.diagonal_multilevel].
+        [diagonal_multilevel()][matfree.hutchinson.diagonal_multilevel].
 
 
     See:

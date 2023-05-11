@@ -65,10 +65,10 @@ Determine the number of samples per batch as follows.
 
 ## More tutorials
 
-- **Control variates:** Use control variates and multilevel schemes to reduce variances.  [(LINK)](control_variates.md)
-- **Log-determinants:**  Use stochastic Lanczos quadrature to compute matrix functions. [(LINK)](log_determinants.md)
-- **Higher moments and UQ:** Compute means, variances, and other moments simultaneously. [(LINK)](higher_moments.md)
-- **Vector calculus:** Use matrix-free linear algebra to implement vector calculus. [(LINK)](vector_calculus.md)
+- **Control variates:** Use control variates and multilevel schemes to reduce variances.  [(LINK)](https://pnkraemer.github.io/matfree/control_variates/)
+- **Log-determinants:**  Use stochastic Lanczos quadrature to compute matrix functions. [(LINK)](https://pnkraemer.github.io/matfree/log_determinants/)
+- **Higher moments and UQ:** Compute means, variances, and other moments simultaneously. [(LINK)](https://pnkraemer.github.io/matfree/higher_moments/)
+- **Vector calculus:** Use matrix-free linear algebra to implement vector calculus. [(LINK)](https://pnkraemer.github.io/matfree/vector_calculus/)
 
 
 
