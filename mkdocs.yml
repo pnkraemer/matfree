@@ -37,7 +37,7 @@ theme:
         name: Switch to light mode
   font:
     text: Fira Sans
-  features: [navigation.tabs, navigation.footer]
+  features: [navigation.sections, navigation.footer]
 plugins:
   - search
   - mkdocstrings:
