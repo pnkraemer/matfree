@@ -25,8 +25,8 @@ def test_logdet_spd(A, order):
     key = prng.prng_key(1)
     fun = montecarlo.normal(shape=(n,))
     received = slq.logdet_spd(
-        lambda v: A @ v,
         order,
+        lambda v: A @ v,
         key=key,
         num_samples_per_batch=10,
         num_batches=1,
