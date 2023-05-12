@@ -4,23 +4,26 @@ from matfree import decomp, montecarlo
 from matfree.backend import func, linalg, np
 
 
-def logdet(*args, **kwargs):
+def logdet_spd(*args, **kwargs):
     """Estimate the log-determinant of a symmetric, positive definite matrix."""
-    return trace_of_matfun_symmetric(np.log, *args, **kwargs)
+    return trace_of_matfun_spd(np.log, *args, **kwargs)
 
 
 # todo: nuclear norm, schatten-p norms.
 #  But for this we should use bi-diagonalisation
 
 
-def trace_of_matfun_symmetric(matfun, Av, order, /, **kwargs):
+def trace_of_matfun_spd(matfun, Av, order, /, **kwargs):
     """Compute the trace of the function of a symmetric matrix."""
-    quadratic_form = quadratic_form_slq_symmetric(matfun, Av, order)
+    quadratic_form = quadratic_form_slq_spd(matfun, Av, order)
     return montecarlo.estimate(quadratic_form, **kwargs)
 
 
-def quadratic_form_slq_symmetric(matfun, Av, order, /):
-    """Approximate quadratic form for stochastic Lanczos quadrature."""
+def quadratic_form_slq_spd(matfun, Av, order, /):
+    """Quadratic form for stochastic Lanczos quadrature.
+
+    Assumes a symmetric, positive definite matrix.
+    """
 
     def quadform(v0, /):
         algorithm = decomp.lanczos_full_reortho(order)

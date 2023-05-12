@@ -56,7 +56,7 @@ if __name__ == "__main__":
     (matfun, jvp, Av, trace, JJ), (k, sample_fun) = problem(dim)
 
     x = hutchinson.trace(Av, key=k, sample_fun=sample_fun)
-    y = slq.trace_of_matfun_symmetric(matfun, jvp, 5, key=k, sample_fun=sample_fun)
+    y = slq.trace_of_matfun_spd(matfun, jvp, 5, key=k, sample_fun=sample_fun)
     assert np.allclose(x, trace, atol=1e-1, rtol=1e-1), (x, trace)
     assert np.allclose(y, trace, atol=1e-1, rtol=1e-1), (y, trace)
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     @func.partial(func.jit, static_argnums=0)
     def slq_low(num, key):
         """SLQ(1)"""  # noqa: D400,D415
-        return slq.trace_of_matfun_symmetric(
+        return slq.trace_of_matfun_spd(
             matfun,
             jvp,
             1,
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     @func.partial(func.jit, static_argnums=0)
     def slq_high(num, key):
         """SLQ(5)"""  # noqa: D400,D415
-        return slq.trace_of_matfun_symmetric(
+        return slq.trace_of_matfun_spd(
             matfun,
             jvp,
             5,
