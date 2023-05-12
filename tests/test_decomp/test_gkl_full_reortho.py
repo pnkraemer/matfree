@@ -110,6 +110,4 @@ def test_no_error_zero_depth(A):
     assert np.shape(d_m) == (1,)
     assert np.shape(e_m) == (0,)
     assert np.shape(b) == ()
-    assert np.shape(
-        v,
-    ) == (ncols,)
+    assert np.shape(v) == (ncols,)
