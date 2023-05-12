@@ -1,14 +1,15 @@
-"""Tests for Lanczos functionality."""
+"""Tests for (selected) autodiff functionality."""
+
 
 from matfree import montecarlo, slq, test_util
-from matfree.backend import linalg, np, prng, testing
+from matfree.backend import np, prng, testing
 
 
 @testing.fixture()
 def A(n, num_significant_eigvals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
-    d = np.arange(n) / n + 1.0
+    d = np.arange(n) + 10.0
     d = d.at[num_significant_eigvals:].set(0.001)
 
     return test_util.symmetric_matrix_from_eigenvalues(d)
@@ -19,12 +20,20 @@ def A(n, num_significant_eigvals):
 @testing.parametrize("order", [10])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet(A, order):
-    """Assert that the log-determinant estimation matches the true log-determinant."""
-    n, _ = np.shape(A)
+def test_check_grads(A, order):
+    """Assert that log-determinant computation admits valid VJPs and JVPs."""
     key = prng.prng_key(1)
+
+    def fun(s):
+        return _logdet(s, order, key)
+
+    testing.check_grads(fun, (A,), order=1, atol=1e-1, rtol=1e-1)
+
+
+def _logdet(A, order, key):
+    n, _ = np.shape(A)
     fun = montecarlo.normal(shape=(n,))
-    received = slq.logdet(
+    return slq.logdet_spd(
         lambda v: A @ v,
         order,
         key=key,
@@ -32,6 +41,3 @@ def test_logdet(A, order):
         num_batches=1,
         sample_fun=fun,
     )
-    expected = linalg.slogdet(A)[1]
-    print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
-    assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails
