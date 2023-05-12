@@ -174,6 +174,13 @@ def gkl_full_reortho(depth, /, matrix_shape) -> AlgorithmType:
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
     """
+    nrows, ncols = matrix_shape
+    max_depth = min(nrows, ncols) - 1
+    if depth > max_depth or depth < 0:
+        msg1 = f"Depth {depth} exceeds the matrix' dimensions. "
+        msg2 = f"Expected: 0 <= depth <= min(nrows, ncols) - 1 = {max_depth} "
+        msg3 = f"for a matrix with shape {matrix_shape}."
+        raise ValueError(msg1 + msg2 + msg3)
     return _DecompAlg(
         init=func.partial(_gkl_full_reortho_init, depth, matrix_shape),
         step=_gkl_full_reortho_apply,
