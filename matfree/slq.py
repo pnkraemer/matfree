@@ -9,13 +9,13 @@ def logdet_spd(*args, **kwargs):
     return trace_of_matfun_spd(np.log, *args, **kwargs)
 
 
-def trace_of_matfun_spd(matfun, Av, order, /, **kwargs):
+def trace_of_matfun_spd(matfun, order, Av, /, **kwargs):
     """Compute the trace of the function of a symmetric matrix."""
-    quadratic_form = quadratic_form_slq_spd(matfun, Av, order)
+    quadratic_form = quadratic_form_slq_spd(matfun, order, Av)
     return montecarlo.estimate(quadratic_form, **kwargs)
 
 
-def quadratic_form_slq_spd(matfun, Av, order, /):
+def quadratic_form_slq_spd(matfun, order, Av, /):
     """Quadratic form for stochastic Lanczos quadrature.
 
     Assumes a symmetric, positive definite matrix.

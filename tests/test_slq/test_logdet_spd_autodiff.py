@@ -34,8 +34,8 @@ def _logdet(A, order, key):
     n, _ = np.shape(A)
     fun = montecarlo.normal(shape=(n,))
     return slq.logdet_spd(
-        lambda v: A @ v,
         order,
+        lambda v: A @ v,
         key=key,
         num_samples_per_batch=10,
         num_batches=1,
