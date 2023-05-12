@@ -16,12 +16,12 @@ def A(nrows, ncols, num_significant_singular_vals):
 
 @testing.parametrize("nrows", [50])
 @testing.parametrize("ncols", [30])
-@testing.parametrize("num_significant_singular_vals", [10])
-@testing.parametrize("order", [20])  # ~1.5 * num_significant_eigvals
+@testing.parametrize("num_significant_singular_vals", [30])
+@testing.parametrize("order", [20])
 def test_logdet_product(A, order):
     """Assert that logdet_product yields an accurate estimate."""
     _, ncols = np.shape(A)
-    key = prng.prng_key(1)
+    key = prng.prng_key(3)
     fun = montecarlo.normal(shape=(ncols,))
     received = slq.logdet_product(
         order,
@@ -29,7 +29,7 @@ def test_logdet_product(A, order):
         lambda v: A.T @ v,
         matrix_shape=np.shape(A),
         key=key,
-        num_samples_per_batch=100,
+        num_samples_per_batch=200,
         num_batches=2,
         sample_fun=fun,
     )
