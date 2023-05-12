@@ -54,7 +54,7 @@ def logdet_product(*args, **kwargs):
 
 
 def schatten_norm(*args, power, **kwargs):
-    r"""Compute the Schatten-p norm of a matrix."""
+    r"""Compute the Schatten-p norm of a matrix via stochastic Lanczos quadrature."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
@@ -69,22 +69,18 @@ def trace_of_matfun_product(matfun, order, *matvec_funs, matrix_shape, **kwargs)
 
     Here, "product" refers to $X = A^\top A$.
     """
-    quadratic_form = quadratic_form_slq_product(
+    quadratic_form = _quadratic_form_slq_product(
         matfun, order, *matvec_funs, matrix_shape=matrix_shape
     )
     return montecarlo.estimate(quadratic_form, **kwargs)
 
 
-def quadratic_form_slq_product(matfun, depth, *matvec_funs, matrix_shape):
+def _quadratic_form_slq_product(matfun, depth, *matvec_funs, matrix_shape):
     r"""Quadratic form for stochastic Lanczos quadrature.
-
-    "Product" equivalent of
-    [matfree.slq.quadratic_form_slq_spd(...)][matfree.slq.quadratic_form_slq_spd].
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
     Here, "product" refers to $X = A^\top A$.
-
     """
 
     def quadform(v0, /):
