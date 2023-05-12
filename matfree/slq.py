@@ -53,6 +53,17 @@ def logdet_product(*args, **kwargs):
     return trace_of_matfun_product(np.log, *args, **kwargs)
 
 
+def schatten_norm(*args, power, **kwargs):
+    r"""Compute the Schatten-p norm of a matrix."""
+
+    def matfun(x):
+        """Matrix-function for Schatten-p norms."""
+        return x ** (power / 2)
+
+    trace = trace_of_matfun_product(matfun, *args, **kwargs)
+    return trace ** (1 / power)
+
+
 def trace_of_matfun_product(matfun, order, *matvec_funs, matrix_shape, **kwargs):
     r"""Compute the trace of a function of a product of matrices.
 

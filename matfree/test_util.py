@@ -5,6 +5,7 @@ from matfree.backend import linalg, np
 
 def symmetric_matrix_from_eigenvalues(eigvals, /):
     """Generate a symmetric matrix with prescribed eigenvalues."""
+    assert np.array_min(eigvals) > 0
     (n,) = eigvals.shape
 
     # Need _some_ matrix to start with
@@ -24,6 +25,7 @@ def symmetric_matrix_from_eigenvalues(eigvals, /):
 
 def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
     """Generate an asymmetric matrix with specific singular values."""
+    assert np.array_min(vals) > 0
     A = np.reshape(np.arange(1.0, nrows * ncols + 1.0), (nrows, ncols))
     A /= nrows * ncols
     U, S, Vt = linalg.svd(A, full_matrices=False)
