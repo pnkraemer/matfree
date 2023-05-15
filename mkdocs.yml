@@ -12,6 +12,7 @@ nav:
   - API documentation:
       - matfree.montecarlo: api/montecarlo.md
       - matfree.decomp: api/decomp.md
+      - matfree.lanczos: api/lanczos.md
       - matfree.hutchinson: api/hutchinson.md
       - matfree.slq: api/slq.md
   - Developer documentation: dev/index.md
