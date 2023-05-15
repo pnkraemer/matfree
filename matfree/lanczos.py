@@ -20,7 +20,7 @@ class _Alg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def tridiagonal_full_reortho(depth, /) -> _Alg:
+def tridiagonal_full_reortho(depth, /):
     """**Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
@@ -80,7 +80,7 @@ def tridiagonal_full_reortho(depth, /) -> _Alg:
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
 
 
-def bidiagonal_full_reortho(depth, /, matrix_shape) -> _Alg:
+def bidiagonal_full_reortho(depth, /, matrix_shape):
     """**Golub-Kahan-Lanczos** algorithm with pre-allocation & full reorthogonalisation.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
