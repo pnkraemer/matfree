@@ -22,7 +22,7 @@ def test_max_order(A):
     order = n - 1
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
-    alg = lanczos.lanczos_full_reortho(order)
+    alg = lanczos.tridiagonal_full_reortho(order)
     Q, (d_m, e_m) = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
 
     # Lanczos is not stable.
@@ -63,7 +63,7 @@ def test_identity(A, order):
     n, _ = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
-    alg = lanczos.lanczos_full_reortho(order)
+    alg = lanczos.tridiagonal_full_reortho(order)
     Q, tridiag = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
     (d_m, e_m) = tridiag
 

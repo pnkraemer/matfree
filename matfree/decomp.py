@@ -29,7 +29,7 @@ def svd(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = lanczos.gkl_full_reortho(depth, matrix_shape=matrix_shape)
+    algorithm = lanczos.bidiagonal_full_reortho(depth, matrix_shape=matrix_shape)
     u, (d, e), vt, _ = decompose_fori_loop(v0, Av, vA, algorithm=algorithm)
 
     # Compute SVD of factorisation
@@ -66,7 +66,7 @@ AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
 """Decomposition algorithm type.
 
 For example, the output of
-[matfree.lanczos.lanczos_full_reortho(...)][matfree.lanczos.lanczos_full_reortho].
+[matfree.lanczos.tridiagonal_full_reortho(...)][matfree.lanczos.tridiagonal_full_reortho].
 """
 
 
