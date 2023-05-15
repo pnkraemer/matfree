@@ -22,7 +22,7 @@ def _quadratic_form_slq_spd(matfun, order, Av, /):
     """
 
     def quadform(v0, /):
-        algorithm = lanczos.lanczos_full_reortho(order)
+        algorithm = lanczos.tridiagonal_full_reortho(order)
         _, tridiag = decomp.decompose_fori_loop(v0, Av, algorithm=algorithm)
         (diag, off_diag) = tridiag
 
@@ -85,7 +85,7 @@ def _quadratic_form_slq_product(matfun, depth, *matvec_funs, matrix_shape):
 
     def quadform(v0, /):
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = lanczos.gkl_full_reortho(depth, matrix_shape=matrix_shape)
+        algorithm = lanczos.bidiagonal_full_reortho(depth, matrix_shape=matrix_shape)
         output = decomp.decompose_fori_loop(v0, *matvec_funs, algorithm=algorithm)
         u, (d, e), vt, _ = output
 
