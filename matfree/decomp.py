@@ -66,7 +66,7 @@ AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
 """Decomposition algorithm type.
 
 For example, the output of
-[matfree.lanczos.lanczos_full_reortho(...)][matfree.lanczos.lanczos_full_reortho].
+[matfree.lanczos.tridiagonal_full_reortho(...)][matfree.lanczos.tridiagonal_full_reortho].
 """
 
 

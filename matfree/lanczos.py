@@ -21,12 +21,15 @@ class _Alg(containers.NamedTuple):
 
 
 def tridiagonal_full_reortho(depth, /):
-    """**Lanczos** algorithm with pre-allocation & full reorthogonalisation.
+    """Construct an implementation of **tridiagonalisation**.
+
+    Uses pre-allocation. Fully reorthogonalise vectors at every step.
+
+    This algorithm assumes a **symmetric matrix**.
 
     Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
 
-    Lanczos' algorithm assumes a symmetric matrix.
     """
 
     class State(containers.NamedTuple):
@@ -81,7 +84,11 @@ def tridiagonal_full_reortho(depth, /):
 
 
 def bidiagonal_full_reortho(depth, /, matrix_shape):
-    """**Golub-Kahan-Lanczos** algorithm with pre-allocation & full reorthogonalisation.
+    """Construct an implementation of **bidiagonalisation**.
+
+    Uses pre-allocation. Fully reorthogonalise vectors at every step.
+
+    Works for **arbitrary matrices**. No symmetry required.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
