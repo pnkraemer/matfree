@@ -47,5 +47,4 @@ def test_inverse_correct(fun, pinv_fun, solve_fun):
     # Dense invert
     inverse_matrix = densify(inverse, len(fun(x)))
     inverse_expected = linalg.pinv(func.jacfwd(fun)(x))
-    print(inverse_matrix - inverse_expected)
     assert np.allclose(inverse_matrix, inverse_expected, rtol=1e-3, atol=1e-3)
