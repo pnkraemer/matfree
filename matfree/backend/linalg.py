@@ -1,5 +1,6 @@
 """Numerical linear algebra."""
 
+import jax
 import jax.numpy as jnp
 
 
@@ -43,3 +44,15 @@ def trace(x, /):
 
 def svd(A, /, *, full_matrices=True):
     return jnp.linalg.svd(A, full_matrices=full_matrices)
+
+
+def pinv(A, /):
+    return jnp.linalg.pinv(A)
+
+
+def solve(A, b, /):
+    return jnp.linalg.solve(A, b)
+
+
+def cg(Av, b, /):
+    return jax.scipy.sparse.linalg.cg(Av, b)

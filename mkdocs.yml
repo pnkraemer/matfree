@@ -15,6 +15,7 @@ nav:
       - matfree.lanczos: api/lanczos.md
       - matfree.hutchinson: api/hutchinson.md
       - matfree.slq: api/slq.md
+      - matfree.pinv: api/pinv.md
   - Developer documentation: dev/index.md
   - Benchmarks: benchmarks/index.md
 theme:

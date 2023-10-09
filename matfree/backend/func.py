@@ -30,12 +30,16 @@ def wraps(func, /):
 # Algorithmic differentiation
 
 
-def linearize(func, /, *args):
-    return jax.linearize(func, *args)
+def linearize(func, /, *primals):
+    return jax.linearize(func, *primals)
 
 
 def jacfwd(fun, /, argnums=0):
     return jax.jacfwd(fun, argnums)
+
+
+def vjp(func, /, *primals):
+    return jax.vjp(func, *primals)
 
 
 # Inferring input and output shapes:
