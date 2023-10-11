@@ -9,6 +9,7 @@ nav:
       - log_determinants.md
       - higher_moments.md
       - vector_calculus.md
+      - pytree_logdeterminants.md
   - API documentation:
       - matfree.montecarlo: api/montecarlo.md
       - matfree.decomp: api/decomp.md
