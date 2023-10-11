@@ -73,7 +73,7 @@ if __name__ == "__main__":
     @func.partial(benchmark_util.error_and_time, error_fun=error_fun)
     @func.partial(func.jit, static_argnums=0)
     def slq_low(num, key):
-        """SLQ(1)"""  # noqa: D400,D415
+        """SLQ(1)"""  # noqa: D400
         return slq.trace_of_matfun_spd(
             matfun,
             jvp,
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     @func.partial(benchmark_util.error_and_time, error_fun=error_fun)
     @func.partial(func.jit, static_argnums=0)
     def slq_high(num, key):
-        """SLQ(5)"""  # noqa: D400,D415
+        """SLQ(5)"""  # noqa: D400
         return slq.trace_of_matfun_spd(
             matfun,
             jvp,
