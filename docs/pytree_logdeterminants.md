@@ -1,4 +1,4 @@
-# Pytrees
+# Log-determinants of pytree-valued functions
 
 Can we compute log-determinants if the matrix-vector products are pytree-valued?
 Yes, we can. Here is how.
@@ -8,13 +8,13 @@ Imports:
 ```python
 
 >>> import jax
->>> import jax.flatten_util
+>>> import jax.flatten_util  # this is important!
 >>> import jax.numpy as jnp
 >>>
 >>> from matfree import slq, montecarlo
 
 ```
-Create a test-problem: a function that maps pytree (dict) to pytree (tuple).
+Create a test-problem: a function that maps a pytree (dict) to a pytree (tuple).
 Its (regularised) Gauss--Newton Hessian shall be the matrix-vector product
 whose log-determinant we estimate.
 
