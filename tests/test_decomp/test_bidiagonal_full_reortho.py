@@ -18,12 +18,12 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("ncols", [49])
 @testing.parametrize("num_significant_singular_vals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_bidiagonal_full_reortho(A, order):
+def test_lanczos_bidiag_full_reortho(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
-    alg = decomp.bidiagonal_full_reortho(order, matrix_shape=np.shape(A))
+    alg = decomp.lanczos_bidiag_full_reortho(order, matrix_shape=np.shape(A))
 
     def Av(v):
         return A @ v
@@ -74,7 +74,7 @@ def test_error_too_high_depth(A):
     max_depth = min(nrows, ncols) - 1
 
     with testing.raises(ValueError):
-        _ = decomp.bidiagonal_full_reortho(max_depth + 1, matrix_shape=np.shape(A))
+        _ = decomp.lanczos_bidiag_full_reortho(max_depth + 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [5])
@@ -84,7 +84,7 @@ def test_error_too_low_depth(A):
     """Assert that a ValueError is raised when the depth is negative."""
     min_depth = 0
     with testing.raises(ValueError):
-        _ = decomp.bidiagonal_full_reortho(min_depth - 1, matrix_shape=np.shape(A))
+        _ = decomp.lanczos_bidiag_full_reortho(min_depth - 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [15])
@@ -93,7 +93,7 @@ def test_error_too_low_depth(A):
 def test_no_error_zero_depth(A):
     """Assert the corner case of zero-depth does not raise an error."""
     nrows, ncols = np.shape(A)
-    algorithm = decomp.bidiagonal_full_reortho(0, matrix_shape=np.shape(A))
+    algorithm = decomp.lanczos_bidiag_full_reortho(0, matrix_shape=np.shape(A))
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
 

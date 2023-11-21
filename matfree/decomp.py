@@ -20,7 +20,7 @@ class _Alg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def tridiagonal_full_reortho(depth, /):
+def lanczos_tridiag_full_reortho(depth, /):
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -83,7 +83,7 @@ def tridiagonal_full_reortho(depth, /):
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
 
 
-def bidiagonal_full_reortho(depth, /, matrix_shape):
+def lanczos_bidiag_full_reortho(depth, /, matrix_shape):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -161,7 +161,7 @@ def _gram_schmidt_orthogonalise(vec1, vec2):
     return vec_ortho, coeff
 
 
-def svd(
+def svd_approx(
     v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int, ...]
 ):
     """Approximate singular value decomposition.
@@ -185,7 +185,7 @@ def svd(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = bidiagonal_full_reortho(depth, matrix_shape=matrix_shape)
+    algorithm = lanczos_bidiag_full_reortho(depth, matrix_shape=matrix_shape)
     u, (d, e), vt, _ = decompose_fori_loop(v0, Av, vA, algorithm=algorithm)
 
     # Compute SVD of factorisation
@@ -222,7 +222,7 @@ AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
 """Decomposition algorithm type.
 
 For example, the output of
-[matfree.decomp.tridiagonal_full_reortho(...)][matfree.decomp.tridiagonal_full_reortho].
+[matfree.decomp.lanczos_tridiag_full_reortho(...)][matfree.decomp.lanczos_tridiag_full_reortho].
 """
 
 
