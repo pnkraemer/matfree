@@ -17,6 +17,6 @@ def test_mean(key, num_batches, num_samples):
         num_batches=num_batches,
         num_samples_per_batch=num_samples,
         key=key,
-        sample_fun=hutchinson.normal(shape=()),
+        sample_fun=hutchinson.sampler_normal(shape=()),
     )
     assert np.allclose(received, 1.0, rtol=1e-1)

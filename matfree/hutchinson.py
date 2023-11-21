@@ -31,8 +31,8 @@ def estimate(
     sample_fun:
         Sampling function.
         For trace-estimation, use
-        either [normal(...)][matfree.hutchinson.normal]
-        or [rademacher(...)][matfree.hutchinson.normal].
+        either [normal(...)][matfree.hutchinson.sampler_normal]
+        or [rademacher(...)][matfree.hutchinson.sampler_normal].
     num_batches:
         Number of batches when computing arithmetic means.
     num_samples_per_batch:
@@ -145,7 +145,7 @@ def _stats_via_map(f, num, /, statistics: Sequence[Callable]):
     return f_mean
 
 
-def normal(*, shape, dtype=float):
+def sampler_normal(*, shape, dtype=float):
     """Construct a function that samples from a standard normal distribution."""
 
     def fun(key):
@@ -154,39 +154,13 @@ def normal(*, shape, dtype=float):
     return fun
 
 
-def rademacher(*, shape, dtype=float):
+def sampler_rademacher(*, shape, dtype=float):
     """Construct a function that samples from a Rademacher distribution."""
 
     def fun(key):
         return prng.rademacher(key, shape=shape, dtype=dtype)
 
     return fun
-
-
-class _VDCState(containers.NamedTuple):
-    n: int
-    vdc: float
-    denom: int
-
-
-def van_der_corput(n, /, base=2):
-    """Compute the 'n'th element of the Van-der-Corput sequence."""
-    state = _VDCState(n, vdc=0, denom=1)
-
-    vdc_modify = func.partial(_van_der_corput_modify, base=base)
-    state = control_flow.while_loop(_van_der_corput_cond, vdc_modify, state)
-    return state.vdc
-
-
-def _van_der_corput_cond(state: _VDCState):
-    return state.n > 0
-
-
-def _van_der_corput_modify(state: _VDCState, *, base):
-    denom = state.denom * base
-    num, remainder = divmod(state.n, base)
-    vdc = state.vdc + remainder / denom
-    return _VDCState(num, vdc, denom)
 
 
 def trace(Av: Callable, /, **kwargs) -> Array:
@@ -318,8 +292,8 @@ def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **k
         Matrix-vector product function.
     sample_fun:
         Sampling function.
-        Usually, either [normal][matfree.hutchinson.normal]
-        or [rademacher][matfree.hutchinson.normal].
+        Usually, either [normal][matfree.hutchinson.sampler_normal]
+        or [rademacher][matfree.hutchinson.sampler_normal].
     key:
         Pseudo-random number generator key.
     **kwargs:
@@ -368,8 +342,8 @@ def diagonal_multilevel(
         Pseudo-random number generator key.
     sample_fun:
         Sampling function.
-        Usually, either [normal][matfree.hutchinson.normal]
-        or [rademacher][matfree.hutchinson.normal].
+        Usually, either [normal][matfree.hutchinson.sampler_normal]
+        or [rademacher][matfree.hutchinson.sampler_normal].
     num_levels:
         Number of levels.
     num_batches_per_level:

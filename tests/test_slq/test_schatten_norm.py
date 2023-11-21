@@ -26,7 +26,7 @@ def test_schatten_norm(A, order, power):
 
     _, ncols = np.shape(A)
     key = prng.prng_key(1)
-    fun = hutchinson.normal(shape=(ncols,))
+    fun = hutchinson.sampler_normal(shape=(ncols,))
     received = slq.schatten_norm(
         order,
         lambda v: A @ v,

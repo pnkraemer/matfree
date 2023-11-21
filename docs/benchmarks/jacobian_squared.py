@@ -20,7 +20,7 @@ def problem(n):
     J = func.jacfwd(f)(x0)
     A = J @ J @ J @ J
     trace = linalg.trace(A)
-    sample_fun = hutchinson.normal(shape=(n,), dtype=float)
+    sample_fun = hutchinson.sampler_normal(shape=(n,), dtype=float)
 
     def Av(v):
         return jvp(jvp(jvp(jvp(v))))
