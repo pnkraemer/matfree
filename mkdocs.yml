@@ -11,7 +11,7 @@ nav:
       - vector_calculus.md
       - pytree_logdeterminants.md
   - API documentation:
-      - matfree.montecarlo: api/montecarlo.md
+      - matfree.montecarlo: api/hutchinson.md
       - matfree.decomp: api/decomp.md
       - matfree.lanczos: api/lanczos.md
       - matfree.hutchinson: api/hutchinson.md

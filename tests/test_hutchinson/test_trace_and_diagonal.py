@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from matfree import hutchinson, montecarlo
+from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -22,7 +22,7 @@ def fixture_key():
 
 @testing.parametrize("num_samples", [10_000])
 @testing.parametrize("dim", [5])
-@testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
+@testing.parametrize("sample_fun", [hutchinson.normal, hutchinson.rademacher])
 def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
     """Assert that the estimated trace and diagonal approximations are accurate."""
     # Linearise function

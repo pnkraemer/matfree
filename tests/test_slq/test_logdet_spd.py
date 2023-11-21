@@ -1,6 +1,6 @@
 """Tests for Lanczos functionality."""
 
-from matfree import montecarlo, slq, test_util
+from matfree import hutchinson, slq, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -23,7 +23,7 @@ def test_logdet_spd(A, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
     key = prng.prng_key(1)
-    fun = montecarlo.normal(shape=(n,))
+    fun = hutchinson.normal(shape=(n,))
     received = slq.logdet_spd(
         order,
         lambda v: A @ v,

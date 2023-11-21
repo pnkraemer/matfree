@@ -65,7 +65,7 @@ Estimate the trace of the matrix:
 
 ```python
 >>> key = jax.random.PRNGKey(1)
->>> normal = montecarlo.normal(shape=(2,))
+>>> normal = hutchinson.normal(shape=(2,))
 >>> trace = hutchinson.trace(matvec, key=key, sample_fun=normal)
 >>>
 >>> print(jnp.round(trace))

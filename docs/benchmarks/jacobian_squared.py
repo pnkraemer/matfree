@@ -1,5 +1,5 @@
 """What is the fastest way of computing trace(A^5)."""
-from matfree import benchmark_util, hutchinson, montecarlo, slq
+from matfree import benchmark_util, hutchinson, slq
 from matfree.backend import func, linalg, np, plt, prng
 from matfree.backend.progressbar import progressbar
 
@@ -20,7 +20,7 @@ def problem(n):
     J = func.jacfwd(f)(x0)
     A = J @ J @ J @ J
     trace = linalg.trace(A)
-    sample_fun = montecarlo.normal(shape=(n,), dtype=float)
+    sample_fun = hutchinson.normal(shape=(n,), dtype=float)
 
     def Av(v):
         return jvp(jvp(jvp(jvp(v))))

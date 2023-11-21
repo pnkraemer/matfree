@@ -3,7 +3,7 @@
 Runtime: ~10 seconds.
 """
 
-from matfree import benchmark_util, hutchinson, montecarlo
+from matfree import benchmark_util, hutchinson
 from matfree.backend import func, linalg, np, plt, prng, progressbar
 
 
@@ -22,7 +22,7 @@ def problem(n):
     _, jvp = func.linearize(f, x0)
     J = func.jacfwd(f)(x0)
     trace = linalg.trace(J)
-    sample_fun = montecarlo.normal(shape=(n,), dtype=float)
+    sample_fun = hutchinson.normal(shape=(n,), dtype=float)
 
     return (jvp, trace, J), (key, sample_fun)
 

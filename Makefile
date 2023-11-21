@@ -20,6 +20,7 @@ clean:
 	rm -rf *.egg-info
 	rm -rf dist site build htmlcov
 	rm -rf *.ipynb_checkpoints
+	rm matfree/_version.py
 
 doc:
 	mkdocs build

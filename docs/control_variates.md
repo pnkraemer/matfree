@@ -14,7 +14,7 @@ Imports:
 >>> key = jax.random.PRNGKey(1)
 
 >>> matvec = lambda x: a.T @ (a @ x)
->>> sample_fun = montecarlo.normal(shape=(2,))
+>>> sample_fun = hutchinson.normal(shape=(2,))
 
 ```
 
