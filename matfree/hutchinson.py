@@ -9,7 +9,7 @@ from matfree.backend.typing import Any, Array, Callable, Sequence
 #  trace_and_frobeniusnorm(): y=Ax; return (x@y, y@y)
 
 
-def estimate(
+def mc_estimate(
     fun: Callable,
     /,
     *,
@@ -50,7 +50,7 @@ def estimate(
         [one of these functions](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
         would work.
     """
-    [result] = multiestimate(
+    [result] = mc_multiestimate(
         fun,
         key=key,
         sample_fun=sample_fun,
@@ -62,7 +62,7 @@ def estimate(
     return result
 
 
-def multiestimate(
+def mc_multiestimate(
     fun: Callable,
     /,
     *,
@@ -76,7 +76,7 @@ def multiestimate(
     """Compute a Monte-Carlo estimate with multiple summary statistics.
 
     The signature of this function is almost identical to
-    [estimate(...)][matfree.hutchinson.estimate].
+    [mc_estimate(...)][matfree.hutchinson.mc_estimate].
     The only difference is that statistics_batch and statistics_combine are iterables
     of summary statistics (of equal lengths).
 
@@ -85,15 +85,15 @@ def multiestimate(
     Parameters
     ----------
     fun:
-        Same as in [estimate(...)][matfree.hutchinson.estimate].
+        Same as in [mc_estimate(...)][matfree.hutchinson.mc_estimate].
     key:
-        Same as in [estimate(...)][matfree.hutchinson.estimate].
+        Same as in [mc_estimate(...)][matfree.hutchinson.mc_estimate].
     sample_fun:
-        Same as in [estimate(...)][matfree.hutchinson.estimate].
+        Same as in [mc_estimate(...)][matfree.hutchinson.mc_estimate].
     num_batches:
-        Same as in [estimate(...)][matfree.hutchinson.estimate].
+        Same as in [mc_estimate(...)][matfree.hutchinson.mc_estimate].
     num_samples_per_batch:
-        Same as in [estimate(...)][matfree.hutchinson.estimate].
+        Same as in [mc_estimate(...)][matfree.hutchinson.mc_estimate].
     statistics_batch:
         List or tuple of summary statistics to compute on batch-level.
     statistics_combine:
@@ -172,13 +172,13 @@ def trace(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.hutchinson.estimate].
+        [mc_estimate()][matfree.hutchinson.mc_estimate].
     """
 
     def quadform(vec):
         return linalg.vecdot(vec, Av(vec))
 
-    return estimate(quadform, **kwargs)
+    return mc_estimate(quadform, **kwargs)
 
 
 def trace_moments(Av: Callable, /, moments: Sequence[int] = (1, 2), **kwargs) -> Array:
@@ -193,7 +193,7 @@ def trace_moments(Av: Callable, /, moments: Sequence[int] = (1, 2), **kwargs) ->
         the first and second moment.
     **kwargs:
         Keyword-arguments to be passed to
-        [multiestimate(...)][matfree.hutchinson.multiestimate].
+        [mc_multiestimate(...)][matfree.hutchinson.mc_multiestimate].
     """
 
     def quadform(vec):
@@ -204,7 +204,7 @@ def trace_moments(Av: Callable, /, moments: Sequence[int] = (1, 2), **kwargs) ->
 
     statistics_batch = [func.partial(moment, power=m) for m in moments]
     statistics_combine = [np.mean] * len(moments)
-    return multiestimate(
+    return mc_multiestimate(
         quadform,
         statistics_batch=statistics_batch,
         statistics_combine=statistics_combine,
@@ -229,7 +229,7 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.hutchinson.estimate].
+        [mc_estimate()][matfree.hutchinson.mc_estimate].
 
     """
 
@@ -237,7 +237,7 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
         x = Av(vec)
         return linalg.vecdot(x, x)
 
-    return estimate(quadform, **kwargs)
+    return mc_estimate(quadform, **kwargs)
 
 
 def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> Array:
@@ -252,7 +252,7 @@ def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> 
         This should be the best-possible estimate of the diagonal of the matrix.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.hutchinson.estimate].
+        [mc_estimate()][matfree.hutchinson.mc_estimate].
 
     """
     return diagonal(lambda v: Av(v) - control * v, **kwargs) + control
@@ -267,14 +267,14 @@ def diagonal(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.hutchinson.estimate].
+        [mc_estimate()][matfree.hutchinson.mc_estimate].
 
     """
 
     def quadform(vec):
         return vec * Av(vec)
 
-    return estimate(quadform, **kwargs)
+    return mc_estimate(quadform, **kwargs)
 
 
 def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **kwargs):

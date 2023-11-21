@@ -12,7 +12,7 @@ def test_mean(key, num_batches, num_samples):
     def fun(x):
         return x**2
 
-    received = hutchinson.estimate(
+    received = hutchinson.mc_estimate(
         fun,
         num_batches=num_batches,
         num_samples_per_batch=num_samples,
