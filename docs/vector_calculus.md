@@ -11,7 +11,7 @@ Here is how we can implement divergences and Laplacians without forming full Jac
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, montecarlo
+>>> from matfree import hutchinson
 
 ```
 

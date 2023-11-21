@@ -11,7 +11,6 @@ nav:
       - vector_calculus.md
       - pytree_logdeterminants.md
   - API documentation:
-      - matfree.montecarlo: api/hutchinson.md
       - matfree.decomp: api/decomp.md
       - matfree.lanczos: api/lanczos.md
       - matfree.hutchinson: api/hutchinson.md
@@ -47,12 +46,12 @@ plugins:
       handlers:
         python:
           options:
-            show_root_heading: true
+            show_root_heading: false
             show_root_toc_entry: true
             show_root_full_path: true
             show_root_members_full_path: true
             show_object_full_path: false
-            show_category_heading: true
+            show_category_heading: false
             docstring_style: numpy
             show_if_no_docstring: true
             members_order: alphabetical

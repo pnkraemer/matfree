@@ -11,7 +11,7 @@ Imports:
 >>> import jax.flatten_util  # this is important!
 >>> import jax.numpy as jnp
 >>>
->>> from matfree import slq, montecarlo
+>>> from matfree import slq, hutchinson
 
 ```
 Create a test-problem: a function that maps a pytree (dict) to a pytree (tuple).

@@ -31,8 +31,8 @@ def estimate(
     sample_fun:
         Sampling function.
         For trace-estimation, use
-        either [normal(...)][matfree.normal]
-        or [rademacher(...)][matfree.normal].
+        either [normal(...)][matfree.hutchinson.normal]
+        or [rademacher(...)][matfree.hutchinson.normal].
     num_batches:
         Number of batches when computing arithmetic means.
     num_samples_per_batch:
@@ -76,7 +76,7 @@ def multiestimate(
     """Compute a Monte-Carlo estimate with multiple summary statistics.
 
     The signature of this function is almost identical to
-    [estimate(...)][matfree.estimate].
+    [estimate(...)][matfree.hutchinson.estimate].
     The only difference is that statistics_batch and statistics_combine are iterables
     of summary statistics (of equal lengths).
 
@@ -85,15 +85,15 @@ def multiestimate(
     Parameters
     ----------
     fun:
-        Same as in [estimate(...)][matfree.estimate].
+        Same as in [estimate(...)][matfree.hutchinson.estimate].
     key:
-        Same as in [estimate(...)][matfree.estimate].
+        Same as in [estimate(...)][matfree.hutchinson.estimate].
     sample_fun:
-        Same as in [estimate(...)][matfree.estimate].
+        Same as in [estimate(...)][matfree.hutchinson.estimate].
     num_batches:
-        Same as in [estimate(...)][matfree.estimate].
+        Same as in [estimate(...)][matfree.hutchinson.estimate].
     num_samples_per_batch:
-        Same as in [estimate(...)][matfree.estimate].
+        Same as in [estimate(...)][matfree.hutchinson.estimate].
     statistics_batch:
         List or tuple of summary statistics to compute on batch-level.
     statistics_combine:
@@ -198,7 +198,7 @@ def trace(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.estimate].
+        [estimate()][matfree.hutchinson.estimate].
     """
 
     def quadform(vec):
@@ -219,7 +219,7 @@ def trace_moments(Av: Callable, /, moments: Sequence[int] = (1, 2), **kwargs) ->
         the first and second moment.
     **kwargs:
         Keyword-arguments to be passed to
-        [multiestimate(...)][matfree.multiestimate].
+        [multiestimate(...)][matfree.hutchinson.multiestimate].
     """
 
     def quadform(vec):
@@ -255,7 +255,7 @@ def frobeniusnorm_squared(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.estimate].
+        [estimate()][matfree.hutchinson.estimate].
 
     """
 
@@ -278,7 +278,7 @@ def diagonal_with_control_variate(Av: Callable, control: Array, /, **kwargs) -> 
         This should be the best-possible estimate of the diagonal of the matrix.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.estimate].
+        [estimate()][matfree.hutchinson.estimate].
 
     """
     return diagonal(lambda v: Av(v) - control * v, **kwargs) + control
@@ -293,7 +293,7 @@ def diagonal(Av: Callable, /, **kwargs) -> Array:
         Matrix-vector product function.
     **kwargs:
         Keyword-arguments to be passed to
-        [estimate()][matfree.estimate].
+        [estimate()][matfree.hutchinson.estimate].
 
     """
 
@@ -318,13 +318,13 @@ def trace_and_diagonal(Av: Callable, /, *, sample_fun: Callable, key: Array, **k
         Matrix-vector product function.
     sample_fun:
         Sampling function.
-        Usually, either [normal][matfree.normal]
-        or [rademacher][matfree.normal].
+        Usually, either [normal][matfree.hutchinson.normal]
+        or [rademacher][matfree.hutchinson.normal].
     key:
         Pseudo-random number generator key.
     **kwargs:
         Keyword-arguments to be passed to
-        [diagonal_multilevel()][matfree.diagonal_multilevel].
+        [diagonal_multilevel()][matfree.hutchinson.diagonal_multilevel].
 
 
     See:
@@ -368,8 +368,8 @@ def diagonal_multilevel(
         Pseudo-random number generator key.
     sample_fun:
         Sampling function.
-        Usually, either [normal][matfree.normal]
-        or [rademacher][matfree.normal].
+        Usually, either [normal][matfree.hutchinson.normal]
+        or [rademacher][matfree.hutchinson.normal].
     num_levels:
         Number of levels.
     num_batches_per_level:

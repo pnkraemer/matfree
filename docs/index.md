@@ -51,7 +51,7 @@ Import matfree and JAX, and set up a test problem.
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, montecarlo, slq
+>>> from matfree import hutchinson, slq
 
 >>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>>
