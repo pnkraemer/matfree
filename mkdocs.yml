@@ -60,6 +60,7 @@ plugins:
             show_signature_annotations: true
             separate_signature: false
             docstring_section_style: list
+            show_source: false
 watch: [matfree]
 extra:
   social:
