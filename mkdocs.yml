@@ -12,7 +12,6 @@ nav:
       - pytree_logdeterminants.md
   - API documentation:
       - matfree.decomp: api/decomp.md
-      - matfree.lanczos: api/lanczos.md
       - matfree.hutchinson: api/hutchinson.md
       - matfree.slq: api/slq.md
       - matfree.pinv: api/pinv.md

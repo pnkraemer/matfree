@@ -1,6 +1,6 @@
 """Tests for GKL bidiagonalisation."""
 
-from matfree import decomp, lanczos, test_util
+from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -23,7 +23,7 @@ def test_bidiagonal_full_reortho(A, order):
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
-    alg = lanczos.bidiagonal_full_reortho(order, matrix_shape=np.shape(A))
+    alg = decomp.bidiagonal_full_reortho(order, matrix_shape=np.shape(A))
 
     def Av(v):
         return A @ v
@@ -74,7 +74,7 @@ def test_error_too_high_depth(A):
     max_depth = min(nrows, ncols) - 1
 
     with testing.raises(ValueError):
-        _ = lanczos.bidiagonal_full_reortho(max_depth + 1, matrix_shape=np.shape(A))
+        _ = decomp.bidiagonal_full_reortho(max_depth + 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [5])
@@ -84,7 +84,7 @@ def test_error_too_low_depth(A):
     """Assert that a ValueError is raised when the depth is negative."""
     min_depth = 0
     with testing.raises(ValueError):
-        _ = lanczos.bidiagonal_full_reortho(min_depth - 1, matrix_shape=np.shape(A))
+        _ = decomp.bidiagonal_full_reortho(min_depth - 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [15])
@@ -93,7 +93,7 @@ def test_error_too_low_depth(A):
 def test_no_error_zero_depth(A):
     """Assert the corner case of zero-depth does not raise an error."""
     nrows, ncols = np.shape(A)
-    algorithm = lanczos.bidiagonal_full_reortho(0, matrix_shape=np.shape(A))
+    algorithm = decomp.bidiagonal_full_reortho(0, matrix_shape=np.shape(A))
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
 
