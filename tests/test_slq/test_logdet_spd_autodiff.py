@@ -32,7 +32,7 @@ def test_check_grads(A, order):
 
 def _logdet(A, order, key):
     n, _ = np.shape(A)
-    fun = hutchinson.normal(shape=(n,))
+    fun = hutchinson.sampler_normal(shape=(n,))
     return slq.logdet_spd(
         order,
         lambda v: A @ v,

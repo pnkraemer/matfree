@@ -11,12 +11,12 @@ def test_mean_and_max(key, num_batches, num_samples):
     def fun(x):
         return x**2
 
-    mean, amax = hutchinson.multiestimate(
+    mean, amax = hutchinson.mc_multiestimate(
         fun,
         num_batches=num_batches,
         num_samples_per_batch=num_samples,
         key=key,
-        sample_fun=hutchinson.normal(shape=()),
+        sample_fun=hutchinson.sampler_normal(shape=()),
         statistics_batch=[np.mean, np.array_max],
         statistics_combine=[np.mean, np.array_max],
     )

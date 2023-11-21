@@ -22,7 +22,7 @@ def test_logdet_product(A, order):
     """Assert that logdet_product yields an accurate estimate."""
     _, ncols = np.shape(A)
     key = prng.prng_key(3)
-    fun = hutchinson.normal(shape=(ncols,))
+    fun = hutchinson.sampler_normal(shape=(ncols,))
     received = slq.logdet_product(
         order,
         lambda v: A @ v,

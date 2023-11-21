@@ -70,7 +70,7 @@ Now, we can compute the log-determinant with the flattened inputs as usual:
 ```python
 >>> # Compute the log-determinant
 >>> key = jax.random.PRNGKey(seed=1)
->>> sample_fun = hutchinson.normal(shape=f0_flat.shape)
+>>> sample_fun = hutchinson.sampler_normal(shape=f0_flat.shape)
 >>> order = 3
 >>> logdet = slq.logdet_spd(order, matvec, key=key, sample_fun=sample_fun)
 

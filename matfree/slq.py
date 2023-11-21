@@ -12,7 +12,7 @@ def logdet_spd(*args, **kwargs):
 def trace_of_matfun_spd(matfun, order, Av, /, **kwargs):
     """Compute the trace of the function of a symmetric matrix."""
     quadratic_form = _quadratic_form_slq_spd(matfun, order, Av)
-    return hutchinson.estimate(quadratic_form, **kwargs)
+    return hutchinson.mc_estimate(quadratic_form, **kwargs)
 
 
 def _quadratic_form_slq_spd(matfun, order, Av, /):
@@ -72,7 +72,7 @@ def trace_of_matfun_product(matfun, order, *matvec_funs, matrix_shape, **kwargs)
     quadratic_form = _quadratic_form_slq_product(
         matfun, order, *matvec_funs, matrix_shape=matrix_shape
     )
-    return hutchinson.estimate(quadratic_form, **kwargs)
+    return hutchinson.mc_estimate(quadratic_form, **kwargs)
 
 
 def _quadratic_form_slq_product(matfun, depth, *matvec_funs, matrix_shape):

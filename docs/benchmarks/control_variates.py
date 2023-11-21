@@ -22,7 +22,7 @@ def problem(n):
     _, jvp = func.linearize(f, x0)
     J = func.jacfwd(f)(x0)
     trace = linalg.trace(J)
-    sample_fun = hutchinson.normal(shape=(n,), dtype=float)
+    sample_fun = hutchinson.sampler_normal(shape=(n,), dtype=float)
 
     return (jvp, trace, J), (key, sample_fun)
 

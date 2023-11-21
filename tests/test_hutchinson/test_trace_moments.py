@@ -32,7 +32,7 @@ def test_variance_normal(J_and_jvp, key, num_batches, num_samples_per_batch, dim
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
     J, jvp = J_and_jvp
-    fun = hutchinson.normal(shape=(dim,), dtype=float)
+    fun = hutchinson.sampler_normal(shape=(dim,), dtype=float)
     first, second = hutchinson.trace_moments(
         jvp,
         key=key,
@@ -58,7 +58,7 @@ def test_variance_rademacher(J_and_jvp, key, num_batches, num_samples_per_batch,
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
     J, jvp = J_and_jvp
-    fun = hutchinson.rademacher(shape=(dim,), dtype=float)
+    fun = hutchinson.sampler_rademacher(shape=(dim,), dtype=float)
     first, second = hutchinson.trace_moments(
         jvp,
         key=key,
