@@ -1,46 +1,41 @@
 """Tests for basic trace estimators."""
 
 from matfree import hutchinson
-from matfree.backend import func, linalg, np, prng, testing
+from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
-@testing.fixture(name="fun")
-def fixture_fun():
-    """Create a nonlinear, to-be-differentiated function."""
-
-    def f(x):
-        return np.sin(np.flip(np.cos(x)) + 1.0) * np.sin(x) + 1.0
-
-    return f
-
-
-@testing.fixture(name="key")
-def fixture_key():
-    """Fix a pseudo-random number generator."""
-    return prng.prng_key(seed=1)
-
-
-@testing.parametrize("num_batches", [1_000])
-@testing.parametrize("num_samples_per_batch", [1_000])
-@testing.parametrize("dim", [1, 10])
-@testing.parametrize(
-    "sample_fun", [hutchinson.sampler_normal, hutchinson.sampler_rademacher]
-)
-def test_diagonal(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
+@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
+def test_diagonal(sample_fun):
     """Assert that the estimated diagonal approximates the true diagonal accurately."""
+
+    @testing.case()
+    def case_diagonal():
+        return hutchinson.integrand_diagonal, linalg.diagonal
+
+    def fun(x):
+        """Create a nonlinear, to-be-differentiated function."""
+        fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
+        return {"params": fx}
+
+    key = prng.prng_key(seed=2)
+
     # Linearise function
-    x0 = prng.uniform(key, shape=(dim,))  # random lin. point
-    _, jvp = func.linearize(fun, x0)
-    J = func.jacfwd(fun)(x0)
+    x0 = prng.uniform(key, shape=(4,))  # random lin. point
+    args_like = {"params": x0}
+    _, jvp = func.linearize(fun, args_like)
+    J = func.jacfwd(fun)(args_like)
+
+    expected = tree_util.tree_map(linalg.diagonal, J["params"])
 
     # Estimate the trace
-    fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
-    estimate = hutchinson.diagonal(
-        jvp,
-        num_batches=num_batches,
-        key=key,
-        num_samples_per_batch=num_samples_per_batch,
-        sample_fun=fun,
-    )
-    truth = linalg.diagonal(J)
-    assert np.allclose(estimate, truth, rtol=1e-2)
+    problem = hutchinson.integrand_diagonal(jvp)
+    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    estimate = hutchinson.montecarlo(problem, sample_fun=sampler, stats_fun=np.mean)
+    received = estimate(key)
+
+    def compare(a, b):
+        return np.allclose(a, b, rtol=1e-2)
+
+    print(received)
+    print(expected)
+    assert tree_util.tree_all(tree_util.tree_map(compare, received, expected))
