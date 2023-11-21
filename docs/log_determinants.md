@@ -6,13 +6,13 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, montecarlo, slq
+>>> from matfree import hutchinson, slq
 
 >>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
 
 >>> matvec = lambda x: a.T @ (a @ x)
->>> sample_fun = montecarlo.normal(shape=(2,))
+>>> sample_fun = hutchinson.normal(shape=(2,))
 
 ```
 
@@ -20,7 +20,7 @@ Imports:
 Estimate log-determinants as such:
 ```python
 >>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
->>> sample_fun = montecarlo.normal(shape=(6,))
+>>> sample_fun = hutchinson.normal(shape=(6,))
 >>> matvec = lambda x: a.T @ (a @ x) + x
 >>> order = 3
 >>> logdet = slq.logdet_spd(order, matvec, key=key, sample_fun=sample_fun)
@@ -37,7 +37,7 @@ on arithmetic with $B$; no need to assemble $M$:
 
 ```python
 >>> a = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36 + jnp.eye(6)
->>> sample_fun = montecarlo.normal(shape=(6,))
+>>> sample_fun = hutchinson.normal(shape=(6,))
 >>> matvec = lambda x: (a @ x)
 >>> vecmat = lambda x: (a.T @ x)
 >>> order = 3

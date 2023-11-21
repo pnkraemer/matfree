@@ -11,7 +11,7 @@ Imports:
 >>> import jax.flatten_util  # this is important!
 >>> import jax.numpy as jnp
 >>>
->>> from matfree import slq, montecarlo
+>>> from matfree import slq, hutchinson
 
 ```
 Create a test-problem: a function that maps a pytree (dict) to a pytree (tuple).
@@ -70,7 +70,7 @@ Now, we can compute the log-determinant with the flattened inputs as usual:
 ```python
 >>> # Compute the log-determinant
 >>> key = jax.random.PRNGKey(seed=1)
->>> sample_fun = montecarlo.normal(shape=f0_flat.shape)
+>>> sample_fun = hutchinson.normal(shape=f0_flat.shape)
 >>> order = 3
 >>> logdet = slq.logdet_spd(order, matvec, key=key, sample_fun=sample_fun)
 

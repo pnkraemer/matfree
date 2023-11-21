@@ -1,6 +1,6 @@
 """Test Schatten norm implementations."""
 
-from matfree import montecarlo, slq, test_util
+from matfree import hutchinson, slq, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -26,7 +26,7 @@ def test_schatten_norm(A, order, power):
 
     _, ncols = np.shape(A)
     key = prng.prng_key(1)
-    fun = montecarlo.normal(shape=(ncols,))
+    fun = hutchinson.normal(shape=(ncols,))
     received = slq.schatten_norm(
         order,
         lambda v: A @ v,

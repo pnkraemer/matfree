@@ -1,6 +1,6 @@
 """Tests for basic trace estimators."""
 
-from matfree import hutchinson, montecarlo
+from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing
 
 
@@ -23,7 +23,7 @@ def fixture_key():
 @testing.parametrize("num_batches", [1_000])
 @testing.parametrize("num_samples_per_batch", [1_000])
 @testing.parametrize("dim", [1, 10])
-@testing.parametrize("sample_fun", [montecarlo.normal, montecarlo.rademacher])
+@testing.parametrize("sample_fun", [hutchinson.normal, hutchinson.rademacher])
 def test_frobeniusnorm_squared(
     fun, key, num_batches, num_samples_per_batch, dim, sample_fun
 ):

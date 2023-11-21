@@ -11,7 +11,7 @@ Here is how we can implement divergences and Laplacians without forming full Jac
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, montecarlo
+>>> from matfree import hutchinson
 
 ```
 
@@ -85,7 +85,7 @@ For large-scale problems, it may be the only way of computing Laplacians reliabl
 ```python
 >>> laplacian_dense = divergence_dense(gradient)
 >>>
->>> normal = montecarlo.normal(shape=(3,))
+>>> normal = hutchinson.normal(shape=(3,))
 >>> key = jax.random.PRNGKey(1)
 >>> laplacian_matfree = divergence_matfree(gradient, key=key, sample_fun=normal)
 >>>

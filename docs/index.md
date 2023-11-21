@@ -51,7 +51,7 @@ Import matfree and JAX, and set up a test problem.
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, montecarlo, slq
+>>> from matfree import hutchinson, slq
 
 >>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>>
@@ -65,7 +65,7 @@ Estimate the trace of the matrix:
 
 ```python
 >>> key = jax.random.PRNGKey(1)
->>> normal = montecarlo.normal(shape=(2,))
+>>> normal = hutchinson.normal(shape=(2,))
 >>> trace = hutchinson.trace(matvec, key=key, sample_fun=normal)
 >>>
 >>> print(jnp.round(trace))

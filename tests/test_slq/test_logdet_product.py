@@ -1,6 +1,6 @@
 """Test slq.logdet_prod()."""
 
-from matfree import montecarlo, slq, test_util
+from matfree import hutchinson, slq, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -22,7 +22,7 @@ def test_logdet_product(A, order):
     """Assert that logdet_product yields an accurate estimate."""
     _, ncols = np.shape(A)
     key = prng.prng_key(3)
-    fun = montecarlo.normal(shape=(ncols,))
+    fun = hutchinson.normal(shape=(ncols,))
     received = slq.logdet_product(
         order,
         lambda v: A @ v,

@@ -1,7 +1,7 @@
 """Tests for (selected) autodiff functionality."""
 
 
-from matfree import montecarlo, slq, test_util
+from matfree import hutchinson, slq, test_util
 from matfree.backend import np, prng, testing
 
 
@@ -32,7 +32,7 @@ def test_check_grads(A, order):
 
 def _logdet(A, order, key):
     n, _ = np.shape(A)
-    fun = montecarlo.normal(shape=(n,))
+    fun = hutchinson.normal(shape=(n,))
     return slq.logdet_spd(
         order,
         lambda v: A @ v,

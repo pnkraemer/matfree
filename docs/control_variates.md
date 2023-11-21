@@ -8,13 +8,13 @@ Imports:
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, montecarlo, slq
+>>> from matfree import hutchinson, slq
 
 >>> a = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>> key = jax.random.PRNGKey(1)
 
 >>> matvec = lambda x: a.T @ (a @ x)
->>> sample_fun = montecarlo.normal(shape=(2,))
+>>> sample_fun = hutchinson.normal(shape=(2,))
 
 ```
 
