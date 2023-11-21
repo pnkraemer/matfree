@@ -11,7 +11,7 @@ def test_mean_and_max(key, num_batches, num_samples):
     def fun(x):
         return x**2
 
-    mean, amax = hutchinson.multiestimate(
+    mean, amax = hutchinson.mc_multiestimate(
         fun,
         num_batches=num_batches,
         num_samples_per_batch=num_samples,
