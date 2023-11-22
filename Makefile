@@ -21,11 +21,13 @@ clean:
 doc-preview:
 	python scripts/generate_api_docs.py
 	python scripts/readme_to_dev_docs.py
+	python scripts/tutorials_to_py_light.py
 	mkdocs serve
 
 doc-build:
 	python scripts/generate_api_docs.py
 	python scripts/readme_to_dev_docs.py
+	python scripts/tutorials_to_py_light.py
 	mkdocs build
 
 run-benchmarks:

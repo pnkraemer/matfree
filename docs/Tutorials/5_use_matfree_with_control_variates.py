@@ -1,7 +1,7 @@
-"""Use Matfree with control variates.
+## Use Matfree with control variates
+#
+# Here is how to implement control variates.
 
-Here is how to implement control variates.
-"""
 
 import jax
 import jax.numpy as jnp

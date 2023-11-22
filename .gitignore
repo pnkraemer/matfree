@@ -11,6 +11,7 @@ matfree/_version.py
 docs/index.md
 docs/API*/
 docs/Developer*/
+docs/Tutorial*/
 
 # Don't version jupyter notebooks. Track synced markdown files.
 *.ipynb
