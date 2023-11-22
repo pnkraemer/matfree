@@ -1,7 +1,6 @@
 """Hutchinson-style trace and diagonal estimation."""
 
-
-from matfree.backend import func, linalg, np, tree_util
+from matfree.backend import func, linalg, np, prng, tree_util
 
 # todo: allow a fun() that returns pytrees instead of arrays.
 #  why? Because then we rival trace_and_variance as
@@ -9,6 +8,18 @@ from matfree.backend import func, linalg, np, tree_util
 
 
 def integrand_diagonal(matvec):
+    """Construct the integrand for estimating the diagonal.
+
+
+    When plugged into the Monte-Carlo estimator,
+    the result will be an Array or PyTree of Arrays with the
+    same tree-structure as
+    ``
+    matvec(*args_like)
+    ``
+    where ``*args_like`` is an argument of the sampler.
+    """
+
     def integrand(v):
         Qv = matvec(v)
         v_flat, unflatten = tree_util.ravel_pytree(v)
@@ -45,7 +56,7 @@ def stats_mean_and_std():
     return stats
 
 
-def montecarlo(integrand_fun, /, sample_fun, stats_fun):
+def hutchinson(integrand_fun, /, sample_fun, stats_fun):
     def sample(key):
         samples = sample_fun(key)
         Qs = func.vmap(integrand_fun)(samples)
