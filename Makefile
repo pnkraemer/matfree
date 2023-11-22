@@ -11,16 +11,12 @@ test:
 	pytest -x -v
 
 
+clean-preview:
+	git clean -xdn
+
 clean:
-	rm -rf .pytest_cache
-	rm -rf .ruff_cache
-	rm -rf .mypy_cache
-	rm -rf .coverage
-	rm -rf *.egg-info
-	rm -rf dist site build htmlcov
-	rm -rf *.ipynb_checkpoints
-	rm matfree/_version.py
-	rm -rf docs/API/
+	git clean -xdf
+
 
 doc-preview:
 	python scripts/generate_api_docs.py --source matfree --skip backend/* --target docs/API_documentation/
