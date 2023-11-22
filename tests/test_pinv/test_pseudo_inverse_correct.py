@@ -1,6 +1,7 @@
 """Tests for pseudo-inverse functionality."""
-from matfree import pinv
 from matfree.backend import func, linalg, np, prng, testing
+
+from matfree import pinv
 
 
 def fun_tall(x):

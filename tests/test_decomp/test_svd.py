@@ -1,8 +1,9 @@
 """Tests for SVD functionality."""
 
 
-from matfree import decomp, test_util
 from matfree.backend import linalg, np, testing
+
+from matfree import decomp, test_util
 
 
 @testing.fixture()

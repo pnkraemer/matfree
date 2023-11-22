@@ -1,8 +1,9 @@
 """Tests for (selected) autodiff functionality."""
 
 
-from matfree import hutchinson, slq, test_util
 from matfree.backend import np, prng, testing
+
+from matfree import hutchinson, slq, test_util
 
 
 @testing.fixture()

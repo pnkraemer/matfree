@@ -1,7 +1,8 @@
 """Stochastic Lanczos quadrature."""
 
-from matfree import decomp, hutchinson
 from matfree.backend import func, linalg, np
+
+from matfree import decomp, hutchinson
 
 
 def logdet_spd(*args, **kwargs):
