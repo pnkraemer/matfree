@@ -1,5 +1,5 @@
 from matfree import hutchinson
-from matfree.backend import func, linalg, np, prng, testing, tree_util
+from matfree.backend import func, np, prng, testing, tree_util
 
 
 @testing.parametrize("sample_fun", [prng.normal, prng.rademacher])

@@ -1,6 +1,6 @@
 """Hutchinson-style trace and diagonal estimation."""
 
-from matfree.backend import func, linalg, np, prng, tree_util
+from matfree.backend import func, linalg, np, tree_util
 
 # todo: allow a fun() that returns pytrees instead of arrays.
 #  why? Because then we rival trace_and_variance as
@@ -9,7 +9,6 @@ from matfree.backend import func, linalg, np, prng, tree_util
 
 def integrand_diagonal(matvec, /):
     """Construct the integrand for estimating the diagonal.
-
 
     When plugged into the Monte-Carlo estimator,
     the result will be an Array or PyTree of Arrays with the
