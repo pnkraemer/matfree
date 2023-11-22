@@ -23,6 +23,7 @@ clean:
 	rm matfree/_version.py
 
 doc:
+	cp README.md docs/index.md
 	mkdocs build
 
 run-benchmarks:

@@ -51,7 +51,7 @@ Import matfree and JAX, and set up a test problem.
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson, slq
+>>> from matfree import hutchinson
 
 >>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>>
@@ -64,29 +64,23 @@ Import matfree and JAX, and set up a test problem.
 Estimate the trace of the matrix:
 
 ```python
+>>> # Determine the shape of the base-samples
+>>> input_like = jnp.zeros((2,), dtype=float)
+>>> sampler = hutchinson.sampler_from_prng(jax.random.normal, input_like)
+>>>
+>>> # Set Hutchinson's method up to compute the traces
+>>> # (instead of, e.g., diagonals)
+>>> integrand = hutchinson.integrand_trace(matvec)
+>>>
+>>> # Compute an estimator
+>>> estimate = hutchinson.hutchinson(integrand, sampler)
+
+>>> # Estimate
 >>> key = jax.random.PRNGKey(1)
->>> normal = hutchinson.sampler_normal(shape=(2,))
->>> trace = hutchinson.trace(matvec, key=key, sample_fun=normal)
+>>> trace = jax.jit(estimate)(key)
 >>>
 >>> print(jnp.round(trace))
 514.0
->>>
->>> # for comparison:
->>> print(jnp.round(jnp.trace(A.T @ A)))
-506.0
-
-```
-Adjust the batch-size to improve the performance
-- More, smaller batches reduce memory but increase the runtime.
-- Fewer, larger batches increase memory but reduce the runtime.
-
-
-Change the number of batches as follows:
-
-```python
->>> trace = hutchinson.trace(matvec, key=key, sample_fun=normal, num_batches=10)
->>> print(jnp.round(trace))
-508.0
 >>>
 >>> # for comparison:
 >>> print(jnp.round(jnp.trace(A.T @ A)))

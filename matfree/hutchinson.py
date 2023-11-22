@@ -90,7 +90,7 @@ def stats_mean_and_std():
     return stats
 
 
-def hutchinson(integrand_fun, /, sample_fun, stats_fun):
+def hutchinson(integrand_fun, /, sample_fun, stats_fun=np.mean):
     def sample(key):
         samples = sample_fun(key)
         Qs = func.vmap(integrand_fun)(samples)
