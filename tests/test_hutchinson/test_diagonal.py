@@ -23,7 +23,7 @@ def test_diagonal(sample_fun):
 
     expected = tree_util.tree_map(linalg.diagonal, J)
 
-    # Estimate the trace
+    # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
     sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)

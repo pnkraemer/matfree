@@ -39,6 +39,15 @@ def integrand_trace(matvec):
     return integrand
 
 
+def integrand_frobeniusnorm_squared(matvec):
+    def integrand(vec):
+        x = matvec(vec)
+        v_flat, unflatten = tree_util.ravel_pytree(x)
+        return linalg.vecdot(v_flat, v_flat)
+
+    return integrand
+
+
 def sampler_from_prng(sample_func, *args_like, num=10_000):
     x_flat, unflatten = tree_util.ravel_pytree(*args_like)
 
