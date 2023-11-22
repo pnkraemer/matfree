@@ -10,6 +10,7 @@ matfree/_version.py
 # Don't track the automatically generated docs (they are automatically generated)
 docs/index.md
 docs/API*/
+docs/Developer*/
 
 # Don't version jupyter notebooks. Track synced markdown files.
 *.ipynb

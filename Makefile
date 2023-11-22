@@ -1,7 +1,7 @@
 format:
 	isort .  --quiet
 	black .  --quiet
-	blackdoc docs/*.md *.md  --line-length 82
+	blackdoc *.md  --line-length 82
 
 lint:
 	pre-commit run --all-files
@@ -19,13 +19,13 @@ clean:
 
 
 doc-preview:
-	python scripts/generate_api_docs.py --source matfree --skip backend/* --target docs/API_documentation/
-	cp README.md docs/index.md
+	python scripts/generate_api_docs.py
+	python scripts/readme_to_dev_docs.py
 	mkdocs serve
 
-doc:
-	python scripts/generate_api_docs.py --source matfree --skip backend/* --target docs/API_documentation/
-	cp README.md docs/index.md
+doc-build:
+	python scripts/generate_api_docs.py
+	python scripts/readme_to_dev_docs.py
 	mkdocs build
 
 run-benchmarks:

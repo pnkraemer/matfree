@@ -26,7 +26,7 @@ JIT compilation, automatic differentiation, vectorisation, and pytrees.
 [**API docs**](https://pnkraemer.github.io/matfree/api/hutchinson/)
 
 
-## Installation
+**Installation**
 
 To install the package, run
 
@@ -44,7 +44,7 @@ pip install matfree[cpu]
 which is equivalent to combining `pip install jax[cpu]` with `pip install matfree`.
 (But do not only use matfree on CPU!)
 
-## Minimal example
+**Minimal example**
 
 Import matfree and JAX, and set up a test problem.
 
@@ -91,7 +91,7 @@ Estimate the trace of the matrix:
 ```
 
 
-## Tutorials
+**Tutorials**
 
 Here are some more advanced tutorials:
 
@@ -102,6 +102,73 @@ Here are some more advanced tutorials:
 - **Pytree-valued states:** Combining neural-network Jacobians with stochastic Lanczos quadrature. [(LINK)](https://pnkraemer.github.io/matfree/pytree_logdeterminants/)
 
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use matfree for!
+
+
+## Extended installation guide
+
+
+**Tests:**
+
+Install dependencies (assumes JAX is installed; if not, run `pip install .[cpu]`).
+```commandline
+pip install .[test]
+```
+
+
+Run tests:
+
+```commandline
+make test
+```
+
+**Format:**
+
+Install dependencies
+```commandline
+pip install .[format]
+```
+
+Format code:
+```commandline
+make format
+```
+
+**Lint:**
+
+Install the pre-commit hook:
+
+```commandline
+pip install .[lint]
+pre-commit install
+
+```
+
+Run linters:
+
+```commandline
+make lint
+```
+
+**Docs:**
+
+
+Install dependencies
+```commandline
+pip install .[doc]
+```
+
+
+Local preview of docs
+
+```commandline
+make doc-preview
+```
+
+Check doc build:
+```commandline
+make doc-build
+```
+
 
 ## Contributing
 
@@ -121,7 +188,6 @@ To make a pull request, proceed as follows:
 - Install all dependencies with `pip install .[full]` or `pip install -e .[full]`.
 - Make your changes.
 - From the root of the project, run the tests via `make test`, and check out `make format` and `make lint` as well. Use the pre-commit hook if you like.
-
 
 
 When making a pull request, keep in mind the following (rough) guidelines:
