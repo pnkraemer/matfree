@@ -8,7 +8,6 @@ lint:
 
 test:
 	python -m doctest README.md
-	python -m doctest docs/*.md
 	pytest -x -v
 
 

@@ -1,8 +1,7 @@
 """Tests for estimating traces."""
 
-from matfree.backend import func, linalg, np, prng, testing
-
 from matfree import hutchinson
+from matfree.backend import func, linalg, np, prng, testing
 
 
 @testing.fixture(name="key")

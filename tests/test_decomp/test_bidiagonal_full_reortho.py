@@ -1,8 +1,7 @@
 """Tests for GKL bidiagonalisation."""
 
-from matfree.backend import linalg, np, prng, testing
-
 from matfree import decomp, test_util
+from matfree.backend import linalg, np, prng, testing
 
 
 @testing.fixture()

@@ -22,3 +22,7 @@ def tree_leaves(tree, /):
 
 def tree_structure(tree, /):
     return jax.tree_util.tree_structure(tree)
+
+
+def partial_pytree(func, /):
+    return jax.tree_util.Partial(func)

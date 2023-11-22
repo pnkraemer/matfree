@@ -1,8 +1,7 @@
 """Test slq.logdet_prod()."""
 
-from matfree.backend import linalg, np, prng, testing
-
 from matfree import hutchinson, slq, test_util
+from matfree.backend import linalg, np, prng, testing
 
 
 @testing.fixture()

@@ -1,6 +1,5 @@
-from matfree.backend import func, linalg, np, prng, testing, tree_util
-
 from matfree import hutchinson
+from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
 def test_frobeniusnorm_squared():

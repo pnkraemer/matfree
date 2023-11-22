@@ -1,19 +1,11 @@
 """Stochastic Lanczos quadrature."""
 
-from matfree.backend import func, linalg, np
-
 from matfree import decomp, hutchinson
+from matfree.backend import func, linalg, np, tree_util
 
 
-def logdet_spd(*args, **kwargs):
-    """Estimate the log-determinant of a symmetric, positive definite matrix."""
-    return trace_of_matfun_spd(np.log, *args, **kwargs)
-
-
-def trace_of_matfun_spd(matfun, order, Av, /, **kwargs):
-    """Compute the trace of the function of a symmetric matrix."""
-    quadratic_form = _quadratic_form_slq_spd(matfun, order, Av)
-    return hutchinson.mc_estimate(quadratic_form, **kwargs)
+def integrand_logdet_spd(order, matvec, /):
+    return _quadratic_form_slq_spd(np.log, order, matvec)
 
 
 def _quadratic_form_slq_spd(matfun, order, Av, /):
@@ -54,29 +46,17 @@ def logdet_product(*args, **kwargs):
     return trace_of_matfun_product(np.log, *args, **kwargs)
 
 
-def schatten_norm(*args, power, **kwargs):
+def integrand_schatten_norm(power, depth, *matvec_funs):
     r"""Compute the Schatten-p norm of a matrix via stochastic Lanczos quadrature."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    trace = trace_of_matfun_product(matfun, *args, **kwargs)
-    return trace ** (1 / power)
+    return _quadratic_form_slq_product(matfun, depth, *matvec_funs)
 
 
-def trace_of_matfun_product(matfun, order, *matvec_funs, matrix_shape, **kwargs):
-    r"""Compute the trace of a function of a product of matrices.
-
-    Here, "product" refers to $X = A^\top A$.
-    """
-    quadratic_form = _quadratic_form_slq_product(
-        matfun, order, *matvec_funs, matrix_shape=matrix_shape
-    )
-    return hutchinson.mc_estimate(quadratic_form, **kwargs)
-
-
-def _quadratic_form_slq_product(matfun, depth, *matvec_funs, matrix_shape):
+def _quadratic_form_slq_product(matfun, depth, matvec, vecmat, /):
     r"""Quadratic form for stochastic Lanczos quadrature.
 
     Instead of the trace of a function of a matrix,
@@ -85,9 +65,27 @@ def _quadratic_form_slq_product(matfun, depth, *matvec_funs, matrix_shape):
     """
 
     def quadform(v0, /):
+        v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
+
+        def matvec_flat(v_flat):
+            v = v_unflatten(v_flat)
+            Av = matvec(v)
+            flat, unflatten = tree_util.ravel_pytree(Av)
+            return flat, tree_util.partial_pytree(unflatten)
+
+        w0_flat, w_unflatten = func.eval_shape(matvec_flat, v0_flat)
+        matrix_shape = (*np.shape(w0_flat), *np.shape(v0_flat))
+
+        def vecmat_flat(w_flat):
+            w = w_unflatten(w_flat)
+            wA = vecmat(w)
+            return tree_util.ravel_pytree(wA)[0]
+
         # Decompose into orthogonal-bidiag-orthogonal
         algorithm = decomp.lanczos_bidiag_full_reortho(depth, matrix_shape=matrix_shape)
-        output = decomp.decompose_fori_loop(v0, *matvec_funs, algorithm=algorithm)
+        output = decomp.decompose_fori_loop(
+            v0_flat, lambda v: matvec_flat(v)[0], vecmat_flat, algorithm=algorithm
+        )
         u, (d, e), vt, _ = output
 
         # Compute SVD of factorisation

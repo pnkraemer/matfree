@@ -1,8 +1,7 @@
 """What is the fastest way of computing trace(A^5)."""
+from matfree import benchmark_util, hutchinson, slq
 from matfree.backend import func, linalg, np, plt, prng
 from matfree.backend.progressbar import progressbar
-
-from matfree import benchmark_util, hutchinson, slq
 
 
 def problem(n):
