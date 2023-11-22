@@ -18,3 +18,7 @@ def ravel_pytree(tree, /):
 
 def tree_leaves(tree, /):
     return jax.tree_util.tree_leaves(tree)
+
+
+def tree_structure(tree, /):
+    return jax.tree_util.tree_structure(tree)
