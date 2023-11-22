@@ -1,6 +1,6 @@
 """Hutchinson-style trace and diagonal estimation."""
 
-from matfree.backend import func, linalg, np, tree_util
+from matfree.backend import func, linalg, np, prng, tree_util
 
 # todo: allow a fun() that returns pytrees instead of arrays.
 #  why? Because then we rival trace_and_variance as
@@ -73,7 +73,15 @@ def integrand_trace_moments(matvec, moments, /):
     return integrand
 
 
-def sampler_from_prng(sample_func, *args_like, num=10_000):
+def sampler_normal(*args_like, num):
+    return _sampler_from_jax_random(prng.normal, *args_like, num=num)
+
+
+def sampler_rademacher(*args_like, num):
+    return _sampler_from_jax_random(prng.rademacher, *args_like, num=num)
+
+
+def _sampler_from_jax_random(sample_func, *args_like, num):
     x_flat, unflatten = tree_util.ravel_pytree(*args_like)
 
     def sample(key):

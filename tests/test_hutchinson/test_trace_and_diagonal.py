@@ -2,8 +2,7 @@ from matfree import hutchinson
 from matfree.backend import func, np, prng, testing, tree_util
 
 
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
-def test_diagonal(sample_fun):
+def test_trace_and_diagonal():
     def fun(x):
         """Create a nonlinear, to-be-differentiated function."""
         fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
@@ -18,19 +17,19 @@ def test_diagonal(sample_fun):
 
     # Estimate the matrix function
     problem = hutchinson.integrand_trace_and_diagonal(jvp)
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     received = estimate(key)
 
     # Estimate the trace
     problem = hutchinson.integrand_trace(jvp)
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     expected_trace = estimate(key)
 
     # Estimate the diagonal
     problem = hutchinson.integrand_diagonal(jvp)
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     expected_diagonal = estimate(key)
 

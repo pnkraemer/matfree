@@ -2,8 +2,7 @@ from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
-def test_frobeniusnorm_squared(sample_fun):
+def test_frobeniusnorm_squared():
     """Assert that the estimated squared Frobenius norm approximates accurately."""
 
     def fun(x):
@@ -22,7 +21,7 @@ def test_frobeniusnorm_squared(sample_fun):
 
     # Estimate the matrix function
     problem = hutchinson.integrand_frobeniusnorm_squared(jvp)
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     received = estimate(key)
 

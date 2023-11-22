@@ -2,8 +2,7 @@ from matfree import hutchinson
 from matfree.backend import func, np, prng, testing, tree_util
 
 
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
-def test_estimate_multiple_stats(sample_fun):
+def test_estimate_multiple_stats():
     def fun(x):
         """Create a nonlinear, to-be-differentiated function."""
         fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
@@ -18,7 +17,7 @@ def test_estimate_multiple_stats(sample_fun):
 
     # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    sampler = hutchinson.sampler_normal(args_like, num=100_000)
     stats = hutchinson.stats_mean_and_std()
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=stats)
     received = estimate(key)

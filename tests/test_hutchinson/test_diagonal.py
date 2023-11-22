@@ -2,8 +2,7 @@ from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
-@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
-def test_diagonal(sample_fun):
+def test_diagonal():
     """Assert that the estimated diagonal approximates the true diagonal accurately."""
 
     def fun(x):
@@ -23,7 +22,7 @@ def test_diagonal(sample_fun):
 
     # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    sampler = hutchinson.sampler_normal(args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     received = estimate(key)
 

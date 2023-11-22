@@ -30,7 +30,7 @@ def test_variance_normal(J_and_jvp, key):
     # Estimate the trace
     J, jvp, args_like = J_and_jvp
     problem = hutchinson.integrand_trace_moments(jvp, [1, 2])
-    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=1_000_000)
+    sampler = hutchinson.sampler_normal(args_like, num=1_000_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     first, second = estimate(key)
 
@@ -49,7 +49,7 @@ def test_variance_rademacher(J_and_jvp, key):
     J, jvp, args_like = J_and_jvp
 
     problem = hutchinson.integrand_trace_moments(jvp, [1, 2])
-    sampler = hutchinson.sampler_from_prng(prng.rademacher, args_like, num=500)
+    sampler = hutchinson.sampler_rademacher(args_like, num=500)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
     first, second = estimate(key)
 
