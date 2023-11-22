@@ -50,6 +50,7 @@ if __name__ == "__main__":
     # Create dev docs
     source = "README.md"
     directory = "docs/Developer_documentation/"
+    mkdir_unless_exists("docs/Developer_documentation/")
 
     # Read the README
     with open(source) as file:
