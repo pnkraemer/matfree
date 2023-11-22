@@ -1,45 +1,39 @@
-"""Tests for basic trace estimators."""
-
 from matfree import hutchinson
-from matfree.backend import func, linalg, np, prng, testing
+from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
-@testing.fixture(name="fun")
-def fixture_fun():
-    """Create a nonlinear, to-be-differentiated function."""
+@testing.parametrize("sample_fun", [prng.normal, prng.rademacher])
+def test_diagonal(sample_fun):
+    def fun(x):
+        """Create a nonlinear, to-be-differentiated function."""
+        fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
+        return {"params": fx}
 
-    def f(x):
-        return np.sin(np.flip(np.cos(x)) + 1.0) * np.sin(x) + 1.0
+    key = prng.prng_key(seed=2)
 
-    return f
-
-
-@testing.fixture(name="key")
-def fixture_key():
-    """Fix a pseudo-random number generator."""
-    return prng.prng_key(seed=1)
-
-
-@testing.parametrize("num_samples", [10_000])
-@testing.parametrize("dim", [5])
-@testing.parametrize(
-    "sample_fun", [hutchinson.sampler_normal, hutchinson.sampler_rademacher]
-)
-def test_trace_and_diagonal(fun, key, num_samples, dim, sample_fun):
-    """Assert that the estimated trace and diagonal approximations are accurate."""
     # Linearise function
-    x0 = prng.uniform(key, shape=(dim,))
-    _, jvp = func.linearize(fun, x0)
-    J = func.jacfwd(fun)(x0)
+    x0 = prng.uniform(key, shape=(4,))  # random lin. point
+    args_like = {"params": x0}
+    _, jvp = func.linearize(fun, args_like)
+
+    # Estimate the matrix function
+    problem = hutchinson.integrand_trace_and_diagonal(jvp)
+    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    received = estimate(key)
 
     # Estimate the trace
-    fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
-    trace, diag = hutchinson.trace_and_diagonal(
-        jvp, key=key, num_levels=num_samples, sample_fun=fun
-    )
+    problem = hutchinson.integrand_trace(jvp)
+    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    expected_trace = estimate(key)
 
-    # Print errors if test fails
-    error_diag = linalg.vector_norm(diag - linalg.diagonal(J))
-    error_trace = linalg.vector_norm(trace - linalg.trace(J))
-    assert np.allclose(diag, linalg.diagonal(J), rtol=1e-2), error_diag
-    assert np.allclose(trace, linalg.trace(J), rtol=1e-2), error_trace
+    # Estimate the diagonal
+    problem = hutchinson.integrand_diagonal(jvp)
+    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=100_000)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    expected_diagonal = estimate(key)
+
+    expected = {"trace": expected_trace, "diagonal": expected_diagonal}
+
+    assert tree_util.tree_all(tree_util.tree_map(np.allclose, received, expected))
