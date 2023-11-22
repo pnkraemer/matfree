@@ -16,7 +16,6 @@ nav:
       - matfree.slq: api/slq.md
       - matfree.pinv: api/pinv.md
   - Developer documentation: dev/index.md
-  - Benchmarks: benchmarks/index.md
 theme:
   name: material
   palette:

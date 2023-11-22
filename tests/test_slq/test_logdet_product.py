@@ -22,17 +22,12 @@ def test_logdet_product(A, order):
     """Assert that logdet_product yields an accurate estimate."""
     _, ncols = np.shape(A)
     key = prng.prng_key(3)
-    fun = hutchinson.sampler_normal(shape=(ncols,))
-    received = slq.logdet_product(
-        order,
-        lambda v: A @ v,
-        lambda v: A.T @ v,
-        matrix_shape=np.shape(A),
-        key=key,
-        num_samples_per_batch=200,
-        num_batches=2,
-        sample_fun=fun,
-    )
+    x_like = np.ones((ncols,), dtype=float)
+    fun = hutchinson.sampler_normal(x_like, num=400)
+    problem = slq.integrand_logdet_product(order, lambda v: A @ v, lambda v: A.T @ v)
+    estimate = hutchinson.hutchinson(problem, fun)
+    received = estimate(key)
+
     expected = linalg.slogdet(A.T @ A)[1]
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails

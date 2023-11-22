@@ -38,22 +38,22 @@ def _quadratic_form_slq_spd(matfun, order, Av, /):
     return quadform
 
 
-def logdet_product(*args, **kwargs):
-    r"""Compute the log-determinant of a product of matrices.
+def integrand_logdet_product(depth, matvec, vecmat, /):
+    r"""Construct the integrand for the log-determinant of a product of matrices.
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return trace_of_matfun_product(np.log, *args, **kwargs)
+    return _quadratic_form_slq_product(np.log, depth, matvec, vecmat)
 
 
-def integrand_schatten_norm(power, depth, *matvec_funs):
-    r"""Compute the Schatten-p norm of a matrix via stochastic Lanczos quadrature."""
+def integrand_schatten_norm(power, depth, matvec, vecmat, /):
+    r"""Construct the integrand for the p-th power of the Schatten-p norm."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return _quadratic_form_slq_product(matfun, depth, *matvec_funs)
+    return _quadratic_form_slq_product(matfun, depth, matvec, vecmat)
 
 
 def _quadratic_form_slq_product(matfun, depth, matvec, vecmat, /):
