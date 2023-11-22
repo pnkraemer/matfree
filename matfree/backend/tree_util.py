@@ -14,3 +14,7 @@ def tree_map(func, tree, *rest):
 
 def ravel_pytree(tree, /):
     return jax.flatten_util.ravel_pytree(tree)
+
+
+def tree_leaves(tree, /):
+    return jax.tree_util.tree_leaves(tree)
