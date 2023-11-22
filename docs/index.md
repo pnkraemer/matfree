@@ -52,6 +52,8 @@ Import matfree and JAX, and set up a test problem.
 >>> import jax
 >>> import jax.numpy as jnp
 >>> from matfree import hutchinson
+>>>
+>>> jnp.set_printoptions(1)
 
 >>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>>
@@ -66,7 +68,7 @@ Estimate the trace of the matrix:
 ```python
 >>> # Determine the shape of the base-samples
 >>> input_like = jnp.zeros((2,), dtype=float)
->>> sampler = hutchinson.sampler_from_prng(jax.random.normal, input_like)
+>>> sampler = hutchinson.sampler_from_prng(jax.random.rademacher, input_like)
 >>>
 >>> # Set Hutchinson's method up to compute the traces
 >>> # (instead of, e.g., diagonals)
@@ -79,11 +81,11 @@ Estimate the trace of the matrix:
 >>> key = jax.random.PRNGKey(1)
 >>> trace = jax.jit(estimate)(key)
 >>>
->>> print(jnp.round(trace))
-514.0
+>>> print(trace)
+508.9
 >>>
 >>> # for comparison:
->>> print(jnp.round(jnp.trace(A.T @ A)))
+>>> print((jnp.trace(A.T @ A)))
 506.0
 
 ```
