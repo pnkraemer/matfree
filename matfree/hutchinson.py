@@ -7,7 +7,7 @@ from matfree.backend import func, linalg, np, prng, tree_util
 #  trace_and_frobeniusnorm(): y=Ax; return (x@y, y@y)
 
 
-def integrand_diagonal(matvec):
+def integrand_diagonal(matvec, /):
     """Construct the integrand for estimating the diagonal.
 
 
@@ -20,7 +20,7 @@ def integrand_diagonal(matvec):
     where ``*args_like`` is an argument of the sampler.
     """
 
-    def integrand(v):
+    def integrand(v, /):
         Qv = matvec(v)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
@@ -29,8 +29,8 @@ def integrand_diagonal(matvec):
     return integrand
 
 
-def integrand_trace(matvec):
-    def integrand(v):
+def integrand_trace(matvec, /):
+    def integrand(v, /):
         Qv = matvec(v)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
@@ -39,8 +39,8 @@ def integrand_trace(matvec):
     return integrand
 
 
-def integrand_trace_and_diagonal(matvec):
-    def integrand(v):
+def integrand_trace_and_diagonal(matvec, /):
+    def integrand(v, /):
         Qv = matvec(v)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
@@ -51,11 +51,25 @@ def integrand_trace_and_diagonal(matvec):
     return integrand
 
 
-def integrand_frobeniusnorm_squared(matvec):
-    def integrand(vec):
+def integrand_frobeniusnorm_squared(matvec, /):
+    def integrand(vec, /):
         x = matvec(vec)
         v_flat, unflatten = tree_util.ravel_pytree(x)
         return linalg.vecdot(v_flat, v_flat)
+
+    return integrand
+
+
+def integrand_trace_moments(matvec, moments, /):
+    def moment_fun(x):
+        return tree_util.tree_map(lambda m: x**m, moments)
+
+    def integrand(vec, /):
+        x = matvec(vec)
+        v_flat, unflatten = tree_util.ravel_pytree(vec)
+        x_flat, _unflatten = tree_util.ravel_pytree(x)
+        fx = linalg.vecdot(x_flat, v_flat)
+        return moment_fun(fx)
 
     return integrand
 

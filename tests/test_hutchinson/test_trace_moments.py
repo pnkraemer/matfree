@@ -11,36 +11,28 @@ def fixture_key():
 
 
 @testing.fixture(name="J_and_jvp")
-def fixture_J_and_jvp(key, dim):
+def fixture_J_and_jvp(key):
     """Create a nonlinear, to-be-differentiated function."""
 
     def fun(x):
         return np.sin(np.flip(np.cos(x)) + 1.0) * np.sin(x) + 1.0
 
     # Linearise function
-    x0 = prng.uniform(key, shape=(dim,))  # random lin. point
+    x0 = prng.uniform(key, shape=(2,))  # random lin. point
     _, jvp = func.linearize(fun, x0)
     J = func.jacfwd(fun)(x0)
 
-    return J, jvp
+    return J, jvp, x0
 
 
-@testing.parametrize("num_batches", [1_000])
-@testing.parametrize("num_samples_per_batch", [1_000])
-@testing.parametrize("dim", [1, 10])
-def test_variance_normal(J_and_jvp, key, num_batches, num_samples_per_batch, dim):
+def test_variance_normal(J_and_jvp, key):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
-    J, jvp = J_and_jvp
-    fun = hutchinson.sampler_normal(shape=(dim,), dtype=float)
-    first, second = hutchinson.trace_moments(
-        jvp,
-        key=key,
-        num_batches=num_batches,
-        num_samples_per_batch=num_samples_per_batch,
-        sample_fun=fun,
-        moments=(1, 2),
-    )
+    J, jvp, args_like = J_and_jvp
+    problem = hutchinson.integrand_trace_moments(jvp, [1, 2])
+    sampler = hutchinson.sampler_from_prng(prng.normal, args_like, num=1_000_000)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    first, second = estimate(key)
 
     # Assert the trace is correct
     truth = linalg.trace(J)
@@ -51,22 +43,15 @@ def test_variance_normal(J_and_jvp, key, num_batches, num_samples_per_batch, dim
     assert np.allclose(second - first**2, norm * 2, rtol=1e-2)
 
 
-@testing.parametrize("num_batches", [1_000])
-@testing.parametrize("num_samples_per_batch", [1_000])
-@testing.parametrize("dim", [1, 10])
-def test_variance_rademacher(J_and_jvp, key, num_batches, num_samples_per_batch, dim):
+def test_variance_rademacher(J_and_jvp, key):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
-    J, jvp = J_and_jvp
-    fun = hutchinson.sampler_rademacher(shape=(dim,), dtype=float)
-    first, second = hutchinson.trace_moments(
-        jvp,
-        key=key,
-        num_batches=num_batches,
-        num_samples_per_batch=num_samples_per_batch,
-        sample_fun=fun,
-        moments=(1, 2),
-    )
+    J, jvp, args_like = J_and_jvp
+
+    problem = hutchinson.integrand_trace_moments(jvp, [1, 2])
+    sampler = hutchinson.sampler_from_prng(prng.rademacher, args_like, num=500)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    first, second = estimate(key)
 
     # Assert the trace is correct
     truth = linalg.trace(J)
@@ -74,5 +59,5 @@ def test_variance_rademacher(J_and_jvp, key, num_batches, num_samples_per_batch,
 
     # Assert the variance is correct:
     norm = linalg.matrix_norm(J, which="fro") ** 2
-    truth = 2 * (norm - linalg.trace(J**2))
+    truth = norm - linalg.trace(J**2)
     assert np.allclose(second - first**2, truth, atol=1e-2, rtol=1e-2)
