@@ -1,5 +1,5 @@
 from matfree import hutchinson
-from matfree.backend import func, np, prng, testing, tree_util
+from matfree.backend import func, np, prng, tree_util
 
 
 def test_trace_and_diagonal():

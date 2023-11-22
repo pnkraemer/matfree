@@ -6,7 +6,7 @@
 import jax
 import jax.numpy as jnp
 
-from matfree import hutchinson, slq
+from matfree import hutchinson
 
 a = jnp.reshape(jnp.arange(12.0), (6, 2))
 key = jax.random.PRNGKey(1)

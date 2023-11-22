@@ -1,6 +1,6 @@
 """Stochastic Lanczos quadrature."""
 
-from matfree import decomp, hutchinson
+from matfree import decomp
 from matfree.backend import func, linalg, np, tree_util
 
 
