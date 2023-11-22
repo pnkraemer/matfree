@@ -66,4 +66,4 @@ jobs:
           pip install --upgrade pip
           pip install .[doc]
       - name: Build documentation
-        run: make doc
+        run: make doc-build
