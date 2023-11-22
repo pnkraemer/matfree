@@ -20,8 +20,15 @@ clean:
 	rm -rf dist site build htmlcov
 	rm -rf *.ipynb_checkpoints
 	rm matfree/_version.py
+	rm -rf docs/API/
+
+doc-preview:
+	python scripts/generate_api_docs.py --source matfree --skip backend/* --target docs/API_documentation/
+	cp README.md docs/index.md
+	mkdocs serve
 
 doc:
+	python scripts/generate_api_docs.py --source matfree --skip backend/* --target docs/API_documentation/
 	cp README.md docs/index.md
 	mkdocs build
 

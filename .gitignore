@@ -1,7 +1,14 @@
+# Don't track the version
 matfree/_version.py
+
+
+# Don't track the automatically generated docs (they are automatically generated)
+docs/index.md
+docs/API*/
 
 # Don't version jupyter notebooks. Track synced markdown files.
 *.ipynb
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

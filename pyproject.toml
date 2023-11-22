@@ -47,6 +47,7 @@ doc = [
     "mkdocstrings",
     "mkdocstrings-python",
     "mkdocs-jupyter",
+    "mkdocs-awesome-pages-plugin",
     "matplotlib",
     "tqdm",
 ]
