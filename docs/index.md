@@ -49,43 +49,43 @@ which is equivalent to combining `pip install jax[cpu]` with `pip install matfre
 Import matfree and JAX, and set up a test problem.
 
 ```python
->>> import jax
->>> import jax.numpy as jnp
->>> from matfree import hutchinson
->>>
->>> jnp.set_printoptions(1)
+import jax
+import jax.numpy as jnp
+from matfree import hutchinson
 
->>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
->>>
->>> def matvec(x):
-...     return A.T @ (A @ x)
-...
+jnp.set_printoptions(1)
+
+A = jnp.reshape(jnp.arange(12.0), (6, 2))
+
+def matvec(x):
+    return A.T @ (A @ x)
+
 
 ```
 
 Estimate the trace of the matrix:
 
 ```python
->>> # Determine the shape of the base-samples
->>> input_like = jnp.zeros((2,), dtype=float)
->>> sampler = hutchinson.sampler_from_prng(jax.random.rademacher, input_like)
->>>
->>> # Set Hutchinson's method up to compute the traces
->>> # (instead of, e.g., diagonals)
->>> integrand = hutchinson.integrand_trace(matvec)
->>>
->>> # Compute an estimator
->>> estimate = hutchinson.hutchinson(integrand, sampler)
+# Determine the shape of the base-samples
+input_like = jnp.zeros((2,), dtype=float)
+sampler = hutchinson.sampler_from_prng(jax.random.rademacher, input_like)
 
->>> # Estimate
->>> key = jax.random.PRNGKey(1)
->>> trace = jax.jit(estimate)(key)
->>>
->>> print(trace)
+# Set Hutchinson's method up to compute the traces
+# (instead of, e.g., diagonals)
+integrand = hutchinson.integrand_trace(matvec)
+
+# Compute an estimator
+estimate = hutchinson.hutchinson(integrand, sampler)
+
+# Estimate
+key = jax.random.PRNGKey(1)
+trace = jax.jit(estimate)(key)
+
+print(trace)
 508.9
->>>
->>> # for comparison:
->>> print((jnp.trace(A.T @ A)))
+
+# for comparison:
+print((jnp.trace(A.T @ A)))
 506.0
 
 ```

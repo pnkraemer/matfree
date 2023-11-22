@@ -9,9 +9,9 @@ Here is how we can implement divergences and Laplacians without forming full Jac
 
 
 ```python
->>> import jax
->>> import jax.numpy as jnp
->>> from matfree import hutchinson
+import jax
+import jax.numpy as jnp
+from matfree import hutchinson
 
 ```
 
@@ -22,33 +22,33 @@ The conventional implementation would look like this:
 
 ```python
 
->>> def divergence_dense(vf):
-...     """Compute the divergence of a vector field."""
-...
-...     def div_fn(x):
-...         J = jax.jacfwd(vf)
-...         return jnp.trace(J(x))
-...
-...     return div_fn
-...
+def divergence_dense(vf):
+    """Compute the divergence of a vector field."""
+
+    def div_fn(x):
+        J = jax.jacfwd(vf)
+        return jnp.trace(J(x))
+
+    return div_fn
+
 
 ```
 This implementation computes the divergence of a vector field:
 
 ```python
->>> def fun(x):
-...     """A scalar valued function."""
-...     return jnp.dot(x, x) ** 2
-...
->>> x0 = jnp.arange(1.0, 4.0)
->>> gradient = jax.grad(fun)
->>> laplacian = divergence_dense(gradient)
->>> print(jax.hessian(fun)(x0))
+def fun(x):
+    """A scalar valued function."""
+    return jnp.dot(x, x) ** 2
+
+x0 = jnp.arange(1.0, 4.0)
+gradient = jax.grad(fun)
+laplacian = divergence_dense(gradient)
+print(jax.hessian(fun)(x0))
 [[ 64.  16.  24.]
  [ 16.  88.  48.]
  [ 24.  48. 128.]]
 
->>> print(laplacian(x0))
+print(laplacian(x0))
 280.0
 
 ```
@@ -64,18 +64,18 @@ to approximate divergences and Laplacians without forming full Jacobians:
 
 ```python
 
->>> def divergence_matfree(vf, *, key, sample_fun):
-...     """Estimate the divergence of a vector field."""
-...
-...     def div_fn(x):
-...         def jvp(v):
-...             _vf_val, jvp_val = jax.jvp(fun=vf, primals=(x,), tangents=(v,))
-...             return jvp_val
-...
-...         return hutchinson.trace(jvp, key=key, sample_fun=sample_fun)
-...
-...     return div_fn
-...
+def divergence_matfree(vf, *, key, sample_fun):
+    """Estimate the divergence of a vector field."""
+
+    def div_fn(x):
+        def jvp(v):
+            _vf_val, jvp_val = jax.jvp(fun=vf, primals=(x,), tangents=(v,))
+            return jvp_val
+
+        return hutchinson.trace(jvp, key=key, sample_fun=sample_fun)
+
+    return div_fn
+
 
 ```
 The difference to the above implementation is that `divergence_matfree` does not form dense Jacobians.
@@ -83,16 +83,16 @@ It requires $O(d)$ memory and  $O(d N)$ operations (for $N$ Monte-Carlo samples)
 For large-scale problems, it may be the only way of computing Laplacians reliably.
 
 ```python
->>> laplacian_dense = divergence_dense(gradient)
->>>
->>> normal = hutchinson.sampler_normal(shape=(3,))
->>> key = jax.random.PRNGKey(1)
->>> laplacian_matfree = divergence_matfree(gradient, key=key, sample_fun=normal)
->>>
->>> print(jnp.round(laplacian_dense(x0), 1))
+laplacian_dense = divergence_dense(gradient)
+
+normal = hutchinson.sampler_normal(shape=(3,))
+key = jax.random.PRNGKey(1)
+laplacian_matfree = divergence_matfree(gradient, key=key, sample_fun=normal)
+
+print(jnp.round(laplacian_dense(x0), 1))
 280.0
 
->>> print(jnp.round(laplacian_matfree(x0), 1))
+print(jnp.round(laplacian_matfree(x0), 1))
 278.4
 
 ```
