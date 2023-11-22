@@ -104,73 +104,58 @@ Here are some more advanced tutorials:
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use matfree for!
 
 
-## Extended installation guide
+## Continuous integration
 
 
-**Tests:**
-
-Install dependencies (assumes JAX is installed; if not, run `pip install .[cpu]`).
+To install all test-related dependencies, (assuming JAX is installed; if not, run `pip install .[cpu]`), execute
 ```commandline
 pip install .[test]
 ```
-
-
-Run tests:
-
+Then, run the tests via
 ```commandline
 make test
 ```
 
-**Format:**
-
-Install dependencies
+Install all formatting-related dependencies via
 ```commandline
 pip install .[format]
 ```
-
-Format code:
+and format the code via
 ```commandline
 make format
 ```
 
-**Lint:**
-
-Install the pre-commit hook:
+To lint the code, install the pre-commit hook
 
 ```commandline
 pip install .[lint]
 pre-commit install
 
 ```
-
-Run linters:
-
+and run the linters via
 ```commandline
 make lint
 ```
 
-**Docs:**
+Install the documentation-related dependencies as
 
-
-Install dependencies
 ```commandline
 pip install .[doc]
 ```
-
-
-Local preview of docs
+Preview the documentation via
 
 ```commandline
 make doc-preview
 ```
 
-Check doc build:
+and check whether the docs build correctly via
+
 ```commandline
 make doc-build
 ```
 
 
-## Contributing
+## Contributing to Matfree
 
 Contributions are absolutely welcome!
 
@@ -195,3 +180,34 @@ When making a pull request, keep in mind the following (rough) guidelines:
 * Most PRs resolve an issue.
 * Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
 * Most enhancements (e.g. new features) are covered by tests.
+
+
+## Extending the documentation
+
+**Writing a new tutorial:**
+
+To add a new tutorial, create a Python file in `tutorials/` and fill it with content.
+Use docstrings (mirror the style in the existing tutorials).
+Make sure to satisfy the formatter and linter.
+That's all.
+
+Then, the documentation pipeline will automatically convert those into a format compatible
+with Jupytext, which subsequently includes it into the documentation.
+If you do not want to make the tutorial part of the documentation, make the filename
+have a leading underscore.
+
+
+**Extending the developer documentation:**
+
+To extend the developer documentation, create a new section in the README.
+Use a second-level header (a header that starts with "##") and fill the section
+with content.
+Then, the documentation pipeline will turn this section into a page in the developer documentation.
+
+
+**Creating a new module:**
+
+To make a new module appear in the documentation, create the new module in `matfree/`,
+and fill it with content.
+Unless the module name starts with an underscore or is placed in the backend,
+the documentation pipeline will take care of the rest.
