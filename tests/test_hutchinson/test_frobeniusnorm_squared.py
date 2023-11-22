@@ -1,5 +1,3 @@
-"""Tests for basic trace estimators."""
-
 from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing, tree_util
 

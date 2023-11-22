@@ -1,5 +1,3 @@
-"""Tests for basic trace estimators."""
-
 from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing, tree_util
 
@@ -17,7 +15,6 @@ def test_estimate_multiple_stats(sample_fun):
     x0 = prng.uniform(key, shape=(4,))  # random lin. point
     args_like = {"params": x0}
     _, jvp = func.linearize(fun, args_like)
-    J = func.jacfwd(fun)(args_like)["params"]
 
     # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
