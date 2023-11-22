@@ -5,11 +5,11 @@ repo_name: pnkraemer/matfree
 nav:
   - Get started: index.md
   - Tutorials:
-      - control_variates.md
-      - log_determinants.md
-      - higher_moments.md
-      - vector_calculus.md
-      - pytree_logdeterminants.md
+      - tutorials/control_variates.md
+      - tutorials/log_determinants.md
+      - tutorials/higher_moments.md
+      - tutorials/vector_calculus.md
+      - tutorials/pytree_logdeterminants.md
   - API documentation:
       - matfree.decomp: api/decomp.md
       - matfree.hutchinson: api/hutchinson.md
@@ -41,6 +41,10 @@ theme:
   features: [navigation.sections, navigation.footer]
 plugins:
   - search
+  - mkdocs-jupyter:
+      include: ['*.md']
+      execute: true
+      allow_errors: true
   - mkdocstrings:
       handlers:
         python:

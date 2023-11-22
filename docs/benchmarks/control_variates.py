@@ -3,8 +3,9 @@
 Runtime: ~10 seconds.
 """
 
-from matfree import benchmark_util, hutchinson
 from matfree.backend import func, linalg, np, plt, prng, progressbar
+
+from matfree import benchmark_util, hutchinson
 
 
 def problem(n):
