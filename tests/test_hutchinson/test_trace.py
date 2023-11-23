@@ -1,8 +1,11 @@
+"""Test trace estimation."""
 from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, tree_util
 
 
-def test_diagonal():
+def test_trace():
+    """Assert that traces are estimated correctly."""
+
     def fun(x):
         """Create a nonlinear, to-be-differentiated function."""
         fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])

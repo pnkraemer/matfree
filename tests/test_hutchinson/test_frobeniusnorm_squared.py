@@ -1,3 +1,4 @@
+"""Test the estimation of squared Frobenius-norms."""
 from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, tree_util
 

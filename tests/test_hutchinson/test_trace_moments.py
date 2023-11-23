@@ -1,4 +1,4 @@
-"""Tests for estimating traces."""
+"""Tests for estimating higher moments of traces."""
 
 from matfree import hutchinson
 from matfree.backend import func, linalg, np, prng, testing

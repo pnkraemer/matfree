@@ -26,7 +26,8 @@ def py_to_py_light(*, source, target):
 
                 # If first line ends on '.' (which it should), remove ".".
                 # We implement this by removing all "."'s from the string.
-                # More than one period is not supposed to be in the first-line docstring.
+                # More than one period is not supposed
+                # to be in the first-line docstring.
                 header[0] = header[0].replace(".", "")
 
                 # Turn header into markdown
