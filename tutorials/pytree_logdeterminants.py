@@ -70,6 +70,8 @@ f0_flat, unravel_func_f = jax.flatten_util.ravel_pytree(f0)
 
 
 def make_matvec_flat(alpha):
+    """Create a flattened matrix-vector-product function."""
+
     def fun(f_flat):
         """Evaluate a flattened matrix-vector product."""
         f_unravelled = unravel_func_f(f_flat)
