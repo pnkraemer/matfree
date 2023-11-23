@@ -5,18 +5,28 @@ from matfree.backend import func, linalg, np, tree_util
 
 
 def integrand_logdet_spd(order, matvec, /):
-    return _quadratic_form_slq_spd(np.log, order, matvec)
+    return _integrand_slq_spd(np.log, order, matvec)
 
 
-def _quadratic_form_slq_spd(matfun, order, Av, /):
+def _integrand_slq_spd(matfun, order, matvec, /):
     """Quadratic form for stochastic Lanczos quadrature.
 
     Assumes a symmetric, positive definite matrix.
     """
 
     def quadform(v0, /):
+        v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
+
+        def matvec_flat(v_flat):
+            v = v_unflatten(v_flat)
+            Av = matvec(v)
+            flat, unflatten = tree_util.ravel_pytree(Av)
+            return flat
+
         algorithm = decomp.lanczos_tridiag_full_reortho(order)
-        _, tridiag = decomp.decompose_fori_loop(v0, Av, algorithm=algorithm)
+        _, tridiag = decomp.decompose_fori_loop(
+            v0_flat, matvec_flat, algorithm=algorithm
+        )
         (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
@@ -30,7 +40,7 @@ def _quadratic_form_slq_spd(matfun, order, Av, /):
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        (dim,) = v0.shape
+        (dim,) = v0_flat.shape
 
         fx_eigvals = func.vmap(matfun)(eigvals)
         return dim * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
