@@ -2,25 +2,15 @@
 site_name: matfree documentation
 repo_url: https://github.com/pnkraemer/matfree
 repo_name: pnkraemer/matfree
-# nav:
-#  - Get started: index.md
-#  - ...
-#  - Developer documentation: dev/index.md
-#  - Tutorials:
-#      - _generated/tutorials/*
 theme:
   name: material
   palette:
-
-    # Palette toggle for light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: white
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
-    # Palette toggle for dark mode
     - media: '(prefers-color-scheme: light)'
       scheme: slate
       primary: black
@@ -35,7 +25,7 @@ plugins:
   - mkdocs-jupyter:
       include: ['*.py']
       execute: true
-      allow_errors: true
+      allow_errors: false
   - mkdocstrings:
       handlers:
         python:
@@ -58,9 +48,12 @@ plugins:
 watch: [matfree]
 extra:
   social:
-    - icon: fontawesome/brands/twitter
+    - icon: fontawesome/brands/x-twitter
       link: https://twitter.com/@pnkraemer
-      name: Nico
+      name: pnkraemer on X
+    - icon: fontawesome/brands/github
+      link: https://github.com/pnkraemer
+      name: pnkraemer on GitHub
   generator: false
 copyright: Copyright &copy; 2023 Nicholas Krämer
 markdown_extensions:
