@@ -1,17 +1,26 @@
-"""Stochastic Lanczos quadrature."""
+"""Stochastic Lanczos quadrature.
+
+The [slq][matfree.slq] module extends the integrands
+in [hutchinson][matfree.hutchinson] to those that implement
+stochastic Lanczos quadrature.
+"""
 
 from matfree import decomp
 from matfree.backend import func, linalg, np, tree_util
 
 
 def integrand_logdet_spd(order, matvec, /):
-    return _integrand_slq_spd(np.log, order, matvec)
+    """Construct the integrand for the log-determinant.
+
+    This function assumes a symmetric, positive definite matrix.
+    """
+    return integrand_slq_spd(np.log, order, matvec)
 
 
-def _integrand_slq_spd(matfun, order, matvec, /):
+def integrand_slq_spd(matfun, order, matvec, /):
     """Quadratic form for stochastic Lanczos quadrature.
 
-    Assumes a symmetric, positive definite matrix.
+    This function assumes a symmetric, positive definite matrix.
     """
 
     def quadform(v0, /):
@@ -49,11 +58,11 @@ def _integrand_slq_spd(matfun, order, matvec, /):
 
 
 def integrand_logdet_product(depth, matvec, vecmat, /):
-    r"""Construct the integrand for the log-determinant of a product of matrices.
+    r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return _quadratic_form_slq_product(np.log, depth, matvec, vecmat)
+    return integrand_slq_product(np.log, depth, matvec, vecmat)
 
 
 def integrand_schatten_norm(power, depth, matvec, vecmat, /):
@@ -63,11 +72,11 @@ def integrand_schatten_norm(power, depth, matvec, vecmat, /):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return _quadratic_form_slq_product(matfun, depth, matvec, vecmat)
+    return integrand_slq_product(matfun, depth, matvec, vecmat)
 
 
-def _quadratic_form_slq_product(matfun, depth, matvec, vecmat, /):
-    r"""Quadratic form for stochastic Lanczos quadrature.
+def integrand_slq_product(matfun, depth, matvec, vecmat, /):
+    r"""Construct the integrand for the trace of a function of a matrix-product.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
