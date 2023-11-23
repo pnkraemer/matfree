@@ -1,4 +1,4 @@
-"""Estimate log-determinants of pytree-valued functions.
+"""Estimate log-determinants of PyTree-valued functions.
 
 Can we compute log-determinants if the matrix-vector
 products are pytree-valued?

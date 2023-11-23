@@ -1,4 +1,4 @@
-"""Use Matfree for vector calculus.
+"""Implement vector calculus in linear complexity.
 
 Implementing vector calculus with conventional
 algorithmic differentiation can be inefficient.

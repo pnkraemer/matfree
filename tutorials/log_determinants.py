@@ -1,4 +1,4 @@
-"""Use Matfree to compute log-determinants."""
+"""Compute log-determinants with stochastic Lanczos quadrature."""
 
 import jax
 import jax.numpy as jnp

@@ -22,9 +22,16 @@ def test_logdet_product(A, order):
     """Assert that logdet_product yields an accurate estimate."""
     _, ncols = np.shape(A)
     key = prng.prng_key(3)
-    x_like = np.ones((ncols,), dtype=float)
+
+    def matvec(x):
+        return {"fx": A @ x["fx"]}
+
+    def vecmat(x):
+        return {"fx": x["fx"] @ A}
+
+    x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = hutchinson.sampler_normal(x_like, num=400)
-    problem = slq.integrand_logdet_product(order, lambda v: A @ v, lambda v: A.T @ v)
+    problem = slq.integrand_logdet_product(order, matvec, vecmat)
     estimate = hutchinson.hutchinson(problem, fun)
     received = estimate(key)
 

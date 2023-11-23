@@ -1,4 +1,4 @@
-"""Combine Matfree with control variates.
+"""Combine trace estimation with control variates.
 
 Here is how to implement control variates.
 """
