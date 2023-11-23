@@ -19,12 +19,6 @@ Everything is natively compatible with JAX' feature set:
 JIT compilation, automatic differentiation, vectorisation, and pytrees.
 [_Let us know what you think about matfree!_](https://github.com/pnkraemer/matfree/issues)
 
-[**Installation**](#installation) |
-[**Minimal example**](#minimal-example) |
-[**Tutorials**](#tutorials) |
-[**Contributing**](#contributing) |
-[**API docs**](https://pnkraemer.github.io/matfree/api/hutchinson/)
-
 
 **Installation**
 
