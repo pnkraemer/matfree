@@ -2,34 +2,15 @@
 site_name: matfree documentation
 repo_url: https://github.com/pnkraemer/matfree
 repo_name: pnkraemer/matfree
-nav:
-  - Get started: index.md
-  - Tutorials:
-      - control_variates.md
-      - log_determinants.md
-      - higher_moments.md
-      - vector_calculus.md
-      - pytree_logdeterminants.md
-  - API documentation:
-      - matfree.decomp: api/decomp.md
-      - matfree.hutchinson: api/hutchinson.md
-      - matfree.slq: api/slq.md
-      - matfree.pinv: api/pinv.md
-  - Developer documentation: dev/index.md
-  - Benchmarks: benchmarks/index.md
 theme:
   name: material
   palette:
-
-    # Palette toggle for light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: white
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
-    # Palette toggle for dark mode
     - media: '(prefers-color-scheme: light)'
       scheme: slate
       primary: black
@@ -41,15 +22,19 @@ theme:
   features: [navigation.sections, navigation.footer]
 plugins:
   - search
+  - mkdocs-jupyter:
+      include: ['*.py']
+      execute: true
+      allow_errors: false
   - mkdocstrings:
       handlers:
         python:
           options:
-            show_root_heading: false
+            show_root_heading: true
             show_root_toc_entry: true
             show_root_full_path: true
             show_root_members_full_path: true
-            show_object_full_path: false
+            show_object_full_path: true
             show_category_heading: false
             docstring_style: numpy
             show_if_no_docstring: true
@@ -63,9 +48,12 @@ plugins:
 watch: [matfree]
 extra:
   social:
-    - icon: fontawesome/brands/twitter
+    - icon: fontawesome/brands/x-twitter
       link: https://twitter.com/@pnkraemer
-      name: Nico
+      name: pnkraemer on X
+    - icon: fontawesome/brands/github
+      link: https://github.com/pnkraemer
+      name: pnkraemer on GitHub
   generator: false
 copyright: Copyright &copy; 2023 Nicholas Krämer
 markdown_extensions:

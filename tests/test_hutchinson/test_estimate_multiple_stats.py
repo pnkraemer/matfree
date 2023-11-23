@@ -1,11 +1,11 @@
-"""Test the diagonal estimation."""
+"""Test the estimation with multiple statistics."""
 
 from matfree import hutchinson
-from matfree.backend import func, linalg, np, prng, tree_util
+from matfree.backend import func, np, prng, tree_util
 
 
-def test_diagonal():
-    """Assert that the estimated diagonal approximates the true diagonal accurately."""
+def test_estimate_multiple_stats():
+    """Assert that mean and standard-deviation are estimated correctly."""
 
     def fun(x):
         """Create a nonlinear, to-be-differentiated function."""
@@ -18,17 +18,16 @@ def test_diagonal():
     x0 = prng.uniform(key, shape=(4,))  # random lin. point
     args_like = {"params": x0}
     _, jvp = func.linearize(fun, args_like)
-    J = func.jacfwd(fun)(args_like)["params"]
-
-    expected = tree_util.tree_map(linalg.diagonal, J)
 
     # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
     sampler = hutchinson.sampler_normal(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    stats = hutchinson.stats_mean_and_std()
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=stats)
     received = estimate(key)
 
-    def compare(a, b):
-        return np.allclose(a, b, rtol=1e-2)
-
-    assert tree_util.tree_all(tree_util.tree_map(compare, received, expected))
+    irrelevant_value = 1.1
+    expected_structure = {"params": {"mean": irrelevant_value, "std": irrelevant_value}}
+    assert tree_util.tree_structure(received) == tree_util.tree_structure(
+        expected_structure
+    )

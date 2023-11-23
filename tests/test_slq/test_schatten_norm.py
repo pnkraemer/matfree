@@ -20,23 +20,20 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("order", [20])
 @testing.parametrize("power", [1, 2, 5])
 def test_schatten_norm(A, order, power):
-    """Assert that schatten_norm yields an accurate estimate."""
+    """Assert that the Schatten norm is accurate."""
     _, s, _ = linalg.svd(A, full_matrices=False)
-    expected = np.sum(s**power) ** (1 / power)
+    expected = np.sum(s**power)
 
     _, ncols = np.shape(A)
-    key = prng.prng_key(1)
-    fun = hutchinson.sampler_normal(shape=(ncols,))
-    received = slq.schatten_norm(
-        order,
-        lambda v: A @ v,
-        lambda v: A.T @ v,
-        power=power,
-        matrix_shape=np.shape(A),
-        key=key,
-        num_samples_per_batch=100,
-        num_batches=5,
-        sample_fun=fun,
+    args_like = np.ones((ncols,), dtype=float)
+    sampler = hutchinson.sampler_normal(args_like, num=500)
+    integrand = slq.integrand_schatten_norm(
+        power, order, lambda v: A @ v, lambda v: A.T @ v
     )
+    estimate = hutchinson.hutchinson(integrand, sampler)
+
+    key = prng.prng_key(1)
+    received = estimate(key)
+
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails

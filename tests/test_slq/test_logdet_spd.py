@@ -22,16 +22,17 @@ def A(n, num_significant_eigvals):
 def test_logdet_spd(A, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
+
+    def matvec(x):
+        return {"fx": A @ x["fx"]}
+
     key = prng.prng_key(1)
-    fun = hutchinson.sampler_normal(shape=(n,))
-    received = slq.logdet_spd(
-        order,
-        lambda v: A @ v,
-        key=key,
-        num_samples_per_batch=10,
-        num_batches=1,
-        sample_fun=fun,
-    )
+    args_like = {"fx": np.ones((n,), dtype=float)}
+    sampler = hutchinson.sampler_normal(args_like, num=10)
+    integrand = slq.integrand_logdet_spd(order, matvec)
+    estimate = hutchinson.hutchinson(integrand, sampler)
+    received = estimate(key)
+
     expected = linalg.slogdet(A)[1]
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails

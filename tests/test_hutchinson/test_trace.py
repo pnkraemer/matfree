@@ -1,46 +1,32 @@
-"""Tests for basic trace estimators."""
-
+"""Test trace estimation."""
 from matfree import hutchinson
-from matfree.backend import func, linalg, np, prng, testing
+from matfree.backend import func, linalg, np, prng, tree_util
 
 
-@testing.fixture(name="fun")
-def fixture_fun():
-    """Create a nonlinear, to-be-differentiated function."""
+def test_trace():
+    """Assert that traces are estimated correctly."""
 
-    def f(x):
-        return np.sin(np.flip(np.cos(x)) + 1.0) * np.sin(x) + 1.0
+    def fun(x):
+        """Create a nonlinear, to-be-differentiated function."""
+        fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
+        return {"params": fx}
 
-    return f
+    key = prng.prng_key(seed=2)
 
-
-@testing.fixture(name="key")
-def fixture_key():
-    """Fix a pseudo-random number generator."""
-    return prng.prng_key(seed=1)
-
-
-@testing.parametrize("num_batches", [1_000])
-@testing.parametrize("num_samples_per_batch", [1_000])
-@testing.parametrize("dim", [1, 10])
-@testing.parametrize(
-    "sample_fun", [hutchinson.sampler_normal, hutchinson.sampler_rademacher]
-)
-def test_trace(fun, key, num_batches, num_samples_per_batch, dim, sample_fun):
-    """Assert that the estimated trace approximates the true trace accurately."""
     # Linearise function
-    x0 = prng.uniform(key, shape=(dim,))  # random lin. point
-    _, jvp = func.linearize(fun, x0)
-    J = func.jacfwd(fun)(x0)
+    x0 = prng.uniform(key, shape=(4,))  # random lin. point
+    args_like = {"params": x0}
+    _, jvp = func.linearize(fun, args_like)
+    J = func.jacfwd(fun)(args_like)["params"]["params"]
+    expected = linalg.trace(J)
 
-    # Estimate the trace
-    fun = sample_fun(shape=np.shape(x0), dtype=np.dtype(x0))
-    estimate = hutchinson.trace(
-        jvp,
-        num_batches=num_batches,
-        key=key,
-        num_samples_per_batch=num_samples_per_batch,
-        sample_fun=fun,
-    )
-    truth = linalg.trace(J)
-    assert np.allclose(estimate, truth, rtol=1e-2)
+    # Estimate the matrix function
+    problem = hutchinson.integrand_trace(jvp)
+    sampler = hutchinson.sampler_normal(args_like, num=100_000)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    received = estimate(key)
+
+    def compare(a, b):
+        return np.allclose(a, b, rtol=1e-2)
+
+    assert tree_util.tree_all(tree_util.tree_map(compare, received, expected))

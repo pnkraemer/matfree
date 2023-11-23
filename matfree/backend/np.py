@@ -1,18 +1,20 @@
-"""NumPy-style API."""
+"""NumPy-style API.
 
-# In here, we loosely follow the Array API:
-#
-# https://data-apis.org/array-api/2022.12/
-#
-# But deviate in a few points:
-# * The functions here do not have all the arguments specified in the API
-#   (we only wrap the arguments we need)
-# * Our current version of diag/diagonal is slightly different
-# * We do not use methods on Array types, e.g. shape(), dtype(). Instead
-#   these are functions. (Not all backends might always follow this method interface.)
-# * We do not implement any constants (e.g. NaN, Pi). Instead, these are methods.
-# * We call max/min/amax/amin array_max and elementwise_max.
-#   This is more verbose than what the array API suggests.
+In here, we loosely follow the Array API:
+
+https://data-apis.org/array-api/2022.12/
+
+But deviate in a few points:
+* The functions here do not have all the arguments specified in the API
+  (we only wrap the arguments we need)
+* Our current version of diag/diagonal is slightly different
+* We do not use methods on Array types, e.g. shape(), dtype(). Instead,
+  these are functions. (Not all backends might always follow this method interface.)
+* We do not implement any constants (e.g. NaN, Pi). Instead, these are functions.
+* We call max/min/amax/amin array_max and elementwise_max.
+  This is more verbose than what the array API suggests.
+
+"""
 
 import jax.numpy as jnp
 

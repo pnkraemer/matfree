@@ -29,6 +29,6 @@ jobs:
           pip install --upgrade pip
           pip install .[cpu,doc]
       - name: Build the HTML docs
-        run: make doc
+        run: make doc-build
       - name: Publish the HTML docs
         run: mkdocs gh-deploy --force --clean --verbose

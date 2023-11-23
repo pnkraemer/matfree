@@ -64,6 +64,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install .[doc]
+          pip install .[cpu,doc]
       - name: Build documentation
-        run: make doc
+        run: make doc-build
