@@ -93,13 +93,16 @@ Estimate the trace of the matrix:
 
 **Tutorials**
 
-Here are some more advanced tutorials:
+Find many more tutorials in [Matfree's documentation](https://pnkraemer.github.io/matfree/).
 
-- **Control variates:** Use control variates and multilevel schemes to reduce variances.  [(LINK)](https://pnkraemer.github.io/matfree/control_variates/)
-- **Log-determinants:**  Use stochastic Lanczos quadrature to compute matrix functions. [(LINK)](https://pnkraemer.github.io/matfree/log_determinants/)
-- **Higher moments and UQ:** Compute means, variances, and other moments simultaneously. [(LINK)](https://pnkraemer.github.io/matfree/higher_moments/)
-- **Vector calculus:** Use matrix-free linear algebra to implement vector calculus. [(LINK)](https://pnkraemer.github.io/matfree/vector_calculus/)
-- **Pytree-valued states:** Combining neural-network Jacobians with stochastic Lanczos quadrature. [(LINK)](https://pnkraemer.github.io/matfree/pytree_logdeterminants/)
+These tutorials include, among other things:
+
+- **Log-determinants:**  Use stochastic Lanczos quadrature to compute matrix functions.
+- **Pytree-valued states:** Combining neural-network Jacobians with stochastic Lanczos quadrature.
+- **Control variates:** Use control variates and multilevel schemes to reduce variances.
+- **Higher moments and UQ:** Compute means, variances, and other moments simultaneously.
+- **Vector calculus:** Use matrix-free linear algebra to implement vector calculus.
+
 
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use matfree for!
 
