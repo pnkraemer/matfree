@@ -1,4 +1,8 @@
-"""Compute log-determinants with stochastic Lanczos quadrature."""
+"""Compute log-determinants with stochastic Lanczos quadrature.
+
+Log-determinant estimation can be implemented with stochastic Lanczos quadrature,
+which can be loosely interpreted as an extension of Hutchinson's trace estimator.
+"""
 
 import jax
 import jax.numpy as jnp
@@ -43,18 +47,18 @@ A += jnp.eye(nrows)
 A /= nrows**2
 
 
-def matvec(x):
+def matvec_right(x):
     """Compute a matrix-vector product."""
     return A @ x
 
 
-def vecmat(x):
+def vecmat_left(x):
     """Compute a vector-matrix product."""
     return x @ A
 
 
 order = 3
-problem = slq.integrand_logdet_product(order, matvec, vecmat)
+problem = slq.integrand_logdet_product(order, matvec_right, vecmat_left)
 sampler = hutchinson.sampler_normal(x_like, num=1_000)
 estimator = hutchinson.hutchinson(problem, sample_fun=sampler)
 logdet = estimator(jax.random.PRNGKey(1))

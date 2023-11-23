@@ -5,7 +5,6 @@ products are pytree-valued?
 Yes, we can. Matfree natively supports PyTrees.
 """
 
-
 import jax
 import jax.numpy as jnp
 

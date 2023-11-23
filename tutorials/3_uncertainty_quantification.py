@@ -4,7 +4,6 @@ Computing higher moments of trace-estimates can easily
 be turned into uncertainty quantification.
 """
 
-
 import jax
 import jax.numpy as jnp
 
