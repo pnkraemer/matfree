@@ -60,6 +60,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.arithmatex:
       generic: true
+  - admonition
+  - pymdownx.details
 extra_javascript:
   # From: https://squidfunk.github.io/mkdocs-material/reference/mathjax/#mkdocsyml
   - javascripts/mathjax.js
