@@ -23,12 +23,12 @@ def integrand_slq_spd(matfun, order, matvec, /):
     This function assumes a symmetric, positive definite matrix.
     """
 
-    def quadform(v0, /):
+    def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
 
         def matvec_flat(v_flat):
             v = v_unflatten(v_flat)
-            Av = matvec(v)
+            Av = matvec(v, *parameters)
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
@@ -83,12 +83,12 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
     Here, "product" refers to $X = A^\top A$.
     """
 
-    def quadform(v0, /):
+    def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
 
         def matvec_flat(v_flat):
             v = v_unflatten(v_flat)
-            Av = matvec(v)
+            Av = matvec(v, *parameters)
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat, tree_util.partial_pytree(unflatten)
 
@@ -97,7 +97,7 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
 
         def vecmat_flat(w_flat):
             w = w_unflatten(w_flat)
-            wA = vecmat(w)
+            wA = vecmat(w, *parameters)
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
