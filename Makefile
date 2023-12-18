@@ -7,8 +7,8 @@ lint:
 	pre-commit run --all-files
 
 test:
-	python -m doctest README.md
 	pytest -x -v
+	python -m doctest README.md
 
 
 clean-preview:
