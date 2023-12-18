@@ -19,8 +19,8 @@ def integrand_diagonal(matvec, /):
     where ``*args_like`` is an argument of the sampler.
     """
 
-    def integrand(v, /):
-        Qv = matvec(v)
+    def integrand(v, *parameters):
+        Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
         return unflatten(v_flat * Qv_flat)
@@ -31,8 +31,8 @@ def integrand_diagonal(matvec, /):
 def integrand_trace(matvec, /):
     """Construct the integrand for estimating the trace."""
 
-    def integrand(v, /):
-        Qv = matvec(v)
+    def integrand(v, *parameters):
+        Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
         return linalg.vecdot(v_flat, Qv_flat)
@@ -43,8 +43,8 @@ def integrand_trace(matvec, /):
 def integrand_trace_and_diagonal(matvec, /):
     """Construct the integrand for estimating the trace and diagonal jointly."""
 
-    def integrand(v, /):
-        Qv = matvec(v)
+    def integrand(v, *parameters):
+        Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
         trace_form = linalg.vecdot(v_flat, Qv_flat)
@@ -57,8 +57,8 @@ def integrand_trace_and_diagonal(matvec, /):
 def integrand_frobeniusnorm_squared(matvec, /):
     """Construct the integrand for estimating the squared Frobenius norm."""
 
-    def integrand(vec, /):
-        x = matvec(vec)
+    def integrand(vec, *parameters):
+        x = matvec(vec, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(x)
         return linalg.vecdot(v_flat, v_flat)
 
@@ -71,8 +71,8 @@ def integrand_trace_moments(matvec, moments, /):
     def moment_fun(x):
         return tree_util.tree_map(lambda m: x**m, moments)
 
-    def integrand(vec, /):
-        x = matvec(vec)
+    def integrand(vec, *parameters):
+        x = matvec(vec, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(vec)
         x_flat, _unflatten = tree_util.ravel_pytree(x)
         fx = linalg.vecdot(x_flat, v_flat)
@@ -139,9 +139,9 @@ def hutchinson(integrand_fun, /, sample_fun, stats_fun=np.mean):
 
     """
 
-    def sample(key):
+    def sample(key, *parameters):
         samples = sample_fun(key)
-        Qs = func.vmap(integrand_fun)(samples)
+        Qs = func.vmap(lambda vec: integrand_fun(vec, *parameters))(samples)
         return tree_util.tree_map(lambda s: stats_fun(s, axis=0), Qs)
 
     return sample
