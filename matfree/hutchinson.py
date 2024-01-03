@@ -101,11 +101,11 @@ def _sampler_from_jax_random(sample_func, *args_like, num):
     return sample
 
 
-def integrand_compute_first_two_moments(integrand, /):
-    """Evaluate mean and standard-deviation of the samples."""
+def integrand_wrap_first_two_moments(integrand_fun, /):
+    """Compute the first two moments of the integrand."""
 
     def integrand_wrapped(vec, *parameters):
-        Qs = integrand(vec, *parameters)
+        Qs = integrand_fun(vec, *parameters)
         return tree_util.tree_map(compute_moments, Qs)
 
     def compute_moments(x, /):
