@@ -101,16 +101,20 @@ def _sampler_from_jax_random(sample_func, *args_like, num):
     return sample
 
 
-def stats_mean_and_std():
+def integrand_compute_first_two_moments(integrand, /):
     """Evaluate mean and standard-deviation of the samples."""
 
-    def stats(arr, /, axis):
-        return {"mean": np.mean(arr, axis=axis), "std": np.std(arr, axis=axis)}
+    def integrand_wrapped(vec, *parameters):
+        Qs = integrand(vec, *parameters)
+        return tree_util.tree_map(compute_moments, Qs)
 
-    return stats
+    def compute_moments(x, /):
+        return {"moment_1st": x, "moment_2nd": x**2}
+
+    return integrand_wrapped
 
 
-def hutchinson(integrand_fun, /, sample_fun, stats_fun=np.mean):
+def hutchinson(integrand_fun, /, sample_fun):
     """Construct Hutchinson's estimator.
 
     Parameters
@@ -123,14 +127,6 @@ def hutchinson(integrand_fun, /, sample_fun, stats_fun=np.mean):
         The sample function. Usually, either
         [sampler_normal][matfree.hutchinson.sampler_normal] or
         [sampler_rademacher][matfree.hutchinson.sampler_rademacher].
-    stats_fun
-        The statistics to evaluate.
-        Usually, this is jnp.mean. But any other
-        statistical function which expects arguments like
-        [one of these functions](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
-        and returns a pytree of arrays works;
-        for example,
-        [stats_mean_and_std][matfree.hutchinson.stats_mean_and_std].
 
     Returns
     -------
@@ -142,6 +138,6 @@ def hutchinson(integrand_fun, /, sample_fun, stats_fun=np.mean):
     def sample(key, *parameters):
         samples = sample_fun(key)
         Qs = func.vmap(lambda vec: integrand_fun(vec, *parameters))(samples)
-        return tree_util.tree_map(lambda s: stats_fun(s, axis=0), Qs)
+        return tree_util.tree_map(lambda s: np.mean(s, axis=0), Qs)
 
     return sample

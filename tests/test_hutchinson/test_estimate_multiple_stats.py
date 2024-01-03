@@ -21,13 +21,13 @@ def test_estimate_multiple_stats():
 
     # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
+    problem = hutchinson.integrand_compute_first_two_moments(problem)
     sampler = hutchinson.sampler_normal(args_like, num=100_000)
-    stats = hutchinson.stats_mean_and_std()
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=stats)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
     received = estimate(key)
 
     irrelevant_value = 1.1
-    expected_structure = {"params": {"mean": irrelevant_value, "std": irrelevant_value}}
-    assert tree_util.tree_structure(received) == tree_util.tree_structure(
-        expected_structure
-    )
+    expected = {
+        "params": {"moment_1st": irrelevant_value, "moment_2nd": irrelevant_value}
+    }
+    assert tree_util.tree_structure(received) == tree_util.tree_structure(expected)
