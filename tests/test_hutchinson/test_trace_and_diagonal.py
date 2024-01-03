@@ -21,19 +21,19 @@ def test_trace_and_diagonal():
     # Estimate the matrix function
     problem = hutchinson.integrand_trace_and_diagonal(jvp)
     sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
     received = estimate(key)
 
     # Estimate the trace
     problem = hutchinson.integrand_trace(jvp)
     sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
     expected_trace = estimate(key)
 
     # Estimate the diagonal
     problem = hutchinson.integrand_diagonal(jvp)
     sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler, stats_fun=np.mean)
+    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
     expected_diagonal = estimate(key)
 
     expected = {"trace": expected_trace, "diagonal": expected_diagonal}

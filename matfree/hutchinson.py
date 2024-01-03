@@ -7,6 +7,36 @@ from matfree.backend import func, linalg, np, prng, tree_util
 #  trace_and_frobeniusnorm(): y=Ax; return (x@y, y@y)
 
 
+def hutchinson(integrand_fun, /, sample_fun):
+    """Construct Hutchinson's estimator.
+
+    Parameters
+    ----------
+    integrand_fun
+        The integrand function. For example, the return-value of
+        [integrand_trace][matfree.hutchinson.integrand_trace].
+        But any other integrand works, too.
+    sample_fun
+        The sample function. Usually, either
+        [sampler_normal][matfree.hutchinson.sampler_normal] or
+        [sampler_rademacher][matfree.hutchinson.sampler_rademacher].
+
+    Returns
+    -------
+    integrand_fun
+        A function that maps a random key to an estimate.
+        This function can be jitted, vmapped, or looped over as the user desires.
+
+    """
+
+    def sample(key, *parameters):
+        samples = sample_fun(key)
+        Qs = func.vmap(lambda vec: integrand_fun(vec, *parameters))(samples)
+        return tree_util.tree_map(lambda s: np.mean(s, axis=0), Qs)
+
+    return sample
+
+
 def integrand_diagonal(matvec, /):
     """Construct the integrand for estimating the diagonal.
 
@@ -65,20 +95,38 @@ def integrand_frobeniusnorm_squared(matvec, /):
     return integrand
 
 
-def integrand_trace_moments(matvec, moments, /):
-    """Construct the integrand for estimating (higher) moments of the trace."""
+def integrand_wrap_moments(integrand_fun, /, moments):
+    """Wrap an integrand into another integrand that computes moments.
 
-    def moment_fun(x):
+    Parameters
+    ----------
+    integrand_fun
+        Any integrand function compatible with Hutchinson-style estimation.
+    moments
+        Any Pytree (tuples, lists, dictionaries) whose leafs that are
+        valid inputs to ``lambda m: x**m`` for an array ``x``,
+        usually, with data-type ``float``
+        (but that depends on the wrapped integrand).
+        For example, ``moments=4``, ``moments=(1,2)``,
+        or ``moments={"a": 1, "b": 2}``.
+
+    Returns
+    -------
+    integrand_fun
+        An integrand function compatible with Hutchinson-style estimation whose
+        output has a PyTree-structure that mirrors the structure of the ``moments``
+        argument.
+
+    """
+
+    def integrand_wrapped(vec, *parameters):
+        Qs = integrand_fun(vec, *parameters)
+        return tree_util.tree_map(moment_fun, Qs)
+
+    def moment_fun(x, /):
         return tree_util.tree_map(lambda m: x**m, moments)
 
-    def integrand(vec, *parameters):
-        x = matvec(vec, *parameters)
-        v_flat, unflatten = tree_util.ravel_pytree(vec)
-        x_flat, _unflatten = tree_util.ravel_pytree(x)
-        fx = linalg.vecdot(x_flat, v_flat)
-        return moment_fun(fx)
-
-    return integrand
+    return integrand_wrapped
 
 
 def sampler_normal(*args_like, num):
@@ -97,51 +145,5 @@ def _sampler_from_jax_random(sample_func, *args_like, num):
     def sample(key):
         samples = sample_func(key, shape=(num, *x_flat.shape), dtype=x_flat.dtype)
         return func.vmap(unflatten)(samples)
-
-    return sample
-
-
-def stats_mean_and_std():
-    """Evaluate mean and standard-deviation of the samples."""
-
-    def stats(arr, /, axis):
-        return {"mean": np.mean(arr, axis=axis), "std": np.std(arr, axis=axis)}
-
-    return stats
-
-
-def hutchinson(integrand_fun, /, sample_fun, stats_fun=np.mean):
-    """Construct Hutchinson's estimator.
-
-    Parameters
-    ----------
-    integrand_fun
-        The integrand function. For example, the return-value of
-        [integrand_trace][matfree.hutchinson.integrand_trace].
-        But any other integrand works, too.
-    sample_fun
-        The sample function. Usually, either
-        [sampler_normal][matfree.hutchinson.sampler_normal] or
-        [sampler_rademacher][matfree.hutchinson.sampler_rademacher].
-    stats_fun
-        The statistics to evaluate.
-        Usually, this is jnp.mean. But any other
-        statistical function which expects arguments like
-        [one of these functions](https://data-apis.org/array-api/2022.12/API_specification/statistical_functions.html)
-        and returns a pytree of arrays works;
-        for example,
-        [stats_mean_and_std][matfree.hutchinson.stats_mean_and_std].
-
-    Returns
-    -------
-    A function that maps a random key to an estimate.
-    This function can be jitted, vmapped, or looped over as the user desires.
-
-    """
-
-    def sample(key, *parameters):
-        samples = sample_fun(key)
-        Qs = func.vmap(lambda vec: integrand_fun(vec, *parameters))(samples)
-        return tree_util.tree_map(lambda s: stats_fun(s, axis=0), Qs)
 
     return sample
