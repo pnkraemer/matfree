@@ -101,7 +101,7 @@ These tutorials include, among other things:
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use matfree for!
 
 
-## Continuous integration
+## Use Matfree's continuous integration
 
 
 To install all test-related dependencies, (assuming JAX is installed; if not, run `pip install .[cpu]`), execute
@@ -152,7 +152,7 @@ make doc-build
 ```
 
 
-## Contributing to Matfree
+## Contribute to Matfree
 
 Contributions are absolutely welcome!
 
@@ -179,9 +179,9 @@ When making a pull request, keep in mind the following (rough) guidelines:
 * Most enhancements (e.g. new features) are covered by tests.
 
 
-## Extending the documentation
+## Extend Matfree's documentation
 
-**Writing a new tutorial:**
+**Write a new tutorial:**
 
 To add a new tutorial, create a Python file in `tutorials/` and fill it with content.
 Use docstrings (mirror the style in the existing tutorials).
@@ -194,7 +194,7 @@ If you do not want to make the tutorial part of the documentation, make the file
 have a leading underscore.
 
 
-**Extending the developer documentation:**
+**Extend the developer documentation:**
 
 To extend the developer documentation, create a new section in the README.
 Use a second-level header (a header that starts with "##") and fill the section
@@ -202,7 +202,7 @@ with content.
 Then, the documentation pipeline will turn this section into a page in the developer documentation.
 
 
-**Creating a new module:**
+**Create a new module:**
 
 To make a new module appear in the documentation, create the new module in `matfree/`,
 and fill it with content.
