@@ -23,8 +23,9 @@ def hutchinson(integrand_fun, /, sample_fun):
 
     Returns
     -------
-    A function that maps a random key to an estimate.
-    This function can be jitted, vmapped, or looped over as the user desires.
+    integrand_fun
+        A function that maps a random key to an estimate.
+        This function can be jitted, vmapped, or looped over as the user desires.
 
     """
 
@@ -94,8 +95,29 @@ def integrand_frobeniusnorm_squared(matvec, /):
     return integrand
 
 
-def integrand_wrap_moments(integrand_fun, /, moments=(1, 2)):
-    """Wrap an integrand into another integrand that computes moments."""
+def integrand_wrap_moments(integrand_fun, /, moments):
+    """Wrap an integrand into another integrand that computes moments.
+
+    Parameters
+    ----------
+    integrand_fun
+        Any integrand function compatible with Hutchinson-style estimation.
+    moments
+        Any Pytree (tuples, lists, dictionaries) whose leafs that are
+        valid inputs to ``lambda m: x**m`` for an array ``x``,
+        usually, with data-type ``float``
+        (but that depends on the wrapped integrand).
+        For example, ``moments=4``, ``moments=(1,2)``,
+        or ``moments={"a": 1, "b": 2}``.
+
+    Returns
+    -------
+    integrand_fun
+        An integrand function compatible with Hutchinson-style estimation whose
+        output has a PyTree-structure that mirrors the structure of the ``moments``
+        argument.
+
+    """
 
     def integrand_wrapped(vec, *parameters):
         Qs = integrand_fun(vec, *parameters)
