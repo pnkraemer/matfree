@@ -4,7 +4,7 @@ from matfree import hutchinson
 from matfree.backend import func, np, prng, tree_util
 
 
-def test_estimate_multiple_stats():
+def test_yields_correct_tree_structure():
     """Assert that mean and standard-deviation are estimated correctly."""
 
     def fun(x):
@@ -21,7 +21,7 @@ def test_estimate_multiple_stats():
 
     # Estimate the matrix function
     problem = hutchinson.integrand_diagonal(jvp)
-    problem = hutchinson.integrand_compute_first_two_moments(problem)
+    problem = hutchinson.integrand_wrap_first_two_moments(problem)
     sampler = hutchinson.sampler_normal(args_like, num=100_000)
     estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
     received = estimate(key)
