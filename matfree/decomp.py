@@ -1,9 +1,9 @@
 """Matrix decomposition algorithms."""
 
 from matfree.backend import containers, control_flow, linalg, np
-from matfree.backend.typing import Array, Callable, Tuple, TypeAlias
+from matfree.backend.typing import Array, Callable, Tuple
 
-AlgorithmType: TypeAlias = Tuple[Callable, Callable, Callable, Tuple[int, int]]
+AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
 """Decomposition algorithm type.
 
 For example, the output of
