@@ -179,6 +179,8 @@ def _normalise(vec):
     return vec / length, length
 
 
+# todo: does this implement a (poor) QR-decomposition?
+#  Check this out, and implement alternative options if possible
 def _gram_schmidt_orthogonalise_set(vec, vectors):  # Gram-Schmidt
     vec, coeffs = control_flow.scan(_gram_schmidt_orthogonalise, vec, xs=vectors)
     return vec, coeffs

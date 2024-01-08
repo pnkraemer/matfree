@@ -37,6 +37,10 @@ def ones_like(x, /):
     return jnp.ones_like(x)
 
 
+def zeros_like(x, /):
+    return jnp.zeros_like(x)
+
+
 def zeros(shape, *, dtype=None):
     return jnp.zeros(shape, dtype=dtype)
 
