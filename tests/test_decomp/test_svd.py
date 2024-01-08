@@ -34,6 +34,7 @@ def test_equal_to_linalg_svd(A):
         return v @ A
 
     v0 = np.ones((ncols,))
+    v0 /= linalg.vector_norm(v0)
     U, S, Vt = decomp.svd_approx(v0, depth, Av, vA, matrix_shape=np.shape(A))
     U_, S_, Vt_ = linalg.svd(A, full_matrices=False)
 
