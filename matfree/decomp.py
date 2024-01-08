@@ -44,6 +44,7 @@ def lanczos_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> Algori
         basis: Array
         tridiag: Tuple[Array, Array]
         q: Array
+        length: Array
 
     def init(init_vec: Array) -> State:
         (ncols,) = np.shape(init_vec)
@@ -57,10 +58,13 @@ def lanczos_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> Algori
         offdiag = np.zeros((depth,))
         basis = np.zeros((depth + 1, ncols))
 
-        return State(0, basis, (diag, offdiag), init_vec)
+        return State(0, basis, (diag, offdiag), init_vec, 1.0)
 
     def apply(state: State, Av: Callable) -> State:
-        i, basis, (diag, offdiag), vec = state
+        i, basis, (diag, offdiag), vec, length = state
+
+        # Compute the next off-diagonal entry
+        offdiag = offdiag.at[i - 1].set(length)
 
         # Re-orthogonalise against ALL basis elements before storing.
         # Note: we re-orthogonalise against ALL columns of Q, not just
@@ -69,26 +73,23 @@ def lanczos_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> Algori
         # that the whole computation has static bounds (thus we can JIT it all).
         # Since 'Q' is padded with zeros, the numerical values are identical
         # between both modes of computing.
-        vec, length = _normalise(vec)
-        vec, _ = _gram_schmidt_orthogonalise_set(vec, basis)
+        vec, *_ = _gram_schmidt_classical(vec, basis)
 
-        # I don't know why, but this re-normalisation is soooo crucial
-        vec, _ = _normalise(vec)
+        # Store new basis element
         basis = basis.at[i, :].set(vec)
 
         # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
         #  that Q is initialised with zeros.
         vec = Av(vec)
         basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
-        vec, (coeff, _) = _gram_schmidt_orthogonalise_set(vec, basis_vectors_previous)
+        vec, length, (coeff, _) = _gram_schmidt_classical(vec, basis_vectors_previous)
         diag = diag.at[i].set(coeff)
-        offdiag = offdiag.at[i - 1].set(length)
 
-        return State(i + 1, basis, (diag, offdiag), vec)
+        return State(i + 1, basis, (diag, offdiag), vec, length)
 
     def extract(state: State, /):
         # todo: return final output "_ignored"
-        _, basis, (diag, offdiag), _ignored = state
+        _, basis, (diag, offdiag), *_ignored = state
         return basis, (diag, offdiag)
 
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
@@ -142,15 +143,13 @@ def lanczos_bidiag_full_reortho(
 
         uk = Av(vk) - beta * Us[i - 1]
         uk, alpha = _normalise(uk)
-        uk, _ = _gram_schmidt_orthogonalise_set(uk, Us)  # full reorthogonalisation
-        uk, _ = _normalise(uk)
+        uk, *_ = _gram_schmidt_classical(uk, Us)  # full reorthogonalisation
         Us = Us.at[i].set(uk)
         alphas = alphas.at[i].set(alpha)
 
         vk = vA(uk) - alpha * vk
         vk, beta = _normalise(vk)
-        vk, _ = _gram_schmidt_orthogonalise_set(vk, Vs)  # full reorthogonalisation
-        vk, _ = _normalise(vk)
+        vk, *_ = _gram_schmidt_classical(vk, Vs)  # full reorthogonalisation
 
         return State(i + 1, Us, Vs, alphas, betas, beta, vk)
 
@@ -179,14 +178,13 @@ def _normalise(vec):
     return vec / length, length
 
 
-# todo: does this implement a (poor) QR-decomposition?
-#  Check this out, and implement alternative options if possible
-def _gram_schmidt_orthogonalise_set(vec, vectors):  # Gram-Schmidt
-    vec, coeffs = control_flow.scan(_gram_schmidt_orthogonalise, vec, xs=vectors)
-    return vec, coeffs
+def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
+    vec, coeffs = control_flow.scan(_gram_schmidt_classical_step, vec, xs=vectors)
+    vec, length = _normalise(vec)
+    return vec, length, coeffs
 
 
-def _gram_schmidt_orthogonalise(vec1, vec2):
+def _gram_schmidt_classical_step(vec1, vec2):
     coeff = linalg.vecdot(vec1, vec2)
     vec_ortho = vec1 - coeff * vec2
     return vec_ortho, coeff

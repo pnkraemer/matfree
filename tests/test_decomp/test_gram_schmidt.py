@@ -27,7 +27,7 @@ def qr_via_gs_m(M):
     Q0 = np.zeros_like(M)
     R0 = np.zeros_like(M)
     for i in range(len(M)):
-        M, v, n, c = gram_schmidt_modified_set(i, M)
+        M, (v, c) = gram_schmidt_modified_set(i, M)
         Q0 = Q0.at[:, i].set(v)
         R0 = R0.at[i, :].set(c)
     return Q0, R0
@@ -40,7 +40,7 @@ def gram_schmidt_modified_set(i, matrix):  # Gram-Schmidt
     coeffs = q.T @ matrix
     matrix = matrix - (coeffs[:, None] * q[None, :]).T
     matrix = matrix.at[:, i].set(0.0)
-    return matrix, q, n, coeffs
+    return matrix, (q, coeffs)
 
 
 def positive_diag(q, r):
@@ -59,5 +59,3 @@ def test_manual_qr_matches_numpy_qr(func):
     Q_, R_ = positive_diag(*func(M))
     assert np.allclose(R, R_)
     assert np.allclose(Q, Q_)
-
-    assert False

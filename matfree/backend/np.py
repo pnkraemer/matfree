@@ -49,6 +49,10 @@ def ones(shape, *, dtype=None):
     return jnp.ones(shape, dtype=dtype)
 
 
+def concatenate(list_of_arrays, /):
+    return jnp.concatenate(list_of_arrays)
+
+
 # Element-wise functions
 
 
