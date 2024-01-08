@@ -1,16 +1,9 @@
 """Types."""
 # fmt: off
 from collections.abc import Callable  # noqa: F401
-from typing import (  # noqa: F401, UP035
-    Any,
-    Generic,
-    Iterable,
-    Sequence,
-    Tuple,
-    TypeAlias,
-    TypeVar,
-)
+from typing import Any, Generic, Iterable, Sequence, Tuple, TypeVar  # noqa: F401, UP035
 
 from jax import Array  # noqa: F401
+from typing_extensions import TypeAlias  # noqa: F401 # for Python 3.9
 
 # fmt: on
