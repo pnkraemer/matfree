@@ -3,6 +3,13 @@
 from matfree.backend import containers, control_flow, linalg, np
 from matfree.backend.typing import Array, Callable, Tuple
 
+AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
+"""Decomposition algorithm type.
+
+For example, the output of
+[matfree.decomp.lanczos_tridiag_full_reortho(...)][matfree.decomp.lanczos_tridiag_full_reortho].
+"""
+
 
 class _Alg(containers.NamedTuple):
     """Matrix decomposition algorithm."""
@@ -20,7 +27,7 @@ class _Alg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def lanczos_tridiag_full_reortho(depth, /):
+def lanczos_tridiag_full_reortho(depth, /) -> AlgorithmType:
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -83,7 +90,7 @@ def lanczos_tridiag_full_reortho(depth, /):
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
 
 
-def lanczos_bidiag_full_reortho(depth, /, matrix_shape):
+def lanczos_bidiag_full_reortho(depth, /, matrix_shape) -> AlgorithmType:
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -117,7 +124,7 @@ def lanczos_bidiag_full_reortho(depth, /, matrix_shape):
         Us = np.zeros((depth + 1, nrows))
         Vs = np.zeros((depth + 1, ncols))
         v0, _ = _normalise(init_vec)
-        return State(0, Us, Vs, alphas, betas, 0.0, v0)
+        return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
     def apply(state: State, Av: Callable, vA: Callable) -> State:
         i, Us, Vs, alphas, betas, beta, vk = state
@@ -200,30 +207,6 @@ def _bidiagonal_dense(d, e):
     diag = linalg.diagonal_matrix(d)
     offdiag = linalg.diagonal_matrix(e, 1)
     return diag + offdiag
-
-
-class _DecompAlg(containers.NamedTuple):
-    """Matrix decomposition algorithm."""
-
-    init: Callable
-    """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
-
-    step: Callable
-    """Compute the next iteration."""
-
-    extract: Callable
-    """Extract the solution from the state of the algorithm."""
-
-    lower_upper: Tuple[int, int]
-    """Range of the for-loop used to decompose a matrix."""
-
-
-AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
-"""Decomposition algorithm type.
-
-For example, the output of
-[matfree.decomp.lanczos_tridiag_full_reortho(...)][matfree.decomp.lanczos_tridiag_full_reortho].
-"""
 
 
 # all arguments are positional-only because we will rename arguments a lot

@@ -27,7 +27,7 @@ repos:
     rev: v1.5.1
     hooks:
       - id: mypy
-        args: [--no-strict-optional, --ignore-missing-imports]
+        args: [--ignore-missing-imports]
   - repo: https://github.com/lyz-code/yamlfix/
     rev: 1.13.0
     hooks:
