@@ -1,4 +1,4 @@
-"""Tests for GKL bidiagonalisation."""
+"""Test the Golub-Kahan-Lanczos bi-diagonalisation with full re-orthogonalisation."""
 
 from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing

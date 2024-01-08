@@ -1,4 +1,4 @@
-"""Tests for Lanczos functionality."""
+"""Test the Lanczos tri-diagonalisation with full re-orthogonalisation."""
 
 from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
