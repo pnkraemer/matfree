@@ -27,7 +27,7 @@ class _Alg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def lanczos_tridiag_full_reortho(depth, /) -> AlgorithmType:
+def lanczos_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmType:
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -49,6 +49,9 @@ def lanczos_tridiag_full_reortho(depth, /) -> AlgorithmType:
         (ncols,) = np.shape(init_vec)
         if depth >= ncols or depth < 1:
             raise ValueError
+
+        if validate_unit_2_norm:
+            init_vec = _validate_unit_2_norm(init_vec)
 
         diag = np.zeros((depth + 1,))
         offdiag = np.zeros((depth,))
@@ -84,13 +87,16 @@ def lanczos_tridiag_full_reortho(depth, /) -> AlgorithmType:
         return State(i + 1, basis, (diag, offdiag), vec)
 
     def extract(state: State, /):
-        _, basis, (diag, offdiag), _ = state
+        # todo: return final output "_ignored"
+        _, basis, (diag, offdiag), _ignored = state
         return basis, (diag, offdiag)
 
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
 
 
-def lanczos_bidiag_full_reortho(depth, /, matrix_shape) -> AlgorithmType:
+def lanczos_bidiag_full_reortho(
+    depth, /, matrix_shape, validate_unit_2_norm=False
+) -> AlgorithmType:
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -118,6 +124,9 @@ def lanczos_bidiag_full_reortho(depth, /, matrix_shape) -> AlgorithmType:
         vk: Array
 
     def init(init_vec: Array) -> State:
+        if validate_unit_2_norm:
+            init_vec = _validate_unit_2_norm(init_vec)
+
         nrows, ncols = matrix_shape
         alphas = np.zeros((depth + 1,))
         betas = np.zeros((depth + 1,))
@@ -150,6 +159,19 @@ def lanczos_bidiag_full_reortho(depth, /, matrix_shape) -> AlgorithmType:
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+
+
+def _validate_unit_2_norm(v, /):
+    # Lanczos assumes a unit-2-norm vector as an input
+    # We cannot raise an error based on values of the init_vec,
+    # but we can make it obvious that the result is unusable.
+    is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(v.dtype)
+    return control_flow.cond(
+        is_not_normalized,
+        lambda s: np.nan() * np.ones_like(s),
+        lambda s: s,
+        v,
+    )
 
 
 def _normalise(vec):

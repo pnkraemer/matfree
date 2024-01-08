@@ -31,6 +31,7 @@ def test_lanczos_bidiag_full_reortho(A, order):
     def vA(v):
         return v @ A
 
+    v0 /= linalg.vector_norm(v0)
     Us, Bs, Vs, (b, v) = decomp.decompose_fori_loop(v0, Av, vA, algorithm=alg)
     (d_m, e_m) = Bs
 
@@ -111,3 +112,33 @@ def test_no_error_zero_depth(A):
     assert np.shape(e_m) == (0,)
     assert np.shape(b) == ()
     assert np.shape(v) == (ncols,)
+
+
+@testing.parametrize("nrows", [15])
+@testing.parametrize("ncols", [3])
+@testing.parametrize("num_significant_singular_vals", [3])
+@testing.parametrize("order", [2])
+def test_validate_unit_norm(A, order):
+    """Test that the outputs are NaN if the input is not normalized."""
+    nrows, ncols = np.shape(A)
+    algorithm = decomp.lanczos_bidiag_full_reortho(
+        order, matrix_shape=np.shape(A), validate_unit_2_norm=True
+    )
+    key = prng.prng_key(1)
+
+    # Not normalized!
+    v0 = prng.normal(key, shape=(ncols,)) + 1.0
+
+    def Av(v):
+        return A @ v
+
+    def vA(v):
+        return v @ A
+
+    Us, (d_m, e_m), Vs, (b, v) = decomp.decompose_fori_loop(
+        v0, Av, vA, algorithm=algorithm
+    )
+
+    # Since v0 is not normalized, all inputs are NaN
+    for x in (Us, d_m, e_m, Vs, b, v):
+        assert np.all(np.isnan(x))

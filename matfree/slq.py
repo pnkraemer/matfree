@@ -25,6 +25,7 @@ def integrand_slq_spd(matfun, order, matvec, /):
 
     def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
+        v0_flat /= linalg.vector_norm(v0_flat)
 
         def matvec_flat(v_flat):
             v = v_unflatten(v_flat)
@@ -85,6 +86,7 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
 
     def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
+        v0_flat /= linalg.vector_norm(v0_flat)
 
         def matvec_flat(v_flat):
             v = v_unflatten(v_flat)

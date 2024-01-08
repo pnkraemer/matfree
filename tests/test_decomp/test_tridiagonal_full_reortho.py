@@ -22,6 +22,7 @@ def test_max_order(A):
     order = n - 1
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
+    v0 /= linalg.vector_norm(v0)
     alg = decomp.lanczos_tridiag_full_reortho(order)
     Q, (d_m, e_m) = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
 
@@ -63,6 +64,7 @@ def test_identity(A, order):
     n, _ = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
+    v0 /= linalg.vector_norm(v0)
     alg = decomp.lanczos_tridiag_full_reortho(order)
     Q, tridiag = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
     (d_m, e_m) = tridiag
@@ -92,3 +94,22 @@ def _sym_tridiagonal_dense(d, e):
     offdiag1 = linalg.diagonal_matrix(e, 1)
     offdiag2 = linalg.diagonal_matrix(e, -1)
     return diag + offdiag1 + offdiag2
+
+
+@testing.parametrize("n", [50])
+@testing.parametrize("num_significant_eigvals", [4])
+@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
+def test_validate_unit_norm(A, order):
+    """Test that the outputs are NaN if the input is not normalized."""
+    n, _ = np.shape(A)
+    key = prng.prng_key(1)
+
+    # Not normalized!
+    v0 = prng.normal(key, shape=(n,)) + 1.0
+
+    alg = decomp.lanczos_tridiag_full_reortho(order, validate_unit_2_norm=True)
+    Q, (d_m, e_m) = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
+
+    # Since v0 is not normalized, all inputs are NaN
+    for x in (Q, d_m, e_m):
+        assert np.all(np.isnan(x))

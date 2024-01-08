@@ -83,6 +83,10 @@ def any(x, /):  # noqa: A001
     return jnp.any(x)
 
 
+def all(x, /):  # noqa: A001
+    return jnp.all(x)
+
+
 def allclose(x1, x2, /, *, rtol=1e-5, atol=1e-8):
     return jnp.allclose(x1, x2, rtol=rtol, atol=atol)
 
@@ -156,6 +160,10 @@ def dtype(x, /):
 
 def nan():
     return jnp.nan
+
+
+def finfo_eps(x, /):
+    return jnp.finfo(x).eps
 
 
 # Others
