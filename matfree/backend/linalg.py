@@ -12,8 +12,8 @@ def matrix_norm(x, /, which):
     return jnp.linalg.norm(x, ord=which)
 
 
-def qr(x, /, *, mode="reduced"):
-    return jnp.linalg.qr(x, mode=mode)
+def qr_reduced(x, /):
+    return jnp.linalg.qr(x, mode="reduced")
 
 
 def eigh(x, /):

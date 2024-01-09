@@ -15,7 +15,7 @@ def symmetric_matrix_from_eigenvalues(eigvals, /):
 
     # QR decompose. We need the orthogonal matrix.
     # Treat Q as a stack of eigenvectors.
-    Q, R = linalg.qr(X)
+    Q, R = linalg.qr_reduced(X)
 
     # Treat Q as eigenvectors, and 'D' as eigenvalues.
     # return Q D Q.T.
