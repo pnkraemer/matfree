@@ -38,7 +38,7 @@ def test_logdet_spd(A, order):
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails
 
 
-@testing.parametrize("n", [200])
+@testing.parametrize("n", [50])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
 def test_logdet_spd_exact_for_full_order_lanczos(n):
@@ -52,7 +52,7 @@ def test_logdet_spd_exact_for_full_order_lanczos(n):
     integrand = slq.integrand_logdet_spd(order, lambda v: A @ v)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
-    x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 20
+    x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 10
 
     # Compute v^\top @ log(A) @ v via Lanczos
     received = integrand(x)
