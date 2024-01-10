@@ -25,7 +25,8 @@ def integrand_slq_spd(matfun, order, matvec, /):
 
     def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
-        v0_flat /= linalg.vector_norm(v0_flat)
+        length = linalg.vector_norm(v0_flat)
+        v0_flat /= length
 
         def matvec_flat(v_flat):
             v = v_unflatten(v_flat)
@@ -50,10 +51,8 @@ def integrand_slq_spd(matfun, order, matvec, /):
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        (dim,) = v0_flat.shape
-
         fx_eigvals = func.vmap(matfun)(eigvals)
-        return dim * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
+        return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
 
@@ -86,7 +85,8 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
 
     def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
-        v0_flat /= linalg.vector_norm(v0_flat)
+        length = linalg.vector_norm(v0_flat)
+        v0_flat /= length
 
         def matvec_flat(v_flat):
             v = v_unflatten(v_flat)
@@ -115,10 +115,9 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        _, ncols = matrix_shape
         eigvals, eigvecs = S**2, Vt.T
         fx_eigvals = func.vmap(matfun)(eigvals)
-        return ncols * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
+        return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
 
