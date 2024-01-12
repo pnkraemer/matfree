@@ -84,7 +84,12 @@ def _chebyshev_nodes(n, /):
 
 
 def matrix_poly_chebyshev(matfun, order, matvec, /):
-    """Construct an implementation of matrix-Chebyshev-polynomial interpolation."""
+    """Construct an implementation of matrix-Chebyshev-polynomial interpolation.
+
+    This function assumes that the spectrum of the matrix-vector product
+    is contained in the interval (-1, 1), and that the matrix-function
+    is analytic on this interval.
+    """
     # Construct nodes
     nodes = _chebyshev_nodes(order)
     fx_nodes = matfun(nodes)

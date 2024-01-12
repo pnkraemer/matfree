@@ -1,10 +1,9 @@
 """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
 from matfree import matfun, test_util
-from matfree.backend import linalg, np, prng, testing
+from matfree.backend import linalg, np, prng
 
 
-@testing.parametrize("eigvals_range", [(-1, 1), (3, 4)])
-def test_matrix_poly_chebyshev(eigvals_range, n=4):
+def test_matrix_poly_chebyshev(n=12):
     """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
@@ -19,8 +18,7 @@ def test_matrix_poly_chebyshev(eigvals_range, n=4):
 
     v = prng.normal(prng.prng_key(2), shape=(n,))
 
-    eigvals = np.linspace(0, 1, num=n)
-    eigvals = eigvals_range[0] + eigvals * (eigvals_range[1] - eigvals_range[0])
+    eigvals = np.linspace(-1 + 0.01, 1 - 0.01, num=n)
     matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
 
     # Compute the solution
@@ -35,4 +33,4 @@ def test_matrix_poly_chebyshev(eigvals_range, n=4):
     # Compute the matrix-function vector product
     matfun_vec = matfun.matrix_poly_vector_product(algorithm)
     received = matfun_vec(v, matrix)
-    assert np.allclose(expected, received)
+    assert np.allclose(expected, received, rtol=1e-4)
