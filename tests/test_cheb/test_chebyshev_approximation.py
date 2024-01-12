@@ -1,4 +1,5 @@
-from matfree.backend import control_flow, np
+from matfree import chebyshev, test_util
+from matfree.backend import control_flow, linalg, np, prng
 
 
 def chebyshev_init(x):
@@ -10,8 +11,8 @@ def chebyshev_step(x, ts):
     return 2 * x * t2 - t1, t2
 
 
-def chebyshev_approximate(fun, nodes, x):
-    # nodes = x
+def chebyshev_approximate(fun, order, x):
+    nodes = chebyshev_nodes(order)
     fx_nodes = fun(nodes)
 
     t2_n, t1_n = chebyshev_init(nodes)
@@ -48,9 +49,29 @@ def test_interpolate_function():
         return x**4
 
     x0 = np.linspace(-0.9, 0.9, num=5, endpoint=True)
-
-    nodes = chebyshev_nodes(5)
-
-    approximate = chebyshev_approximate(fun, nodes, x0)
+    order = 5
+    approximate = chebyshev_approximate(fun, order, x0)
 
     assert np.allclose(approximate, fun(x0), atol=1e-6)
+
+
+def test_chebyshev_approximate(n=4):
+    eigvals = np.linspace(-0.99, 0.99, num=n)
+    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+
+    def matvec(x, p):
+        return p @ x
+
+    def matfun(x):
+        return np.sin(x)
+
+    eigvals, eigvecs = linalg.eigh(matrix)
+    log_matrix = eigvecs @ linalg.diagonal(matfun(eigvals)) @ eigvecs.T
+
+    v = prng.normal(prng.prng_key(2), shape=(n,))
+    expected = log_matrix @ v
+
+    order = 6
+    estimate = chebyshev.chebyshev(matfun, order, matvec)
+    received = estimate(v, matrix)
+    assert np.allclose(expected, received)
