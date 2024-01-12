@@ -25,6 +25,10 @@ def arange(start, /, stop=None, step=1):
     return jnp.arange(start, stop, step)
 
 
+def linspace(start, stop, /, *, num, endpoint=True):
+    return jnp.linspace(start, stop, num=num, endpoint=endpoint)
+
+
 def asarray(obj, /):
     return jnp.asarray(obj)
 
@@ -168,6 +172,10 @@ def dtype(x, /):
 
 def nan():
     return jnp.nan
+
+
+def pi():
+    return jnp.pi
 
 
 def finfo_eps(x, /):
