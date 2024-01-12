@@ -24,7 +24,7 @@ def _chebyshev_nodes(n, /):
     return np.cos((2 * k - 1) / (2 * n) * np.pi())
 
 
-def chebyshev(matfun, order, matvec):
+def chebyshev(matfun, order, matvec, /):
     # Construct nodes
     nodes = _chebyshev_nodes(order)
     fx_nodes = matfun(nodes)
