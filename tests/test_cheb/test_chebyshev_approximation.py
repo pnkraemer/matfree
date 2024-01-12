@@ -62,6 +62,8 @@ def test_chebyshev_approximate(n=4):
     def matvec(x, p):
         return p @ x
 
+    # todo: write a test for matfun=np.inv,
+    #  because this application seems to be brittle
     def matfun(x):
         return np.sin(x)
 
