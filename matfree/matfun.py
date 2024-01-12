@@ -1,11 +1,12 @@
 """Chebyshev approximation of matrix functions."""
 
 from matfree.backend import containers, control_flow, np
-from matfree.backend.typing import Array
+from matfree.backend.typing import Array, Callable
 
 
-def matfun_vector_product(algorithm, /):
-    (lower, upper), init_func, step_func, extract_func = algorithm
+def matfun_vector_product(algorithm: tuple[int, int, Callable, Callable, Callable], /):
+    """Construct a function that implements a matrix-function-vector product."""
+    lower, upper, init_func, step_func, extract_func = algorithm
 
     def matvec(vec, *parameters):
         final_state = control_flow.fori_loop(
@@ -24,7 +25,10 @@ def _chebyshev_nodes(n, /):
     return np.cos((2 * k - 1) / (2 * n) * np.pi())
 
 
-def chebyshev(matfun, order, matvec, /):
+def chebyshev(
+    matfun, order, matvec, /
+) -> tuple[int, int, Callable, Callable, Callable]:
+    """Construct an implementation of matrix-Chebyshev-polynomial interpolation."""
     # Construct nodes
     nodes = _chebyshev_nodes(order)
     fx_nodes = matfun(nodes)
@@ -64,4 +68,4 @@ def chebyshev(matfun, order, matvec, /):
     def extract_func(val: _ChebyshevState):
         return val.interpolation
 
-    return (0, order - 1), init_func, recursion_func, extract_func
+    return 0, order - 1, init_func, recursion_func, extract_func
