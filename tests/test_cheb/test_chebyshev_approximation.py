@@ -74,6 +74,7 @@ def test_chebyshev_approximate(n=4):
     expected = log_matrix @ v
 
     order = 6
-    estimate = chebyshev.chebyshev(matfun, order, matvec)
-    received = estimate(v, matrix)
+    algorithm = chebyshev.chebyshev(matfun, order, matvec)
+    matfun_vec = chebyshev.matfun_vector_product(algorithm)
+    received = matfun_vec(v, matrix)
     assert np.allclose(expected, received)
