@@ -1,6 +1,4 @@
-import matplotlib.pyplot as plt
-
-from matfree.backend import np
+from matfree.backend import control_flow, np
 
 
 def chebyshev_init(x):
@@ -22,12 +20,22 @@ def chebyshev_approximate(fun, nodes, x):
 
     t2_x, t1_x = chebyshev_init(x)
     value = c1 * t1_x + c2 * t2_x
-    for i in range(len(nodes)):
-        t2_n, t1_n = chebyshev_step(nodes, (t2_n, t1_n))
-        c2 = 2 * np.mean(fx_nodes * t2_n)
-        t2_x, t1_x = chebyshev_step(x, (t2_x, t1_x))
-        value += c2 * t2_x
+
+    def body(_i, val):
+        return _chebyshev_body_fun(val, nodes=nodes, fx_nodes=fx_nodes, x=x)
+
+    init = value, (t2_n, t1_n), (t2_x, t1_x)
+    value, *_ = control_flow.fori_loop(0, len(nodes) - 1, body, init)
     return value
+
+
+def _chebyshev_body_fun(val, nodes, fx_nodes, x):
+    value, (t2_n, t1_n), (t2_x, t1_x) = val
+    t2_n, t1_n = chebyshev_step(nodes, (t2_n, t1_n))
+    c2 = 2 * np.mean(fx_nodes * t2_n)
+    t2_x, t1_x = chebyshev_step(x, (t2_x, t1_x))
+    value += c2 * t2_x
+    return value, (t2_n, t1_n), (t2_x, t1_x)
 
 
 def chebyshev_nodes(n, /):
@@ -37,14 +45,12 @@ def chebyshev_nodes(n, /):
 
 def test_interpolate_function():
     def fun(x):
-        return x**5
+        return x**4
 
     x0 = np.linspace(-0.9, 0.9, num=5, endpoint=True)
 
-    nodes = chebyshev_nodes(7)
+    nodes = chebyshev_nodes(5)
 
     approximate = chebyshev_approximate(fun, nodes, x0)
 
     assert np.allclose(approximate, fun(x0), atol=1e-6)
-
-    assert False
