@@ -1,5 +1,7 @@
 """Implement approximations of matrix-function-vector products.
 
+This module is experimental.
+
 Examples
 --------
 >>> import jax.random
@@ -89,6 +91,8 @@ def matrix_poly_chebyshev(matfun, order, matvec, /):
     This function assumes that the spectrum of the matrix-vector product
     is contained in the interval (-1, 1), and that the matrix-function
     is analytic on this interval.
+    If this is not the case,
+    transform the matrix-vector product and the matrix-function accordingly.
     """
     # Construct nodes
     nodes = _chebyshev_nodes(order)
