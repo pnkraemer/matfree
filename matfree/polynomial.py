@@ -1,4 +1,8 @@
-"""Approximate matrix-function-vector products with polynomial expansions."""
+"""Approximate matrix-function-vector products with polynomial expansions.
+
+This module does not include Lanczos-style approximations, which are
+in [matfree.lanczos][matfree.lanczos].
+"""
 
 from matfree.backend import containers, control_flow, np
 from matfree.backend.typing import Array
