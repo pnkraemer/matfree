@@ -27,7 +27,7 @@ def test_schatten_norm(A, order, power):
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
     sampler = hutchinson.sampler_normal(args_like, num=500)
-    integrand = lanczos.integrand_schatten_norm(
+    integrand = lanczos.integrand_product_schatten_norm(
         power, order, lambda v: A @ v, lambda v: A.T @ v
     )
     estimate = hutchinson.hutchinson(integrand, sampler)
