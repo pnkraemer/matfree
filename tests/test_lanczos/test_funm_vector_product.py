@@ -1,9 +1,9 @@
 """Test matrix-function-vector products via Lanczos' algorithm."""
-from matfree import matfun, test_util
+from matfree import lanczos, test_util
 from matfree.backend import linalg, np, prng
 
 
-def test_lanczos_via_matfun_vector_product(n=11):
+def test_lanczos_via_funm_vector_product(n=11):
     """Test matrix-function-vector products via Lanczos' algorithm."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
@@ -28,6 +28,6 @@ def test_lanczos_via_matfun_vector_product(n=11):
 
     # Compute the matrix-function vector product
     order = 6
-    matfun_vec = matfun.lanczos_spd(fun, order, matvec)
+    matfun_vec = lanczos.funm_vector_product_spd(fun, order, matvec)
     received = matfun_vec(v, matrix)
     assert np.allclose(expected, received, atol=1e-6)
