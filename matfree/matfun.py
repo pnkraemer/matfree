@@ -1,59 +1,10 @@
-"""Implement approximations of matrix-function-vector products.
+"""Approximate matrix-function-vector products with polynomial expansions.
 
 This module is experimental.
-
-Examples
---------
->>> import jax.random
->>> import jax.numpy as jnp
->>>
->>> jnp.set_printoptions(1)
->>>
->>> M = jax.random.normal(jax.random.PRNGKey(1), shape=(10, 10))
->>> A = M.T @ M
->>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
->>>
->>> # Compute a matrix-logarithm with Lanczos' algorithm
->>> matfun_vec = lanczos_spd(jnp.log, 4, lambda s: A @ s)
->>> matfun_vec(v)
-Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
 """
 
-from matfree import decomp
-from matfree.backend import containers, control_flow, func, linalg, np
+from matfree.backend import containers, control_flow, np
 from matfree.backend.typing import Array
-
-
-def lanczos_spd(matfun, order, matvec, /):
-    """Implement a matrix-function-vector product via Lanczos' algorithm.
-
-    This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation.
-    """
-    # Lanczos' algorithm
-    algorithm = decomp.lanczos_tridiag_full_reortho(order)
-
-    def estimate(vec, *parameters):
-        def matvec_p(v):
-            return matvec(v, *parameters)
-
-        length = linalg.vector_norm(vec)
-        vec /= length
-        basis, tridiag = decomp.decompose_fori_loop(vec, matvec_p, algorithm=algorithm)
-        (diag, off_diag) = tridiag
-
-        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-        #  use it here. Until then: an eigen-decomposition of size (order + 1)
-        #  does not hurt too much...
-        diag = linalg.diagonal_matrix(diag)
-        offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-        offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-        dense_matrix = diag + offdiag1 + offdiag2
-        eigvals, eigvecs = linalg.eigh(dense_matrix)
-
-        fx_eigvals = func.vmap(matfun)(eigvals)
-        return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
-
-    return estimate
 
 
 def matrix_poly_vector_product(matrix_poly_alg, /):

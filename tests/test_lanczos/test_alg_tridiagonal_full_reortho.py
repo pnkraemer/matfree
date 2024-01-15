@@ -1,6 +1,6 @@
 """Test the Lanczos tri-diagonalisation with full re-orthogonalisation."""
 
-from matfree import decomp, test_util
+from matfree import lanczos, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -23,8 +23,8 @@ def test_max_order(A):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     v0 /= linalg.vector_norm(v0)
-    alg = decomp.lanczos_tridiag_full_reortho(order)
-    Q, (d_m, e_m) = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
+    alg = lanczos.alg_tridiag_full_reortho(order)
+    Q, (d_m, e_m) = lanczos.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -65,8 +65,8 @@ def test_identity(A, order):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     v0 /= linalg.vector_norm(v0)
-    alg = decomp.lanczos_tridiag_full_reortho(order)
-    Q, tridiag = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
+    alg = lanczos.alg_tridiag_full_reortho(order)
+    Q, tridiag = lanczos.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
     (d_m, e_m) = tridiag
 
     # Lanczos is not stable.
@@ -107,8 +107,8 @@ def test_validate_unit_norm(A, order):
     # Not normalized!
     v0 = prng.normal(key, shape=(n,)) + 1.0
 
-    alg = decomp.lanczos_tridiag_full_reortho(order, validate_unit_2_norm=True)
-    Q, (d_m, e_m) = decomp.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
+    alg = lanczos.alg_tridiag_full_reortho(order, validate_unit_2_norm=True)
+    Q, (d_m, e_m) = lanczos.decompose_fori_loop(v0, lambda v: A @ v, algorithm=alg)
 
     # Since v0 is not normalized, all inputs are NaN
     for x in (Q, d_m, e_m):

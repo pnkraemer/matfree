@@ -9,6 +9,7 @@ lint:
 test:
 	pytest -x -v
 	python -m doctest README.md
+	python -m doctest matfree/*.py
 
 
 clean-preview:
