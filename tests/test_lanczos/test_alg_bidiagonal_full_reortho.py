@@ -30,9 +30,9 @@ def test_lanczos_bidiag_full_reortho(A, order):
     def vA(v):
         return v @ A
 
-    alg = lanczos.alg_bidiag_full_reortho(Av, vA, order, matrix_shape=np.shape(A))
+    algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, order, matrix_shape=np.shape(A))
     v0 /= linalg.vector_norm(v0)
-    Us, Bs, Vs, (b, v) = lanczos.decompose_fori_loop(v0, algorithm=alg)
+    Us, Bs, Vs, (b, v) = algorithm(v0)
     (d_m, e_m) = Bs
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -116,7 +116,7 @@ def test_no_error_zero_depth(A):
         return v @ A
 
     algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, 0, matrix_shape=np.shape(A))
-    Us, Bs, Vs, (b, v) = lanczos.decompose_fori_loop(v0, algorithm=algorithm)
+    Us, Bs, Vs, (b, v) = algorithm(v0)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)
     assert np.shape(Vs) == (1, ncols)
@@ -147,7 +147,7 @@ def test_validate_unit_norm(A, order):
     algorithm = lanczos.alg_bidiag_full_reortho(
         Av, vA, order, matrix_shape=np.shape(A), validate_unit_2_norm=True
     )
-    Us, (d_m, e_m), Vs, (b, v) = lanczos.decompose_fori_loop(v0, algorithm=algorithm)
+    Us, (d_m, e_m), Vs, (b, v) = algorithm(v0)
 
     # Since v0 is not normalized, all inputs are NaN
     for x in (Us, d_m, e_m, Vs, b, v):

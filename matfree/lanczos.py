@@ -54,8 +54,7 @@ def integrand_slq_spd(matfun, order, matvec, /):
             return flat
 
         algorithm = alg_tridiag_full_reortho(matvec_flat, order)
-        _, tridiag = decompose_fori_loop(v0_flat, *parameters, algorithm=algorithm)
-        (diag, off_diag) = tridiag
+        _, (diag, off_diag) = algorithm(v0_flat, *parameters)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
@@ -105,9 +104,9 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
 
-        def matvec_flat(v_flat):
+        def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
-            Av = matvec(v, *parameters)
+            Av = matvec(v, *p)
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat, tree_util.partial_pytree(unflatten)
 
@@ -123,7 +122,7 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
         algorithm = alg_bidiag_full_reortho(
             lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
         )
-        output = decompose_fori_loop(v0_flat, algorithm=algorithm)
+        output = algorithm(v0_flat, *parameters)
         u, (d, e), vt, _ = output
 
         # Compute SVD of factorisation
@@ -157,8 +156,7 @@ def funm_vector_product_spd(matfun, order, matvec, /):
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        basis, tridiag = decompose_fori_loop(vec, *parameters, algorithm=algorithm)
-        (diag, off_diag) = tridiag
+        basis, (diag, off_diag) = algorithm(vec, *parameters)
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
         #  use it here. Until then: an eigen-decomposition of size (order + 1)
@@ -200,7 +198,7 @@ def svd_approx(
     """
     # Factorise the matrix
     algorithm = alg_bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = decompose_fori_loop(v0, algorithm=algorithm)
+    u, (d, e), vt, _ = algorithm(v0)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
@@ -301,7 +299,8 @@ def alg_tridiag_full_reortho(
         _, basis, (diag, offdiag), *_ignored = state
         return basis, (diag, offdiag)
 
-    return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    alg = _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
 def alg_bidiag_full_reortho(
@@ -366,7 +365,8 @@ def alg_bidiag_full_reortho(
         _, uk_all, vk_all, alphas, betas, beta, vk = state
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
-    return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    alg = _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
 def _normalise(vec):
@@ -386,8 +386,7 @@ def _gram_schmidt_classical_step(vec1, vec2):
     return vec_ortho, coeff
 
 
-# all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(v0, *parameters, algorithm):
+def _decompose_fori_loop(v0, *parameters, algorithm):
     r"""Decompose a matrix purely based on matvec-products with A.
 
     The behaviour of this function is equivalent to
@@ -403,7 +402,6 @@ def decompose_fori_loop(v0, *parameters, algorithm):
 
     but the implementation uses JAX' fori_loop.
     """
-    # todo: turn the "practically equivalent" bit above into a doctest.
     init, step, extract, (lower, upper) = algorithm
     init_val = init(v0)
 

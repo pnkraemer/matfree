@@ -23,8 +23,8 @@ def test_max_order(A):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     v0 /= linalg.vector_norm(v0)
-    alg = lanczos.alg_tridiag_full_reortho(lambda v: A @ v, order)
-    Q, (d_m, e_m) = lanczos.decompose_fori_loop(v0, algorithm=alg)
+    algorithm = lanczos.alg_tridiag_full_reortho(lambda v: A @ v, order)
+    Q, (d_m, e_m) = algorithm(v0)
 
     # Lanczos is not stable.
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -65,8 +65,8 @@ def test_identity(A, order):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     v0 /= linalg.vector_norm(v0)
-    alg = lanczos.alg_tridiag_full_reortho(lambda v: A @ v, order)
-    Q, tridiag = lanczos.decompose_fori_loop(v0, algorithm=alg)
+    algorithm = lanczos.alg_tridiag_full_reortho(lambda v: A @ v, order)
+    Q, tridiag = algorithm(v0)
     (d_m, e_m) = tridiag
 
     # Lanczos is not stable.
@@ -107,10 +107,10 @@ def test_validate_unit_norm(A, order):
     # Not normalized!
     v0 = prng.normal(key, shape=(n,)) + 1.0
 
-    alg = lanczos.alg_tridiag_full_reortho(
+    algorithm = lanczos.alg_tridiag_full_reortho(
         lambda v: A @ v, order, validate_unit_2_norm=True
     )
-    Q, (d_m, e_m) = lanczos.decompose_fori_loop(v0, algorithm=alg)
+    Q, (d_m, e_m) = algorithm(v0)
 
     # Since v0 is not normalized, all inputs are NaN
     for x in (Q, d_m, e_m):
