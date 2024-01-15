@@ -3,7 +3,7 @@ from matfree import lanczos, test_util
 from matfree.backend import linalg, np, prng
 
 
-def test_lanczos_via_funm_vector_product(n=11):
+def test_funm_vector_product(n=11):
     """Test matrix-function-vector products via Lanczos' algorithm."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
