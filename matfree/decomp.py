@@ -252,6 +252,9 @@ def decompose_fori_loop(v0, *matvec_funs, algorithm: AlgorithmType):
     init, step, extract, (lower, upper) = algorithm
     init_val = init(v0)
 
+    # todo: parametrized matrix-vector products
+    # todo: move matvec_funs into the algorithm,
+    #  and parameters into the decompose
     def body_fun(_, s):
         return step(s, *matvec_funs)
 
