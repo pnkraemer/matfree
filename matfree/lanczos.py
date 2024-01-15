@@ -55,15 +55,7 @@ def integrand_slq_spd(matfun, order, matvec, /):
 
         algorithm = alg_tridiag_full_reortho(matvec_flat, order)
         _, (diag, off_diag) = algorithm(v0_flat, *parameters)
-
-        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-        #  use it here. Until then: an eigen-decomposition of size (order + 1)
-        #  does not hurt too much...
-        diag = linalg.diagonal_matrix(diag)
-        offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-        offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-        dense_matrix = diag + offdiag1 + offdiag2
-        eigvals, eigvecs = linalg.eigh(dense_matrix)
+        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
@@ -150,27 +142,30 @@ def funm_vector_product_spd(matfun, order, matvec, /):
     This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation
     and therefore applies only to symmetric, positive definite matrices.
     """
-    # Lanczos' algorithm
     algorithm = alg_tridiag_full_reortho(matvec, order)
 
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
         basis, (diag, off_diag) = algorithm(vec, *parameters)
-
-        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-        #  use it here. Until then: an eigen-decomposition of size (order + 1)
-        #  does not hurt too much...
-        diag = linalg.diagonal_matrix(diag)
-        offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-        offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-        dense_matrix = diag + offdiag1 + offdiag2
-        eigvals, eigvecs = linalg.eigh(dense_matrix)
+        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
 
         fx_eigvals = func.vmap(matfun)(eigvals)
         return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
 
     return estimate
+
+
+def _eigh_tridiag(diag, off_diag):
+    # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
+    #  use it here. Until then: an eigen-decomposition of size (order + 1)
+    #  does not hurt too much...
+    diag = linalg.diagonal_matrix(diag)
+    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
+    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
+    dense_matrix = diag + offdiag1 + offdiag2
+    eigvals, eigvecs = linalg.eigh(dense_matrix)
+    return eigvals, eigvecs
 
 
 def svd_approx(
@@ -330,7 +325,6 @@ def alg_bidiag_full_reortho(
         if validate_unit_2_norm:
             init_vec = _validate_unit_2_norm(init_vec)
 
-        nrows, ncols = matrix_shape
         alphas = np.zeros((depth + 1,))
         betas = np.zeros((depth + 1,))
         Us = np.zeros((depth + 1, nrows))
@@ -365,9 +359,17 @@ def alg_bidiag_full_reortho(
     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
-def _normalise(vec):
-    length = linalg.vector_norm(vec)
-    return vec / length, length
+def _validate_unit_2_norm(v, /):
+    # Lanczos assumes a unit-2-norm vector as an input
+    # We cannot raise an error based on values of the init_vec,
+    # but we can make it obvious that the result is unusable.
+    is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(v.dtype)
+    return control_flow.cond(
+        is_not_normalized,
+        lambda s: np.nan() * np.ones_like(s),
+        lambda s: s,
+        v,
+    )
 
 
 def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
@@ -380,6 +382,11 @@ def _gram_schmidt_classical_step(vec1, vec2):
     coeff = linalg.vecdot(vec1, vec2)
     vec_ortho = vec1 - coeff * vec2
     return vec_ortho, coeff
+
+
+def _normalise(vec):
+    length = linalg.vector_norm(vec)
+    return vec / length, length
 
 
 def _decompose_fori_loop(v0, *parameters, algorithm: _LanczosAlg):
@@ -406,16 +413,3 @@ def _decompose_fori_loop(v0, *parameters, algorithm: _LanczosAlg):
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return extract(result)
-
-
-def _validate_unit_2_norm(v, /):
-    # Lanczos assumes a unit-2-norm vector as an input
-    # We cannot raise an error based on values of the init_vec,
-    # but we can make it obvious that the result is unusable.
-    is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(v.dtype)
-    return control_flow.cond(
-        is_not_normalized,
-        lambda s: np.nan() * np.ones_like(s),
-        lambda s: s,
-        v,
-    )
