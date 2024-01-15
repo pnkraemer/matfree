@@ -47,24 +47,15 @@ def integrand_slq_spd(matfun, order, matvec, /):
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
 
-        def matvec_flat(v_flat):
+        def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
-            Av = matvec(v, *parameters)
+            Av = matvec(v, *p)
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = alg_tridiag_full_reortho(order)
-        _, tridiag = decompose_fori_loop(v0_flat, matvec_flat, algorithm=algorithm)
-        (diag, off_diag) = tridiag
-
-        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-        #  use it here. Until then: an eigen-decomposition of size (order + 1)
-        #  does not hurt too much...
-        diag = linalg.diagonal_matrix(diag)
-        offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-        offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-        dense_matrix = diag + offdiag1 + offdiag2
-        eigvals, eigvecs = linalg.eigh(dense_matrix)
+        algorithm = alg_tridiag_full_reortho(matvec_flat, order)
+        _, (diag, off_diag) = algorithm(v0_flat, *parameters)
+        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
@@ -105,9 +96,9 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
 
-        def matvec_flat(v_flat):
+        def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
-            Av = matvec(v, *parameters)
+            Av = matvec(v, *p)
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat, tree_util.partial_pytree(unflatten)
 
@@ -120,10 +111,10 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = alg_bidiag_full_reortho(depth, matrix_shape=matrix_shape)
-        output = decompose_fori_loop(
-            v0_flat, lambda v: matvec_flat(v)[0], vecmat_flat, algorithm=algorithm
+        algorithm = alg_bidiag_full_reortho(
+            lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
         )
+        output = algorithm(v0_flat, *parameters)
         u, (d, e), vt, _ = output
 
         # Compute SVD of factorisation
@@ -151,31 +142,30 @@ def funm_vector_product_spd(matfun, order, matvec, /):
     This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation
     and therefore applies only to symmetric, positive definite matrices.
     """
-    # Lanczos' algorithm
-    algorithm = alg_tridiag_full_reortho(order)
+    algorithm = alg_tridiag_full_reortho(matvec, order)
 
     def estimate(vec, *parameters):
-        def matvec_p(v):
-            return matvec(v, *parameters)
-
         length = linalg.vector_norm(vec)
         vec /= length
-        basis, tridiag = decompose_fori_loop(vec, matvec_p, algorithm=algorithm)
-        (diag, off_diag) = tridiag
-
-        # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-        #  use it here. Until then: an eigen-decomposition of size (order + 1)
-        #  does not hurt too much...
-        diag = linalg.diagonal_matrix(diag)
-        offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-        offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-        dense_matrix = diag + offdiag1 + offdiag2
-        eigvals, eigvecs = linalg.eigh(dense_matrix)
+        basis, (diag, off_diag) = algorithm(vec, *parameters)
+        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
 
         fx_eigvals = func.vmap(matfun)(eigvals)
         return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
 
     return estimate
+
+
+def _eigh_tridiag(diag, off_diag):
+    # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
+    #  use it here. Until then: an eigen-decomposition of size (order + 1)
+    #  does not hurt too much...
+    diag = linalg.diagonal_matrix(diag)
+    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
+    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
+    dense_matrix = diag + offdiag1 + offdiag2
+    eigvals, eigvecs = linalg.eigh(dense_matrix)
+    return eigvals, eigvecs
 
 
 def svd_approx(
@@ -202,8 +192,8 @@ def svd_approx(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = alg_bidiag_full_reortho(depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = decompose_fori_loop(v0, Av, vA, algorithm=algorithm)
+    algorithm = alg_bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
+    u, (d, e), vt, _ = algorithm(v0)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
@@ -213,16 +203,8 @@ def svd_approx(
     return u @ U, S, Vt @ vt
 
 
-AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
-"""Decomposition algorithm type.
-
-For example, the output of
-[alg_tridiag_full_reortho(...)][matfree.lanczos.alg_tridiag_full_reortho].
-"""
-
-
-class _Alg(containers.NamedTuple):
-    """Matrix decomposition algorithm."""
+class _LanczosAlg(containers.NamedTuple):
+    """Lanczos decomposition algorithm."""
 
     init: Callable
     """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
@@ -237,7 +219,9 @@ class _Alg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmType:
+def alg_tridiag_full_reortho(
+    Av: Callable, depth, /, validate_unit_2_norm=False
+) -> Callable:
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -270,7 +254,7 @@ def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmT
 
         return State(0, basis, (diag, offdiag), init_vec, 1.0)
 
-    def apply(state: State, Av: Callable) -> State:
+    def apply(state: State, *parameters) -> State:
         i, basis, (diag, offdiag), vec, length = state
 
         # Compute the next off-diagonal entry
@@ -290,7 +274,7 @@ def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmT
 
         # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
         #  that Q is initialised with zeros.
-        vec = Av(vec)
+        vec = Av(vec, *parameters)
         basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
         vec, length, (coeff, _) = _gram_schmidt_classical(vec, basis_vectors_previous)
         diag = diag.at[i].set(coeff)
@@ -302,10 +286,15 @@ def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmT
         _, basis, (diag, offdiag), *_ignored = state
         return basis, (diag, offdiag)
 
-    return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    alg = _LanczosAlg(
+        init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
+    )
+    return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
-def alg_bidiag_full_reortho(depth, /, matrix_shape, validate_unit_2_norm=False):
+def alg_bidiag_full_reortho(
+    Av: Callable, vA: Callable, depth, /, matrix_shape, validate_unit_2_norm=False
+):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -336,7 +325,6 @@ def alg_bidiag_full_reortho(depth, /, matrix_shape, validate_unit_2_norm=False):
         if validate_unit_2_norm:
             init_vec = _validate_unit_2_norm(init_vec)
 
-        nrows, ncols = matrix_shape
         alphas = np.zeros((depth + 1,))
         betas = np.zeros((depth + 1,))
         Us = np.zeros((depth + 1, nrows))
@@ -344,18 +332,18 @@ def alg_bidiag_full_reortho(depth, /, matrix_shape, validate_unit_2_norm=False):
         v0, _ = _normalise(init_vec)
         return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
-    def apply(state: State, Av: Callable, vA: Callable) -> State:
+    def apply(state: State, *parameters) -> State:
         i, Us, Vs, alphas, betas, beta, vk = state
         Vs = Vs.at[i].set(vk)
         betas = betas.at[i].set(beta)
 
-        uk = Av(vk) - beta * Us[i - 1]
+        uk = Av(vk, *parameters) - beta * Us[i - 1]
         uk, alpha = _normalise(uk)
         uk, *_ = _gram_schmidt_classical(uk, Us)  # full reorthogonalisation
         Us = Us.at[i].set(uk)
         alphas = alphas.at[i].set(alpha)
 
-        vk = vA(uk) - alpha * vk
+        vk = vA(uk, *parameters) - alpha * vk
         vk, beta = _normalise(vk)
         vk, *_ = _gram_schmidt_classical(vk, Vs)  # full reorthogonalisation
 
@@ -365,12 +353,23 @@ def alg_bidiag_full_reortho(depth, /, matrix_shape, validate_unit_2_norm=False):
         _, uk_all, vk_all, alphas, betas, beta, vk = state
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
-    return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    alg = _LanczosAlg(
+        init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
+    )
+    return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
-def _normalise(vec):
-    length = linalg.vector_norm(vec)
-    return vec / length, length
+def _validate_unit_2_norm(v, /):
+    # Lanczos assumes a unit-2-norm vector as an input
+    # We cannot raise an error based on values of the init_vec,
+    # but we can make it obvious that the result is unusable.
+    is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(v.dtype)
+    return control_flow.cond(
+        is_not_normalized,
+        lambda s: np.nan() * np.ones_like(s),
+        lambda s: s,
+        v,
+    )
 
 
 def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
@@ -385,8 +384,12 @@ def _gram_schmidt_classical_step(vec1, vec2):
     return vec_ortho, coeff
 
 
-# all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(v0, *matvec_funs, algorithm):
+def _normalise(vec):
+    length = linalg.vector_norm(vec)
+    return vec / length, length
+
+
+def _decompose_fori_loop(v0, *parameters, algorithm: _LanczosAlg):
     r"""Decompose a matrix purely based on matvec-products with A.
 
     The behaviour of this function is equivalent to
@@ -402,28 +405,11 @@ def decompose_fori_loop(v0, *matvec_funs, algorithm):
 
     but the implementation uses JAX' fori_loop.
     """
-    # todo: turn the "practically equivalent" bit above into a doctest.
     init, step, extract, (lower, upper) = algorithm
     init_val = init(v0)
 
-    # todo: parametrized matrix-vector products
-    # todo: move matvec_funs into the algorithm,
-    #  and parameters into the decompose
     def body_fun(_, s):
-        return step(s, *matvec_funs)
+        return step(s, *parameters)
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return extract(result)
-
-
-def _validate_unit_2_norm(v, /):
-    # Lanczos assumes a unit-2-norm vector as an input
-    # We cannot raise an error based on values of the init_vec,
-    # but we can make it obvious that the result is unusable.
-    is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(v.dtype)
-    return control_flow.cond(
-        is_not_normalized,
-        lambda s: np.nan() * np.ones_like(s),
-        lambda s: s,
-        v,
-    )
