@@ -1,6 +1,6 @@
-"""Test slq.logdet_prod()."""
+"""Test stochastic Lanczos quadrature for log-determinants of matrix-products."""
 
-from matfree import hutchinson, slq, test_util
+from matfree import hutchinson, lanczos, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -31,7 +31,7 @@ def test_logdet_product(A, order):
 
     x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = hutchinson.sampler_normal(x_like, num=400)
-    problem = slq.integrand_logdet_product(order, matvec, vecmat)
+    problem = lanczos.integrand_logdet_product(order, matvec, vecmat)
     estimate = hutchinson.hutchinson(problem, fun)
     received = estimate(key)
 
@@ -53,7 +53,9 @@ def test_logdet_product_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = slq.integrand_logdet_product(order, lambda v: A @ v, lambda v: v @ A)
+    integrand = lanczos.integrand_logdet_product(
+        order, lambda v: A @ v, lambda v: v @ A
+    )
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 1
