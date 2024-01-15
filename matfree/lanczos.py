@@ -12,6 +12,16 @@ def integrand_logdet_product(depth, matvec, vecmat, /):
     return integrand_slq_product(np.log, depth, matvec, vecmat)
 
 
+def integrand_schatten_norm(power, depth, matvec, vecmat, /):
+    r"""Construct the integrand for the p-th power of the Schatten-p norm."""
+
+    def matfun(x):
+        """Matrix-function for Schatten-p norms."""
+        return x ** (power / 2)
+
+    return integrand_slq_product(matfun, depth, matvec, vecmat)
+
+
 def integrand_slq_product(matfun, depth, matvec, vecmat, /):
     r"""Construct the integrand for the trace of a function of a matrix-product.
 

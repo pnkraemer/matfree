@@ -55,13 +55,3 @@ def integrand_slq_spd(matfun, order, matvec, /):
         return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
-
-
-def integrand_schatten_norm(power, depth, matvec, vecmat, /):
-    r"""Construct the integrand for the p-th power of the Schatten-p norm."""
-
-    def matfun(x):
-        """Matrix-function for Schatten-p norms."""
-        return x ** (power / 2)
-
-    return integrand_slq_product(matfun, depth, matvec, vecmat)

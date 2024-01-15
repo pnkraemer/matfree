@@ -1,6 +1,6 @@
-"""Test Schatten norm implementations."""
+"""Test stochastic Lanczos quadrature for Schatten-p-norms."""
 
-from matfree import hutchinson, slq, test_util
+from matfree import hutchinson, lanczos, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -27,7 +27,7 @@ def test_schatten_norm(A, order, power):
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
     sampler = hutchinson.sampler_normal(args_like, num=500)
-    integrand = slq.integrand_schatten_norm(
+    integrand = lanczos.integrand_schatten_norm(
         power, order, lambda v: A @ v, lambda v: A.T @ v
     )
     estimate = hutchinson.hutchinson(integrand, sampler)
