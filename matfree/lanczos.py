@@ -217,7 +217,7 @@ AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
 """Decomposition algorithm type.
 
 For example, the output of
-[matfree.decomp.lanczos_tridiag_full_reortho(...)][matfree.decomp.lanczos_tridiag_full_reortho].
+[alg_tridiag_full_reortho(...)][matfree.lanczos.alg_tridiag_full_reortho].
 """
 
 
