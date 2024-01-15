@@ -1,9 +1,9 @@
 """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
-from matfree import matfun, test_util
+from matfree import polynomial, test_util
 from matfree.backend import linalg, np, prng
 
 
-def test_matrix_poly_chebyshev(n=12):
+def test_funm_vector_product_chebyshev(n=12):
     """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
@@ -11,8 +11,6 @@ def test_matrix_poly_chebyshev(n=12):
     def matvec(x, p):
         return p @ x
 
-    # todo: write a test for matfun=np.inv,
-    #  because this application seems to be brittle
     def fun(x):
         return np.sin(x)
 
@@ -28,9 +26,8 @@ def test_matrix_poly_chebyshev(n=12):
 
     # Create an implementation of the Chebyshev-algorithm
     order = 6
-    algorithm = matfun.matrix_poly_chebyshev(fun, order, matvec)
+    matfun_vec = polynomial.funm_vector_product_chebyshev(fun, order, matvec)
 
     # Compute the matrix-function vector product
-    matfun_vec = matfun.matrix_poly_vector_product(algorithm)
     received = matfun_vec(v, matrix)
     assert np.allclose(expected, received, rtol=1e-4)

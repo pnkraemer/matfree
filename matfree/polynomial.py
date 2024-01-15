@@ -1,48 +1,15 @@
-"""Approximate matrix-function-vector products with polynomial expansions.
-
-This module is experimental.
-"""
+"""Approximate matrix-function-vector products with polynomial expansions."""
 
 from matfree.backend import containers, control_flow, np
 from matfree.backend.typing import Array
 
 
-def matrix_poly_vector_product(matrix_poly_alg, /):
-    """Implement a matrix-function-vector product via a polynomial expansion.
+def funm_vector_product_chebyshev(matfun, order, matvec, /):
+    """Compute a matrix-function-vector product via Chebyshev's algorithm.
 
-    Parameters
-    ----------
-    matrix_poly_alg
-        Which algorithm to use.
-        For example, the output of
-        [matrix_poly_chebyshev][matfree.matfun.matrix_poly_chebyshev].
-    """
-    lower, upper, init_func, step_func, extract_func = matrix_poly_alg
-
-    def matvec(vec, *parameters):
-        final_state = control_flow.fori_loop(
-            lower=lower,
-            upper=upper,
-            body_fun=lambda _i, v: step_func(v, *parameters),
-            init_val=init_func(vec, *parameters),
-        )
-        return extract_func(final_state)
-
-    return matvec
-
-
-def _chebyshev_nodes(n, /):
-    k = np.arange(n, step=1.0) + 1
-    return np.cos((2 * k - 1) / (2 * n) * np.pi())
-
-
-def matrix_poly_chebyshev(matfun, order, matvec, /):
-    """Construct an implementation of matrix-Chebyshev-polynomial interpolation.
-
-    This function assumes that the spectrum of the matrix-vector product
-    is contained in the interval (-1, 1), and that the matrix-function
-    is analytic on this interval.
-    If this is not the case,
+    This function assumes that the **spectrum of the matrix-vector product
+    is contained in the interval (-1, 1)**, and that the **matrix-function
+    is analytic on this interval**. If this is not the case,
     transform the matrix-vector product and the matrix-function accordingly.
     """
     # Construct nodes
@@ -84,4 +51,26 @@ def matrix_poly_chebyshev(matfun, order, matvec, /):
     def extract_func(val: _ChebyshevState):
         return val.interpolation
 
-    return 0, order - 1, init_func, recursion_func, extract_func
+    alg = (0, order - 1), init_func, recursion_func, extract_func
+    return _funm_vector_product_polyexpand(alg)
+
+
+def _chebyshev_nodes(n, /):
+    k = np.arange(n, step=1.0) + 1
+    return np.cos((2 * k - 1) / (2 * n) * np.pi())
+
+
+def _funm_vector_product_polyexpand(matrix_poly_alg, /):
+    """Implement a matrix-function-vector product via a polynomial expansion."""
+    (lower, upper), init_func, step_func, extract_func = matrix_poly_alg
+
+    def matvec(vec, *parameters):
+        final_state = control_flow.fori_loop(
+            lower=lower,
+            upper=upper,
+            body_fun=lambda _i, v: step_func(v, *parameters),
+            init_val=init_func(vec, *parameters),
+        )
+        return extract_func(final_state)
+
+    return matvec
