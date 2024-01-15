@@ -53,7 +53,7 @@ def make_matvec(alpha):
 
 matvec = make_matvec(alpha=0.1)
 order = 3
-integrand = lanczos.integrand_logdet_spd(order, matvec)
+integrand = lanczos.integrand_spd_logdet(order, matvec)
 sample_fun = hutchinson.sampler_normal(f0, num=10)
 estimator = hutchinson.hutchinson(integrand, sample_fun=sample_fun)
 key = jax.random.PRNGKey(1)

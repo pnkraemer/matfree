@@ -29,7 +29,7 @@ def test_logdet_spd(A, order):
     key = prng.prng_key(1)
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = hutchinson.sampler_normal(args_like, num=10)
-    integrand = lanczos.integrand_logdet_spd(order, matvec)
+    integrand = lanczos.integrand_spd_logdet(order, matvec)
     estimate = hutchinson.hutchinson(integrand, sampler)
     received = estimate(key)
 
@@ -49,7 +49,7 @@ def test_logdet_spd_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = lanczos.integrand_logdet_spd(order, lambda v: A @ v)
+    integrand = lanczos.integrand_spd_logdet(order, lambda v: A @ v)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 10
