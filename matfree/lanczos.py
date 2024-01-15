@@ -47,14 +47,14 @@ def integrand_slq_spd(matfun, order, matvec, /):
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
 
-        def matvec_flat(v_flat):
+        def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
-            Av = matvec(v, *parameters)
+            Av = matvec(v, *p)
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = alg_tridiag_full_reortho(order)
-        _, tridiag = decompose_fori_loop(v0_flat, matvec_flat, algorithm=algorithm)
+        algorithm = alg_tridiag_full_reortho(matvec_flat, order)
+        _, tridiag = decompose_fori_loop(v0_flat, *parameters, algorithm=algorithm)
         (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
@@ -152,15 +152,12 @@ def funm_vector_product_spd(matfun, order, matvec, /):
     and therefore applies only to symmetric, positive definite matrices.
     """
     # Lanczos' algorithm
-    algorithm = alg_tridiag_full_reortho(order)
+    algorithm = alg_tridiag_full_reortho(matvec, order)
 
     def estimate(vec, *parameters):
-        def matvec_p(v):
-            return matvec(v, *parameters)
-
         length = linalg.vector_norm(vec)
         vec /= length
-        basis, tridiag = decompose_fori_loop(vec, matvec_p, algorithm=algorithm)
+        basis, tridiag = decompose_fori_loop(vec, *parameters, algorithm=algorithm)
         (diag, off_diag) = tridiag
 
         # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
@@ -237,7 +234,9 @@ class _Alg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmType:
+def alg_tridiag_full_reortho(
+    Av: Callable, depth, /, validate_unit_2_norm=False
+) -> AlgorithmType:
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -270,7 +269,7 @@ def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmT
 
         return State(0, basis, (diag, offdiag), init_vec, 1.0)
 
-    def apply(state: State, Av: Callable) -> State:
+    def apply(state: State, *parameters) -> State:
         i, basis, (diag, offdiag), vec, length = state
 
         # Compute the next off-diagonal entry
@@ -290,7 +289,7 @@ def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmT
 
         # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
         #  that Q is initialised with zeros.
-        vec = Av(vec)
+        vec = Av(vec, *parameters)
         basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
         vec, length, (coeff, _) = _gram_schmidt_classical(vec, basis_vectors_previous)
         diag = diag.at[i].set(coeff)
@@ -346,20 +345,18 @@ def alg_bidiag_full_reortho(
         v0, _ = _normalise(init_vec)
         return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
-    def apply(
-        state: State,
-    ) -> State:
+    def apply(state: State, *parameters) -> State:
         i, Us, Vs, alphas, betas, beta, vk = state
         Vs = Vs.at[i].set(vk)
         betas = betas.at[i].set(beta)
 
-        uk = Av(vk) - beta * Us[i - 1]
+        uk = Av(vk, *parameters) - beta * Us[i - 1]
         uk, alpha = _normalise(uk)
         uk, *_ = _gram_schmidt_classical(uk, Us)  # full reorthogonalisation
         Us = Us.at[i].set(uk)
         alphas = alphas.at[i].set(alpha)
 
-        vk = vA(uk) - alpha * vk
+        vk = vA(uk, *parameters) - alpha * vk
         vk, beta = _normalise(vk)
         vk, *_ = _gram_schmidt_classical(vk, Vs)  # full reorthogonalisation
 
@@ -390,7 +387,7 @@ def _gram_schmidt_classical_step(vec1, vec2):
 
 
 # all arguments are positional-only because we will rename arguments a lot
-def decompose_fori_loop(v0, *matvec_funs, algorithm):
+def decompose_fori_loop(v0, *parameters, algorithm):
     r"""Decompose a matrix purely based on matvec-products with A.
 
     The behaviour of this function is equivalent to
@@ -414,7 +411,7 @@ def decompose_fori_loop(v0, *matvec_funs, algorithm):
     # todo: move matvec_funs into the algorithm,
     #  and parameters into the decompose
     def body_fun(_, s):
-        return step(s, *matvec_funs)
+        return step(s, *parameters)
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return extract(result)
