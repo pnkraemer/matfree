@@ -9,14 +9,14 @@ Randomised and deterministic matrix-free methods for trace estimation, matrix fu
 Builds on [JAX](https://jax.readthedocs.io/en/latest/).
 
 
-
-- ⚡ A stand-alone implementation of **stochastic Lanczos quadrature**
 - ⚡ Stochastic **trace estimation** including batching, control variates, and uncertainty quantification
-- ⚡ Matrix-free matrix decompositions for **large sparse eigenvalue problems**
+- ⚡ A stand-alone implementation of **stochastic Lanczos quadrature**
+- ⚡ Matrix-decomposition algorithms for **large sparse eigenvalue problems**
+- ⚡ Polynomial methods for approximating **functions of large matrices**
 
 and many other things.
-Everything is natively compatible with JAX' feature set:
-JIT compilation, automatic differentiation, vectorisation, and pytrees.
+Everything is natively compatible with the rest of JAX:
+JIT compilation, automatic differentiation, vectorisation, and PyTrees.
 [_Let us know what you think about matfree!_](https://github.com/pnkraemer/matfree/issues)
 
 
