@@ -1,7 +1,7 @@
 """Tests for SVD functionality."""
 
 
-from matfree import decomp, test_util
+from matfree import lanczos, test_util
 from matfree.backend import linalg, np, testing
 
 
@@ -35,7 +35,7 @@ def test_equal_to_linalg_svd(A):
 
     v0 = np.ones((ncols,))
     v0 /= linalg.vector_norm(v0)
-    U, S, Vt = decomp.svd_approx(v0, depth, Av, vA, matrix_shape=np.shape(A))
+    U, S, Vt = lanczos.svd_approx(v0, depth, Av, vA, matrix_shape=np.shape(A))
     U_, S_, Vt_ = linalg.svd(A, full_matrices=False)
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
