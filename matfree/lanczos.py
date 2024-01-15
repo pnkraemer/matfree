@@ -208,16 +208,8 @@ def svd_approx(
     return u @ U, S, Vt @ vt
 
 
-AlgorithmType = Tuple[Callable, Callable, Callable, Tuple[int, int]]
-"""Decomposition algorithm type.
-
-For example, the output of
-[alg_tridiag_full_reortho(...)][matfree.lanczos.alg_tridiag_full_reortho].
-"""
-
-
-class _Alg(containers.NamedTuple):
-    """Matrix decomposition algorithm."""
+class _LanczosAlg(containers.NamedTuple):
+    """Lanczos decomposition algorithm."""
 
     init: Callable
     """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
@@ -234,7 +226,7 @@ class _Alg(containers.NamedTuple):
 
 def alg_tridiag_full_reortho(
     Av: Callable, depth, /, validate_unit_2_norm=False
-) -> AlgorithmType:
+) -> Callable:
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -299,7 +291,9 @@ def alg_tridiag_full_reortho(
         _, basis, (diag, offdiag), *_ignored = state
         return basis, (diag, offdiag)
 
-    alg = _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    alg = _LanczosAlg(
+        init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
+    )
     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
@@ -365,7 +359,9 @@ def alg_bidiag_full_reortho(
         _, uk_all, vk_all, alphas, betas, beta, vk = state
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
-    alg = _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
+    alg = _LanczosAlg(
+        init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
+    )
     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
@@ -386,7 +382,7 @@ def _gram_schmidt_classical_step(vec1, vec2):
     return vec_ortho, coeff
 
 
-def _decompose_fori_loop(v0, *parameters, algorithm):
+def _decompose_fori_loop(v0, *parameters, algorithm: _LanczosAlg):
     r"""Decompose a matrix purely based on matvec-products with A.
 
     The behaviour of this function is equivalent to
@@ -405,9 +401,6 @@ def _decompose_fori_loop(v0, *parameters, algorithm):
     init, step, extract, (lower, upper) = algorithm
     init_val = init(v0)
 
-    # todo: parametrized matrix-vector products
-    # todo: move matvec_funs into the algorithm,
-    #  and parameters into the decompose
     def body_fun(_, s):
         return step(s, *parameters)
 
