@@ -23,7 +23,6 @@ def test_lanczos_bidiag_full_reortho(A, order):
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
-    alg = lanczos.alg_bidiag_full_reortho(order, matrix_shape=np.shape(A))
 
     def Av(v):
         return A @ v
@@ -31,8 +30,9 @@ def test_lanczos_bidiag_full_reortho(A, order):
     def vA(v):
         return v @ A
 
+    alg = lanczos.alg_bidiag_full_reortho(Av, vA, order, matrix_shape=np.shape(A))
     v0 /= linalg.vector_norm(v0)
-    Us, Bs, Vs, (b, v) = lanczos.decompose_fori_loop(v0, Av, vA, algorithm=alg)
+    Us, Bs, Vs, (b, v) = lanczos.decompose_fori_loop(v0, algorithm=alg)
     (d_m, e_m) = Bs
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -75,7 +75,13 @@ def test_error_too_high_depth(A):
     max_depth = min(nrows, ncols) - 1
 
     with testing.raises(ValueError):
-        _ = lanczos.alg_bidiag_full_reortho(max_depth + 1, matrix_shape=np.shape(A))
+
+        def eye(v):
+            return v
+
+        _ = lanczos.alg_bidiag_full_reortho(
+            eye, eye, max_depth + 1, matrix_shape=np.shape(A)
+        )
 
 
 @testing.parametrize("nrows", [5])
@@ -85,7 +91,13 @@ def test_error_too_low_depth(A):
     """Assert that a ValueError is raised when the depth is negative."""
     min_depth = 0
     with testing.raises(ValueError):
-        _ = lanczos.alg_bidiag_full_reortho(min_depth - 1, matrix_shape=np.shape(A))
+
+        def eye(v):
+            return v
+
+        _ = lanczos.alg_bidiag_full_reortho(
+            eye, eye, min_depth - 1, matrix_shape=np.shape(A)
+        )
 
 
 @testing.parametrize("nrows", [15])
@@ -94,7 +106,6 @@ def test_error_too_low_depth(A):
 def test_no_error_zero_depth(A):
     """Assert the corner case of zero-depth does not raise an error."""
     nrows, ncols = np.shape(A)
-    algorithm = lanczos.alg_bidiag_full_reortho(0, matrix_shape=np.shape(A))
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
 
@@ -104,7 +115,8 @@ def test_no_error_zero_depth(A):
     def vA(v):
         return v @ A
 
-    Us, Bs, Vs, (b, v) = lanczos.decompose_fori_loop(v0, Av, vA, algorithm=algorithm)
+    algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, 0, matrix_shape=np.shape(A))
+    Us, Bs, Vs, (b, v) = lanczos.decompose_fori_loop(v0, algorithm=algorithm)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)
     assert np.shape(Vs) == (1, ncols)
@@ -121,9 +133,6 @@ def test_no_error_zero_depth(A):
 def test_validate_unit_norm(A, order):
     """Test that the outputs are NaN if the input is not normalized."""
     nrows, ncols = np.shape(A)
-    algorithm = lanczos.alg_bidiag_full_reortho(
-        order, matrix_shape=np.shape(A), validate_unit_2_norm=True
-    )
     key = prng.prng_key(1)
 
     # Not normalized!
@@ -135,9 +144,10 @@ def test_validate_unit_norm(A, order):
     def vA(v):
         return v @ A
 
-    Us, (d_m, e_m), Vs, (b, v) = lanczos.decompose_fori_loop(
-        v0, Av, vA, algorithm=algorithm
+    algorithm = lanczos.alg_bidiag_full_reortho(
+        Av, vA, order, matrix_shape=np.shape(A), validate_unit_2_norm=True
     )
+    Us, (d_m, e_m), Vs, (b, v) = lanczos.decompose_fori_loop(v0, algorithm=algorithm)
 
     # Since v0 is not normalized, all inputs are NaN
     for x in (Us, d_m, e_m, Vs, b, v):

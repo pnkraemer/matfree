@@ -120,10 +120,10 @@ def integrand_slq_product(matfun, depth, matvec, vecmat, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = alg_bidiag_full_reortho(depth, matrix_shape=matrix_shape)
-        output = decompose_fori_loop(
-            v0_flat, lambda v: matvec_flat(v)[0], vecmat_flat, algorithm=algorithm
+        algorithm = alg_bidiag_full_reortho(
+            lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
         )
+        output = decompose_fori_loop(v0_flat, algorithm=algorithm)
         u, (d, e), vt, _ = output
 
         # Compute SVD of factorisation
@@ -202,8 +202,8 @@ def svd_approx(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = alg_bidiag_full_reortho(depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = decompose_fori_loop(v0, Av, vA, algorithm=algorithm)
+    algorithm = alg_bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
+    u, (d, e), vt, _ = decompose_fori_loop(v0, algorithm=algorithm)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
@@ -305,7 +305,9 @@ def alg_tridiag_full_reortho(depth, /, validate_unit_2_norm=False) -> AlgorithmT
     return _Alg(init=init, step=apply, extract=extract, lower_upper=(0, depth + 1))
 
 
-def alg_bidiag_full_reortho(depth, /, matrix_shape, validate_unit_2_norm=False):
+def alg_bidiag_full_reortho(
+    Av: Callable, vA: Callable, depth, /, matrix_shape, validate_unit_2_norm=False
+):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation. Fully reorthogonalise vectors at every step.
@@ -344,7 +346,9 @@ def alg_bidiag_full_reortho(depth, /, matrix_shape, validate_unit_2_norm=False):
         v0, _ = _normalise(init_vec)
         return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
-    def apply(state: State, Av: Callable, vA: Callable) -> State:
+    def apply(
+        state: State,
+    ) -> State:
         i, Us, Vs, alphas, betas, beta, vk = state
         Vs = Vs.at[i].set(vk)
         betas = betas.at[i].set(beta)
