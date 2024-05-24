@@ -23,3 +23,7 @@ def check_grads(fun, /, args, *, order, atol, rtol):
 
 def raises(err, /):
     return pytest.raises(err)
+
+
+def warns(warning, /):
+    return pytest.warns(warning)
