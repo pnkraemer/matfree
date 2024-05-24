@@ -13,8 +13,9 @@ def test_preconditioner_solves_correctly(n=10):
         return cov[i, j]
 
     # Assert that the Cholesky decomposition is full-rank.
-    cholesky = low_rank.cholesky_partial(rank=n)
-    matrix, _info = cholesky(element, n)
+    # This is important to ensure that the test below makes sense.
+    cholesky = low_rank.cholesky_partial(element, nrows=n, rank=n)
+    matrix, _info = cholesky()
     assert np.allclose(matrix @ matrix.T, cov)
 
     # Solve the linear system
@@ -27,8 +28,7 @@ def test_preconditioner_solves_correctly(n=10):
 
     # Derive the preconditioner
     precondition = low_rank.preconditioner(cholesky)
-    solve, info = precondition(element, n)
+    received, info = precondition(b, small_value)
 
     # Test that the preconditioner solves correctly
-    received = solve(b, small_value)
     assert np.allclose(received, expected, rtol=1e-2)

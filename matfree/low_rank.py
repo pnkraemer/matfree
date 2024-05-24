@@ -19,57 +19,53 @@ def preconditioner(cholesky: Callable, /) -> Callable:
 
     Returns
     -------
-    solve_with_preconditioner
-        A function that maps a matrix-element function $k=k(i,j)$
-        with $N$ rows and columns to a function that computes
+    solve
+        A function that computes
 
         $$
-        (v, s) \mapsto (sI + L L^\top)^{-1} v,
+        (v, s, *p) \mapsto (sI + L(*p) L(*p)^\top)^{-1} v,
         $$
 
-        where $K = [k(i,j)]_{ij} \approx L L^\top$
-        and $L$ comes from the partial Cholesky decomposition.
+        where $K = [k(i,j,*p)]_{ij} \approx L(*p) L(*p)^\top$
+        and $L$ comes from the low-rank approximation.
     """
 
-    def solve_with_preconditioner(lazy_kernel, /, nrows: int):
-        chol, info = cholesky(lazy_kernel, nrows)
+    def solve(v: Array, s: float, *cholesky_params):
+        chol, info = cholesky(*cholesky_params)
 
         # Assert that the low-rank matrix is tall,
-        # not wide (better safe than sorry)
+        # not wide (every sign has a story...)
         N, n = np.shape(chol)
         assert n <= N, (N, n)
 
-        def solve(v: Array, s: float):
-            # Scale
-            U = chol / np.sqrt(s)
-            V = chol.T / np.sqrt(s)
-            v /= s
+        # Scale
+        U = chol / np.sqrt(s)
+        V = chol.T / np.sqrt(s)
+        v /= s
 
-            # Cholesky decompose the capacitance matrix
-            # and solve the system
-            eye_n = np.eye(n)
-            chol_cap = linalg.cho_factor(eye_n + V @ U)
-            sol = linalg.cho_solve(chol_cap, V @ v)
-            return v - U @ sol
+        # Cholesky decompose the capacitance matrix
+        # and solve the system
+        eye_n = np.eye(n)
+        chol_cap = linalg.cho_factor(eye_n + V @ U)
+        sol = linalg.cho_solve(chol_cap, V @ v)
+        return v - U @ sol, info
 
-        return solve, info
-
-    return solve_with_preconditioner
+    return solve
 
 
-def cholesky_partial(*, rank: int) -> Callable:
+def cholesky_partial(mat_el: Callable, /, *, nrows: int, rank: int) -> Callable:
     """Compute a partial Cholesky factorisation."""
 
-    def cholesky(lazy_kernel: Callable, n: int, *params):
-        if rank > n:
-            msg = f"Rank exceeds n: {rank} >= {n}."
+    def cholesky(*params):
+        if rank > nrows:
+            msg = f"Rank exceeds n: {rank} >= {nrows}."
             raise ValueError(msg)
         if rank < 1:
             msg = f"Rank must be positive, but {rank} < {1}."
             raise ValueError(msg)
 
-        step = _cholesky_partial_body(lazy_kernel, n, *params)
-        chol = np.zeros((n, rank))
+        step = _cholesky_partial_body(mat_el, nrows, *params)
+        chol = np.zeros((nrows, rank))
         return control_flow.fori_loop(0, rank, step, chol), {}
 
     return cholesky
@@ -98,21 +94,21 @@ def _cholesky_partial_body(fn: Callable, n: int, *args):
     return body
 
 
-def cholesky_partial_pivot(*, rank: int) -> Callable:
+def cholesky_partial_pivot(mat_el: Callable, /, *, nrows: int, rank: int) -> Callable:
     """Compute a partial Cholesky factorisation with pivoting."""
 
-    def cholesky(matrix_element: Callable, n: int, *params):
-        if rank > n:
-            msg = f"Rank exceeds n: {rank} >= {n}."
+    def cholesky(*params):
+        if rank > nrows:
+            msg = f"Rank exceeds nrows: {rank} >= {nrows}."
             raise ValueError(msg)
         if rank < 1:
             msg = f"Rank must be positive, but {rank} < {1}."
             raise ValueError(msg)
 
-        body = _cholesky_partial_pivot_body(matrix_element, n, *params)
+        body = _cholesky_partial_pivot_body(mat_el, nrows, *params)
 
-        L = np.zeros((n, rank))
-        P = np.arange(n)
+        L = np.zeros((nrows, rank))
+        P = np.arange(nrows)
 
         init = (L, P, P, True)
         (L, P, _matrix, success) = control_flow.fori_loop(0, rank, body, init)
