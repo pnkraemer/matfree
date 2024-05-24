@@ -129,7 +129,7 @@ skip-magic-trailing-comma = true
 split-on-trailing-comma = false
 
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 
