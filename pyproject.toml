@@ -133,6 +133,10 @@ skip-magic-trailing-comma = true
 split-on-trailing-comma = false
 
 
+[tool.ruff.pydocstyle]
+convention = "numpy"
+
+
 [tool.pytest.ini_options]
 addopts = "-v"
 testpaths = [
