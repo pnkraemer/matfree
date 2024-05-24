@@ -1,13 +1,9 @@
-format:
-	isort .  --quiet
-	black .  --quiet
+format-and-lint:
+	pre-commit run --all-files
 	blackdoc *.md  --line-length 82
 
-lint:
-	pre-commit run --all-files
-
 test:
-	pytest -x -v
+	pytest
 	python -m doctest README.md
 	python -m doctest matfree/*.py
 

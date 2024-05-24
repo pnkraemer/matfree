@@ -1,4 +1,5 @@
 """Generate API docs from the source."""
+
 import pathlib
 
 

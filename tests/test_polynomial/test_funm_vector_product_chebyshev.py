@@ -1,4 +1,5 @@
 """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
+
 from matfree import polynomial, test_util
 from matfree.backend import linalg, np, prng
 

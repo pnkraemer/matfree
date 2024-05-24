@@ -1,6 +1,5 @@
 """Tests for SVD functionality."""
 
-
 from matfree import lanczos, test_util
 from matfree.backend import linalg, np, testing
 

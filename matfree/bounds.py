@@ -4,7 +4,7 @@ from matfree.backend import linalg, np
 
 
 def baigolub96_logdet_spd(bound_spectrum, /, nrows, trace, norm_frobenius_squared):
-    """Bound the log-determinant of a symmatric, positive definite matrix.
+    """Bound the log-determinant of a symmetric, positive definite matrix.
 
     This function implements Theorem 2 in the paper by Bai and Golub (1996).
 
