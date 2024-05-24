@@ -20,6 +20,18 @@ def eigh(x, /):
     return jnp.linalg.eigh(x)
 
 
+def cholesky(x, /):
+    return jnp.linalg.cholesky(x)
+
+
+def cho_factor(matrix, /):
+    return jax.scipy.linalg.cho_factor(matrix)
+
+
+def cho_solve(factor, b, /):
+    return jax.scipy.linalg.cho_solve(factor, b)
+
+
 def slogdet(x, /):
     return jnp.linalg.slogdet(x)
 

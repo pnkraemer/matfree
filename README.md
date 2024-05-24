@@ -13,6 +13,7 @@ Builds on [JAX](https://jax.readthedocs.io/en/latest/).
 - ⚡ A stand-alone implementation of **stochastic Lanczos quadrature**
 - ⚡ Matrix-decomposition algorithms for **large sparse eigenvalue problems**
 - ⚡ Polynomial methods for approximating **functions of large matrices**
+- ⚡ Partial Cholesky **preconditioners** with and without pivoting
 
 and many other things.
 Everything is natively compatible with the rest of JAX:
