@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install .[cpu,lint]
+          pip install .[cpu,format-and-lint]
       - name: Apply linter
         run: make format-and-lint
   test:
