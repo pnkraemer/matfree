@@ -26,7 +26,7 @@ jobs:
           pip install --upgrade pip
           pip install .[cpu,lint]
       - name: Apply linter
-        run: make lint
+        run: make format-and-lint
   test:
     name: Test with ${{ matrix.python-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
