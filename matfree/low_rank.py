@@ -1,4 +1,4 @@
-"""Low-rank approximations symbolic matrices."""
+"""Low-rank approximations (like partial Cholesky decompositions) of matrices."""
 
 from matfree.backend import control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable
@@ -19,10 +19,14 @@ def preconditioner(cholesky: Callable, /) -> Callable:
 
     Returns
     -------
-        A function `precondition(k, N)(v, s)`
-        that maps a matrix-element function $k=k(i,j)$
+    solve_with_preconditioner
+        A function that maps a matrix-element function $k=k(i,j)$
         with $N$ rows and columns to a function that computes
-        $(v, s) \mapsto (sI + L L^\top)^{-1} v$,
+
+        $$
+        (v, s) \mapsto (sI + L L^\top)^{-1} v,
+        $$
+
         where $K = [k(i,j)]_{ij} \approx L L^\top$
         and $L$ comes from the partial Cholesky decomposition.
     """
