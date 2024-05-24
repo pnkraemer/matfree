@@ -41,10 +41,10 @@ trace = estimate(key)
 print(trace)
 
 
-# The above code requires nrows*nsamples storage, which
+# The above code requires nrows $\times$ nsamples storage, which
 # is prohibitive for extremely large matrices.
 # Instead, we can loop around estimate() to do the following:
-# The below code requires nrows*1 storage:
+# The below code requires nrows $\times$ 1 storage:
 
 sampler = hutchinson.sampler_rademacher(x0, num=1)
 estimate = hutchinson.hutchinson(integrand, sampler)
@@ -57,7 +57,7 @@ print(trace)
 
 # In practice, we often combine both approaches by choosing
 # the largest nsamples (in the first implementation) so that
-# nrows*nsamples fits into memory, and handle all samples beyond
+# nrows $\times$ nsamples fits into memory, and handle all samples beyond
 # that via the split-and-map combination.
 #
 #

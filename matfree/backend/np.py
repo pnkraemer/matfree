@@ -88,6 +88,10 @@ def sign(x, /):
     return jnp.sign(x)
 
 
+def logical_and(a, b, /):
+    return jnp.logical_and(a, b)
+
+
 # Utility functions
 
 
@@ -124,6 +128,14 @@ def array_min(x, /):
 
 def array_max(x, /, axis=None):
     return jnp.amax(x, axis=axis)
+
+
+def argmax(x, /, axis=None):
+    return jnp.argmax(x, axis=axis)
+
+
+def argsort(x, /):
+    return jnp.argsort(x)
 
 
 def elementwise_max(x1, x2, /):
