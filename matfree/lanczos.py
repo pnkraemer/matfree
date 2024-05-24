@@ -365,10 +365,7 @@ def _validate_unit_2_norm(v, /):
     # but we can make it obvious that the result is unusable.
     is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(v.dtype)
     return control_flow.cond(
-        is_not_normalized,
-        lambda s: np.nan() * np.ones_like(s),
-        lambda s: s,
-        v,
+        is_not_normalized, lambda s: np.nan() * np.ones_like(s), lambda s: s, v
     )
 
 

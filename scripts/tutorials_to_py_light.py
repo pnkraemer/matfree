@@ -1,4 +1,5 @@
 """Transform py:light scripts into Jupyter notebooks."""
+
 import contextlib
 import os
 from re import sub

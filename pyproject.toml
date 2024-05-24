@@ -74,8 +74,11 @@ version_file = "matfree/_version.py"
 "Issue tracker" = "https://github.com/pnkraemer/matfree/issues"
 
 
+
 [tool.ruff]
-include = ["*.py", "**/pyproject.toml", "*.ipynb"]
+include = ["**.py", "**/pyproject.toml", "**.ipynb"]
+
+[tool.ruff.lint]
 # See: https://beta.ruff.rs/docs/rules/
 select = [
     # pycodestyle (warning, error)
@@ -83,8 +86,6 @@ select = [
     "E",
     # Pyflakes:
     "F",
-    # pydocstyle:
-    "D",
     # pyupgrade:
     "UP",
     # flake8-bugbear:
@@ -119,24 +120,21 @@ ignore = [
     "D213",
     # zip(..., strict=True/False) is not supported on Python < 3.10
     "B905",
-    # Magic methods don't need a docstring:
-    "D105",
 ]
 
-[tool.ruff.per-file-ignores]
-# We don't write docstrings for the backend
-"matfree/backend/*.py" = ["D103"]
+[tool.ruff.format]
+# Use `\n` line endings for all files
+line-ending = "lf"
+# Prefer single quotes over double quotes.
+quote-style = "double"
+skip-magic-trailing-comma = true
 
-[tool.ruff.pydocstyle]
-convention = "numpy"
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
 
 
-[tool.isort]
-multi_line_output = "3"
-include_trailing_comma = "true"
-force_grid_wrap = "0"
-use_parentheses = "true"
-line_length = "88"
-
-[tool.black]
-line-length = "88"
+[tool.pytest.ini_options]
+addopts = "-v"
+testpaths = [
+    "tests"
+]

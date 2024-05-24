@@ -1,6 +1,5 @@
 """Pseudo-random-number utilities."""
 
-
 import jax.random
 
 

@@ -1,4 +1,5 @@
 """Test joint trace and diagonal estimation."""
+
 from matfree import hutchinson
 from matfree.backend import func, np, prng, tree_util
 
