@@ -18,12 +18,13 @@ def test_preconditioner_solves_correctly(n=10):
     matrix, _info = cholesky()
     assert np.allclose(matrix @ matrix.T, cov)
 
-    # Solve the linear system
+    # Set up the test-problem
+    small_value = 1e-1
     b = np.arange(1.0, 1 + len(cov))
     b /= linalg.vector_norm(b)
-    small_value = 1e-1
-    cov_added = cov + small_value * np.eye(len(cov))
 
+    # Solve the linear system
+    cov_added = cov + small_value * np.eye(len(cov))
     expected = linalg.solve(cov_added, b)
 
     # Derive the preconditioner
