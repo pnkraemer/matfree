@@ -115,24 +115,14 @@ make test
 
 Install all formatting-related dependencies via
 ```commandline
-pip install .[format]
+pip install .[format-and-lint]
+pre-commit install
 ```
 and format the code via
 ```commandline
-make format
+make format-and-lint
 ```
 
-To lint the code, install the pre-commit hook
-
-```commandline
-pip install .[lint]
-pre-commit install
-
-```
-and run the linters via
-```commandline
-make lint
-```
 
 Install the documentation-related dependencies as
 
@@ -169,7 +159,7 @@ To make a pull request, proceed as follows:
 - Fork the repository.
 - Install all dependencies with `pip install .[full]` or `pip install -e .[full]`.
 - Make your changes.
-- From the root of the project, run the tests via `make test`, and check out `make format` and `make lint` as well. Use the pre-commit hook if you like.
+- From the root of the project, run the tests via `make test`, and check out `make format-and-lint` as well. Use the pre-commit hook if you like.
 
 
 When making a pull request, keep in mind the following (rough) guidelines:

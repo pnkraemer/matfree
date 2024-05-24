@@ -33,13 +33,10 @@ test =[
     "pytest",
     "pytest-cases",
 ]
-lint =[
+format-and-lint =[
     "matfree[test]",
     "pre-commit",
-]
-format =[
-    "isort",
-    "black",
+    "blackdoc",
 ]
 doc = [
     "mkdocs",
@@ -54,8 +51,7 @@ doc = [
 full = [
     "matfree[cpu]",
     "matfree[test]",
-    "matfree[lint]",
-    "matfree[format]",
+    "matfree[format-and-lint]",
     "matfree[doc]",
 ]
 
