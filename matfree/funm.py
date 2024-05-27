@@ -95,9 +95,6 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matvec
 
 
-# todo: "spd" -> "sym"
-
-
 def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
