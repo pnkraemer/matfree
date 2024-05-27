@@ -1,4 +1,22 @@
-"""Functions of matrices."""
+"""Functions of matrices implemented as matrix-function-vector products.
+
+
+Examples
+--------
+>>> import jax.random
+>>> import jax.numpy as jnp
+>>>
+>>> jnp.set_printoptions(1)
+>>>
+>>> M = jax.random.normal(jax.random.PRNGKey(1), shape=(10, 10))
+>>> A = M.T @ M
+>>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
+>>>
+>>> # Compute a matrix-logarithm with Lanczos' algorithm
+>>> matfun_vec = funm_lanczos_spd(jnp.log, 4, lambda s: A @ s)
+>>> matfun_vec(v)
+Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
+"""
 
 from matfree import lanczos
 from matfree.backend import containers, control_flow, func, linalg, np

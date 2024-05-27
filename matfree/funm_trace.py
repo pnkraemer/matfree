@@ -1,7 +1,15 @@
-"""Stochastic estimation of traces of functions of matrices."""
+"""Stochastic estimation of traces of functions of matrices.
+
+This module extends [matfree.hutchinson][matfree.hutchinson].
+
+"""
 
 from matfree import lanczos
 from matfree.backend import func, linalg, np, tree_util
+
+# todo: currently, all dense matrix-functions are computed
+#  via eigh(). But for e.g. log and exp, we might want to do
+#  something else.
 
 
 def integrand_spd_logdet(order, matvec, /):
