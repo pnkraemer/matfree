@@ -30,7 +30,7 @@ def test_logdet_spd(A, order):
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = hutchinson.sampler_normal(args_like, num=10)
     integrand = funm_trace.integrand_sym_logdet(order, matvec)
-    estimate = hutchinson.hutchinson(integrand, sampler)
+    estimate = hutchinson.estimator(integrand, sampler)
     received = estimate(key)
 
     expected = linalg.slogdet(A)[1]

@@ -25,7 +25,7 @@ def test_yields_correct_tree_structure():
         problem, moments={"moment_1st": 1, "moment_2nd": 2}
     )
     sampler = hutchinson.sampler_normal(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    estimate = hutchinson.estimator(problem, sample_fun=sampler)
     received = estimate(key)
 
     irrelevant_value = 1.1
@@ -63,7 +63,7 @@ def test_yields_correct_variance_normal(J_and_jvp, key):
     problem = hutchinson.integrand_trace(jvp)
     problem = hutchinson.integrand_wrap_moments(problem, moments=[1, 2])
     sampler = hutchinson.sampler_normal(args_like, num=1_000_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    estimate = hutchinson.estimator(problem, sample_fun=sampler)
     first, second = estimate(key)
 
     # Assert the trace is correct
@@ -83,7 +83,7 @@ def test_yields_correct_variance_rademacher(J_and_jvp, key):
     problem = hutchinson.integrand_trace(jvp)
     problem = hutchinson.integrand_wrap_moments(problem, moments=[1, 2])
     sampler = hutchinson.sampler_rademacher(args_like, num=500)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    estimate = hutchinson.estimator(problem, sample_fun=sampler)
     first, second = estimate(key)
 
     # Assert the trace is correct

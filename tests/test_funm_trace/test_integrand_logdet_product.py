@@ -32,7 +32,7 @@ def test_logdet_product(A, order):
     x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = hutchinson.sampler_normal(x_like, num=400)
     problem = funm_trace.integrand_product_logdet(order, matvec, vecmat)
-    estimate = hutchinson.hutchinson(problem, fun)
+    estimate = hutchinson.estimator(problem, fun)
     received = estimate(key)
 
     expected = linalg.slogdet(A.T @ A)[1]

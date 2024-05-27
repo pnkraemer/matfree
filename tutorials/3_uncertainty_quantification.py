@@ -28,7 +28,7 @@ num_samples = 10_000
 normal = hutchinson.sampler_normal(x_like, num=num_samples)
 integrand = hutchinson.integrand_trace(matvec)
 integrand = hutchinson.integrand_wrap_moments(integrand, [1, 2])
-estimator = hutchinson.hutchinson(integrand, sample_fun=normal)
+estimator = hutchinson.estimator(integrand, sample_fun=normal)
 first, second = estimator(jax.random.PRNGKey(1))
 
 

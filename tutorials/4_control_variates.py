@@ -25,7 +25,7 @@ sample_fun = hutchinson.sampler_normal(x_like, num=10_000)
 
 
 problem = hutchinson.integrand_diagonal(lambda v: A @ v)
-estimate = hutchinson.hutchinson(problem, sample_fun)
+estimate = hutchinson.estimator(problem, sample_fun)
 diagonal_ctrl = estimate(jax.random.PRNGKey(1))
 
 
@@ -34,7 +34,7 @@ diagonal_ctrl = estimate(jax.random.PRNGKey(1))
 
 
 problem = hutchinson.integrand_trace_and_diagonal(lambda v: A @ v - diagonal_ctrl * v)
-estimate = hutchinson.hutchinson(problem, sample_fun)
+estimate = hutchinson.estimator(problem, sample_fun)
 trace_and_diagonal = estimate(jax.random.PRNGKey(2))
 trace, diagonal = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 
@@ -42,7 +42,7 @@ trace, diagonal = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 # We can, of course, compute it without a control variate as well.
 
 problem = hutchinson.integrand_trace_and_diagonal(lambda v: A @ v)
-estimate = hutchinson.hutchinson(problem, sample_fun)
+estimate = hutchinson.estimator(problem, sample_fun)
 trace_and_diagonal = estimate(jax.random.PRNGKey(2))
 trace_ref, diagonal_ref = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 

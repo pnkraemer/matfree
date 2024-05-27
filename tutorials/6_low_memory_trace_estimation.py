@@ -34,7 +34,7 @@ integrand = hutchinson.integrand_trace(large_matvec)
 
 x0 = jnp.ones((nrows,))
 sampler = hutchinson.sampler_rademacher(x0, num=nsamples)
-estimate = hutchinson.hutchinson(integrand, sampler)
+estimate = hutchinson.estimator(integrand, sampler)
 
 key = jax.random.PRNGKey(1)
 trace = estimate(key)
@@ -47,7 +47,7 @@ print(trace)
 # The below code requires nrows $\times$ 1 storage:
 
 sampler = hutchinson.sampler_rademacher(x0, num=1)
-estimate = hutchinson.hutchinson(integrand, sampler)
+estimate = hutchinson.estimator(integrand, sampler)
 
 key = jax.random.PRNGKey(2)
 keys = jax.random.split(key, num=nsamples)

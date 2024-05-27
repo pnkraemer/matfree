@@ -24,7 +24,7 @@ def test_frobeniusnorm_squared():
     # Estimate the matrix function
     problem = hutchinson.integrand_frobeniusnorm_squared(jvp)
     sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    estimate = hutchinson.estimator(problem, sample_fun=sampler)
     received = estimate(key)
 
     assert np.allclose(expected, received, rtol=1e-2)

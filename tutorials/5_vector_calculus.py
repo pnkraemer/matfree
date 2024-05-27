@@ -66,7 +66,7 @@ def divergence_matfree(vf, /, *, num):
         _fx, jvp = jax.linearize(vf, x)
         integrand_laplacian = hutchinson.integrand_trace(jvp)
         normal = hutchinson.sampler_normal(x, num=num)
-        estimator = hutchinson.hutchinson(integrand_laplacian, sample_fun=normal)
+        estimator = hutchinson.estimator(integrand_laplacian, sample_fun=normal)
         return estimator(k)
 
     return divergence

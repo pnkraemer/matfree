@@ -70,7 +70,7 @@ Estimate the trace of the matrix:
 >>> integrand = hutchinson.integrand_trace(matvec)
 >>>
 >>> # Compute an estimator
->>> estimate = hutchinson.hutchinson(integrand, sampler)
+>>> estimate = hutchinson.estimator(integrand, sampler)
 
 >>> # Estimate
 >>> key = jax.random.PRNGKey(1)

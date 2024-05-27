@@ -30,7 +30,7 @@ def test_schatten_norm(A, order, power):
     integrand = funm_trace.integrand_product_schatten_norm(
         power, order, lambda v: A @ v, lambda v: A.T @ v
     )
-    estimate = hutchinson.hutchinson(integrand, sampler)
+    estimate = hutchinson.estimator(integrand, sampler)
 
     key = prng.prng_key(1)
     received = estimate(key)
