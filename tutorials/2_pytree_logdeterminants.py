@@ -8,7 +8,7 @@ Yes, we can. Matfree natively supports PyTrees.
 import jax
 import jax.numpy as jnp
 
-from matfree import funm_trace, stochtrace
+from matfree import stochtrace, stochtrace_funm
 
 # Create a test-problem: a function that maps a pytree (dict) to a pytree (tuple).
 # Its (regularised) Gauss--Newton Hessian shall be the matrix-vector product
@@ -53,7 +53,7 @@ def make_matvec(alpha):
 
 matvec = make_matvec(alpha=0.1)
 order = 3
-integrand = funm_trace.integrand_sym_logdet(order, matvec)
+integrand = stochtrace_funm.integrand_sym_logdet(order, matvec)
 sample_fun = stochtrace.sampler_normal(f0, num=10)
 estimator = stochtrace.estimator(integrand, sampler=sample_fun)
 key = jax.random.PRNGKey(1)

@@ -7,7 +7,7 @@ which can be loosely interpreted as an extension of Hutchinson's trace estimator
 import jax
 import jax.numpy as jnp
 
-from matfree import funm_trace, stochtrace
+from matfree import stochtrace, stochtrace_funm
 
 # Set up a matrix.
 
@@ -27,7 +27,7 @@ x_like = jnp.ones((nrows,), dtype=float)  # use to determine shapes of vectors
 # Estimate log-determinants with stochastic Lanczos quadrature.
 
 order = 3
-problem = funm_trace.integrand_sym_logdet(order, matvec)
+problem = stochtrace_funm.integrand_sym_logdet(order, matvec)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
 logdet = estimator(jax.random.PRNGKey(1))
@@ -58,7 +58,7 @@ def vecmat_left(x):
 
 
 order = 3
-problem = funm_trace.integrand_product_logdet(order, matvec_right, vecmat_left)
+problem = stochtrace_funm.integrand_product_logdet(order, matvec_right, vecmat_left)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
 logdet = estimator(jax.random.PRNGKey(1))

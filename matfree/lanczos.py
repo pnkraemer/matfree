@@ -4,7 +4,7 @@ This module includes various Lanczos-decompositions of matrices
 (tridiagonalisation, bidiagonalisation, etc.).
 
 For stochastic Lanczos quadrature, see
-[matfree.funm_trace][matfree.funm_trace].
+[matfree.stochtrace_funm][matfree.stochtrace_funm].
 For matrix-function-vector products, see
 [matfree.funm][matfree.funm].
 """
