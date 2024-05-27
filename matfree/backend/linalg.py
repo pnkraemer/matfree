@@ -40,6 +40,10 @@ def vecdot(x1, x2, /):
     return jnp.dot(x1, x2)
 
 
+def hilbert(n, /):
+    return jax.scipy.linalg.hilbert(n)
+
+
 def diagonal(x, /, offset=0):
     """Extract the diagonal of a matrix."""
     return jnp.diag(x, offset)
