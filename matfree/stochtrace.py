@@ -15,12 +15,12 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     ----------
     integrand
         The integrand function. For example, the return-value of
-        [integrand_trace][matfree.hutchinson.integrand_trace].
+        [integrand_trace][matfree.stochtrace.integrand_trace].
         But any other integrand works, too.
     sampler
         The sample function. Usually, either
-        [sampler_normal][matfree.hutchinson.sampler_normal] or
-        [sampler_rademacher][matfree.hutchinson.sampler_rademacher].
+        [sampler_normal][matfree.stochtrace.sampler_normal] or
+        [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
 
     Returns
     -------

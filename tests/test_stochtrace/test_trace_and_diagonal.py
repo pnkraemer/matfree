@@ -1,6 +1,6 @@
 """Test joint trace and diagonal estimation."""
 
-from matfree import hutchinson
+from matfree import stochtrace
 from matfree.backend import func, np, prng, tree_util
 
 
@@ -20,21 +20,21 @@ def test_trace_and_diagonal():
     _, jvp = func.linearize(fun, args_like)
 
     # Estimate the matrix function
-    problem = hutchinson.integrand_trace_and_diagonal(jvp)
-    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.estimator(problem, sampler=sampler)
+    problem = stochtrace.integrand_trace_and_diagonal(jvp)
+    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     received = estimate(key)
 
     # Estimate the trace
-    problem = hutchinson.integrand_trace(jvp)
-    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.estimator(problem, sampler=sampler)
+    problem = stochtrace.integrand_trace(jvp)
+    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     expected_trace = estimate(key)
 
     # Estimate the diagonal
-    problem = hutchinson.integrand_diagonal(jvp)
-    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.estimator(problem, sampler=sampler)
+    problem = stochtrace.integrand_diagonal(jvp)
+    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     expected_diagonal = estimate(key)
 
     expected = {"trace": expected_trace, "diagonal": expected_diagonal}

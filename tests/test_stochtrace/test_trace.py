@@ -1,11 +1,11 @@
-"""Test the diagonal estimation."""
+"""Test trace estimation."""
 
-from matfree import hutchinson
+from matfree import stochtrace
 from matfree.backend import func, linalg, np, prng, tree_util
 
 
-def test_diagonal():
-    """Assert that the estimated diagonal approximates the true diagonal accurately."""
+def test_trace():
+    """Assert that traces are estimated correctly."""
 
     def fun(x):
         """Create a nonlinear, to-be-differentiated function."""
@@ -18,14 +18,13 @@ def test_diagonal():
     x0 = prng.uniform(key, shape=(4,))  # random lin. point
     args_like = {"params": x0}
     _, jvp = func.linearize(fun, args_like)
-    J = func.jacfwd(fun)(args_like)["params"]
-
-    expected = tree_util.tree_map(linalg.diagonal, J)
+    J = func.jacfwd(fun)(args_like)["params"]["params"]
+    expected = linalg.trace(J)
 
     # Estimate the matrix function
-    problem = hutchinson.integrand_diagonal(jvp)
-    sampler = hutchinson.sampler_normal(args_like, num=100_000)
-    estimate = hutchinson.estimator(problem, sampler=sampler)
+    problem = stochtrace.integrand_trace(jvp)
+    sampler = stochtrace.sampler_normal(args_like, num=100_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     received = estimate(key)
 
     def compare(a, b):
