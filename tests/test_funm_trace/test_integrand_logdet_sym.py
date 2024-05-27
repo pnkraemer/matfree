@@ -1,6 +1,6 @@
 """Tests for Lanczos functionality."""
 
-from matfree import funm_trace, hutchinson, test_util
+from matfree import funm_trace, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -28,9 +28,9 @@ def test_logdet_spd(A, order):
 
     key = prng.prng_key(1)
     args_like = {"fx": np.ones((n,), dtype=float)}
-    sampler = hutchinson.sampler_normal(args_like, num=10)
+    sampler = stochtrace.sampler_normal(args_like, num=10)
     integrand = funm_trace.integrand_sym_logdet(order, matvec)
-    estimate = hutchinson.estimator(integrand, sampler)
+    estimate = stochtrace.estimator(integrand, sampler)
     received = estimate(key)
 
     expected = linalg.slogdet(A)[1]

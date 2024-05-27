@@ -1,6 +1,6 @@
 """Stochastic estimation of traces of functions of matrices.
 
-This module extends [matfree.hutchinson][matfree.hutchinson].
+This module extends [matfree.stochtrace][matfree.stochtrace].
 
 """
 

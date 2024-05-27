@@ -7,7 +7,7 @@ be turned into uncertainty quantification.
 import jax
 import jax.numpy as jnp
 
-from matfree import hutchinson
+from matfree import stochtrace
 
 A = jnp.reshape(jnp.arange(36.0), (6, 6)) / 36
 
@@ -25,10 +25,10 @@ num_samples = 10_000
 # Trace estimation involves estimating expected values of random variables.
 # Sometimes, second and higher moments of a random variable are interesting.
 
-normal = hutchinson.sampler_normal(x_like, num=num_samples)
-integrand = hutchinson.integrand_trace(matvec)
-integrand = hutchinson.integrand_wrap_moments(integrand, [1, 2])
-estimator = hutchinson.estimator(integrand, sampler=normal)
+normal = stochtrace.sampler_normal(x_like, num=num_samples)
+integrand = stochtrace.integrand_trace(matvec)
+integrand = stochtrace.integrand_wrap_moments(integrand, [1, 2])
+estimator = stochtrace.estimator(integrand, sampler=normal)
 first, second = estimator(jax.random.PRNGKey(1))
 
 

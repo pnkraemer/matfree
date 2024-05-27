@@ -6,7 +6,7 @@ Here is how to implement control variates.
 import jax
 import jax.numpy as jnp
 
-from matfree import hutchinson
+from matfree import stochtrace
 
 # Create a matrix to whose trace/diagonal to approximate.
 
@@ -18,14 +18,14 @@ A = jnp.reshape(jnp.arange(1.0, 1.0 + nrows * ncols), (nrows, ncols))
 # Set up the sampler.
 
 x_like = jnp.ones((ncols,), dtype=float)
-sample_fun = hutchinson.sampler_normal(x_like, num=10_000)
+sample_fun = stochtrace.sampler_normal(x_like, num=10_000)
 
 
 # First, compute the diagonal.
 
 
-problem = hutchinson.integrand_diagonal(lambda v: A @ v)
-estimate = hutchinson.estimator(problem, sample_fun)
+problem = stochtrace.integrand_diagonal(lambda v: A @ v)
+estimate = stochtrace.estimator(problem, sample_fun)
 diagonal_ctrl = estimate(jax.random.PRNGKey(1))
 
 
@@ -33,16 +33,16 @@ diagonal_ctrl = estimate(jax.random.PRNGKey(1))
 # using the estimate of the diagonal as a control variate.
 
 
-problem = hutchinson.integrand_trace_and_diagonal(lambda v: A @ v - diagonal_ctrl * v)
-estimate = hutchinson.estimator(problem, sample_fun)
+problem = stochtrace.integrand_trace_and_diagonal(lambda v: A @ v - diagonal_ctrl * v)
+estimate = stochtrace.estimator(problem, sample_fun)
 trace_and_diagonal = estimate(jax.random.PRNGKey(2))
 trace, diagonal = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 
 
 # We can, of course, compute it without a control variate as well.
 
-problem = hutchinson.integrand_trace_and_diagonal(lambda v: A @ v)
-estimate = hutchinson.estimator(problem, sample_fun)
+problem = stochtrace.integrand_trace_and_diagonal(lambda v: A @ v)
+estimate = stochtrace.estimator(problem, sample_fun)
 trace_and_diagonal = estimate(jax.random.PRNGKey(2))
 trace_ref, diagonal_ref = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 
