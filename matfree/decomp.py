@@ -279,6 +279,7 @@ def _eigh_tridiag_sym(diag, off_diag):
 
 
 def hessenberg(matvec, krylov_depth, /, *, reortho: str = "full"):
+    """Construct an implementation of the Arnoldi iteration."""
     reortho_expected = ["none", "full"]
     if reortho not in reortho_expected:
         msg = f"Unexpected input for {reortho}: either of {reortho_expected} expected."
