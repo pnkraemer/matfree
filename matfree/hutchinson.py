@@ -1,4 +1,4 @@
-"""Hutchinson-style estimation."""
+"""Stochastic estimation of traces, diagonals, and more."""
 
 from matfree.backend import func, linalg, np, prng, tree_util
 

@@ -1,14 +1,29 @@
-"""Approximate matrix-function-vector products with polynomial expansions.
+"""Functions of matrices implemented as matrix-function-vector products.
 
-This module does not include Lanczos-style approximations, which are
-in [matfree.lanczos][matfree.lanczos].
+
+Examples
+--------
+>>> import jax.random
+>>> import jax.numpy as jnp
+>>>
+>>> jnp.set_printoptions(1)
+>>>
+>>> M = jax.random.normal(jax.random.PRNGKey(1), shape=(10, 10))
+>>> A = M.T @ M
+>>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
+>>>
+>>> # Compute a matrix-logarithm with Lanczos' algorithm
+>>> matfun_vec = funm_lanczos_spd(jnp.log, 4, lambda s: A @ s)
+>>> matfun_vec(v)
+Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
 """
 
-from matfree.backend import containers, control_flow, np
+from matfree import lanczos
+from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array
 
 
-def funm_vector_product_chebyshev(matfun, order, matvec, /):
+def funm_chebyshev(matfun, order, matvec, /):
     """Compute a matrix-function-vector product via Chebyshev's algorithm.
 
     This function assumes that the **spectrum of the matrix-vector product
@@ -56,7 +71,7 @@ def funm_vector_product_chebyshev(matfun, order, matvec, /):
         return val.interpolation
 
     alg = (0, order - 1), init_func, recursion_func, extract_func
-    return _funm_vector_product_polyexpand(alg)
+    return _funm_polyexpand(alg)
 
 
 def _chebyshev_nodes(n, /):
@@ -64,7 +79,7 @@ def _chebyshev_nodes(n, /):
     return np.cos((2 * k - 1) / (2 * n) * np.pi())
 
 
-def _funm_vector_product_polyexpand(matrix_poly_alg, /):
+def _funm_polyexpand(matrix_poly_alg, /):
     """Implement a matrix-function-vector product via a polynomial expansion."""
     (lower, upper), init_func, step_func, extract_func = matrix_poly_alg
 
@@ -78,3 +93,35 @@ def _funm_vector_product_polyexpand(matrix_poly_alg, /):
         return extract_func(final_state)
 
     return matvec
+
+
+def funm_lanczos_spd(matfun, order, matvec, /):
+    """Implement a matrix-function-vector product via Lanczos' algorithm.
+
+    This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation
+    and therefore applies only to symmetric, positive definite matrices.
+    """
+    algorithm = lanczos.alg_tridiag_full_reortho(matvec, order)
+
+    def estimate(vec, *parameters):
+        length = linalg.vector_norm(vec)
+        vec /= length
+        basis, (diag, off_diag) = algorithm(vec, *parameters)
+        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
+
+        fx_eigvals = func.vmap(matfun)(eigvals)
+        return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
+
+    return estimate
+
+
+def _eigh_tridiag(diag, off_diag):
+    # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
+    #  use it here. Until then: an eigen-decomposition of size (order + 1)
+    #  does not hurt too much...
+    diag = linalg.diagonal_matrix(diag)
+    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
+    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
+    dense_matrix = diag + offdiag1 + offdiag2
+    eigvals, eigvecs = linalg.eigh(dense_matrix)
+    return eigvals, eigvecs
