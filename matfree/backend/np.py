@@ -187,3 +187,7 @@ def finfo_eps(x, /):
 
 def convolve(a, b, /, mode="full"):
     return jnp.convolve(a, b, mode=mode)
+
+
+def tril(x, /, shift=0):
+    return jnp.tril(x, shift)

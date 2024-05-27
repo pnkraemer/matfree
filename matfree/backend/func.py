@@ -42,6 +42,14 @@ def vjp(func, /, *primals):
     return jax.vjp(func, *primals)
 
 
+def custom_vjp(func, /, nondiff_argnums=()):
+    return jax.custom_vjp(func, nondiff_argnums=nondiff_argnums)
+
+
+def closure_convert(func, *args):
+    return jax.closure_convert(func, *args)
+
+
 # Inferring input and output shapes:
 
 

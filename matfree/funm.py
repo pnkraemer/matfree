@@ -123,5 +123,6 @@ def _eigh_tridiag_sym(diag, off_diag):
     offdiag1 = linalg.diagonal_matrix(off_diag, -1)
     offdiag2 = linalg.diagonal_matrix(off_diag, 1)
     dense_matrix = diag + offdiag1 + offdiag2
+
     eigvals, eigvecs = linalg.eigh(dense_matrix)
     return eigvals, eigvecs

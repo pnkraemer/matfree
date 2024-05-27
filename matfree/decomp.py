@@ -9,11 +9,12 @@ For matrix-function-vector products, see
 [matfree.funm][matfree.funm].
 """
 
-from matfree.backend import containers, control_flow, func, linalg, np
+from matfree.backend import containers, control_flow, func, linalg, np, tree_util
 from matfree.backend.typing import Array, Callable, Tuple
 
 # todo: rename svd_approx to svd_partial() because the algorithm is called
 #  "Partial SVD", not "Approximate SVD".
+# todo: move svd_approx to a dedicated eigenvalue-module?
 
 
 def svd_approx(
@@ -67,7 +68,7 @@ class _LanczosAlg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def tridiag_sym(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
+def tridiag_sym(matvec, krylov_depth, /, *, reortho: str, custom_vjp: bool = True):
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -79,63 +80,258 @@ def tridiag_sym(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
 
     """
 
-    class State(containers.NamedTuple):
-        i: int
-        basis: Array
-        tridiag: Tuple[Array, Array]
-        q: Array
-        length: Array
+    if reortho == "full":
+        return _tridiag_reortho_full(matvec, krylov_depth, custom_vjp=custom_vjp)
+    if reortho == "none":
+        return _tridiag_reortho_none(matvec, krylov_depth, custom_vjp=custom_vjp)
 
-    def init(init_vec: Array) -> State:
-        (ncols,) = np.shape(init_vec)
-        if depth >= ncols or depth < 1:
-            raise ValueError
+    msg = f"reortho={reortho} unsupported. Choose eiter {'full', 'none'}."
+    raise ValueError(msg)
 
-        if validate_unit_2_norm:
-            init_vec = _validate_unit_2_norm(init_vec)
 
-        diag = np.zeros((depth + 1,))
-        offdiag = np.zeros((depth,))
-        basis = np.zeros((depth + 1, ncols))
+def _tridiag_reortho_full(matvec, krylov_depth, /, *, custom_vjp):
+    # Implement via Arnoldi to use the reorthogonalised adjoints.
+    # The complexity difference is minimal with full reortho.
+    alg = hessenberg(matvec, krylov_depth, custom_vjp=custom_vjp, reortho="full")
 
-        return State(0, basis, (diag, offdiag), init_vec, 1.0)
+    def estimate(vec, *params):
+        Q, H, v, _norm = alg(vec, *params)
 
-    def apply(state: State, *parameters) -> State:
-        i, basis, (diag, offdiag), vec, length = state
+        T = 0.5 * (H + H.T)
+        diags = linalg.diagonal(T, offset=0)
+        offdiags = linalg.diagonal(T, offset=1)
+        decomposition = (Q.T, (diags, offdiags))
+        remainder = (v / linalg.vector_norm(v), linalg.vector_norm(v))
+        return decomposition, remainder
 
-        # Compute the next off-diagonal entry
-        offdiag = offdiag.at[i - 1].set(length)
+    return estimate
 
-        # Re-orthogonalise against ALL basis elements before storing.
-        # Note: we re-orthogonalise against ALL columns of Q, not just
-        # the ones we have already computed. This increases the complexity
-        # of the whole iteration from n(n+1)/2 to n^2, but has the advantage
-        # that the whole computation has static bounds (thus we can JIT it all).
-        # Since 'Q' is padded with zeros, the numerical values are identical
-        # between both modes of computing.
-        vec, *_ = _gram_schmidt_classical(vec, basis)
 
-        # Store new basis element
-        basis = basis.at[i, :].set(vec)
+def _tridiag_reortho_none(matvec, krylov_depth, /, *, custom_vjp):
+    def estimate(vec, *params):
+        *values, _ = _forward(matvec, krylov_depth, vec, *params)
+        return values
 
-        # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
-        #  that Q is initialised with zeros.
-        vec = Av(vec, *parameters)
-        basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
-        vec, length, (coeff, _) = _gram_schmidt_classical(vec, basis_vectors_previous)
-        diag = diag.at[i].set(coeff)
+    def estimate_fwd(vec, *params):
+        value = estimate(vec, *params)
+        return value, (value, (linalg.vector_norm(vec), *params))
 
-        return State(i + 1, basis, (diag, offdiag), vec, length)
+    # todo: for full-rank decompositions, the final b_K is almost zero
+    #  which blows up the initial step of the backward pass already. Solve this!
+    def estimate_bwd(cache, vjp_incoming):
+        # Read incoming gradients and stack related quantities
+        (dxs, (dalphas, dbetas)), (dx_last, dbeta_last) = vjp_incoming
+        dxs = np.concatenate((dxs, dx_last[None]))
+        dbetas = np.concatenate((dbetas, dbeta_last[None]))
 
-    def extract(state: State, /):
-        # todo: return final output "_ignored"
-        _, basis, (diag, offdiag), *_ignored = state
-        return basis, (diag, offdiag)
+        # Read the cache and stack related quantities
+        ((xs, (alphas, betas)), (x_last, beta_last)), (vector_norm, *params) = cache
+        xs = np.concatenate((xs, x_last[None]))
+        betas = np.concatenate((betas, beta_last[None]))
 
-    alg = _LanczosAlg(
-        init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
+        # Compute the adjoints, discard the adjoint states, and return the gradients
+        grads, _lambdas_and_mus_and_nus = _adjoint(
+            matvec=matvec,
+            params=params,
+            initvec_norm=vector_norm,
+            alphas=alphas,
+            betas=betas,
+            xs=xs,
+            dalphas=dalphas,
+            dbetas=dbetas,
+            dxs=dxs,
+        )
+        return grads
+
+    if custom_vjp:
+        estimate = func.custom_vjp(estimate)
+        estimate.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
+
+    return estimate
+
+
+def _forward(matvec, krylov_depth, vec, *params):
+    # Pre-allocate
+    vectors = np.zeros((krylov_depth + 1, len(vec)))
+    offdiags = np.zeros((krylov_depth,))
+    diags = np.zeros((krylov_depth,))
+
+    # Normalize (not all Lanczos implementations do that)
+    v0 = vec / linalg.vector_norm(vec)
+    vectors = vectors.at[0].set(v0)
+
+    # Lanczos initialisation
+    ((v1, offdiag), diag) = _fwd_init(matvec, v0, *params)
+
+    # Store results
+    k = 0
+    vectors = vectors.at[k + 1].set(v1)
+    offdiags = offdiags.at[k].set(offdiag)
+    diags = diags.at[k].set(diag)
+
+    # Run Lanczos-loop
+    init = (v1, offdiag, v0), (vectors, diags, offdiags)
+    step_fun = func.partial(_fwd_step, matvec, params)
+    _, (vectors, diags, offdiags) = control_flow.fori_loop(
+        lower=1, upper=krylov_depth, body_fun=step_fun, init_val=init
     )
-    return func.partial(_decompose_fori_loop, algorithm=alg)
+
+    # Reorganise the outputs
+    decomposition = vectors[:-1], (diags, offdiags[:-1])
+    remainder = vectors[-1], offdiags[-1]
+    return decomposition, remainder, 1 / linalg.vector_norm(vec)
+
+
+def _fwd_init(matvec, vec, *params):
+    """Initialize Lanczos' algorithm.
+
+    Solve A x_{k} = a_k x_k + b_k x_{k+1}
+    for x_{k+1}, a_k, and b_k, using
+    orthogonality of the x_k.
+    """
+    a = vec @ (matvec(vec, *params))
+    r = (matvec(vec, *params)) - a * vec
+    b = linalg.vector_norm(r)
+    x = r / b
+    return (x, b), a
+
+
+def _fwd_step(matvec, params, i, val):
+    (v1, offdiag, v0), (vectors, diags, offdiags) = val
+    ((v1, offdiag), diag), v0 = _fwd_step_apply(matvec, v1, offdiag, v0, *params), v1
+
+    # Store results
+    vectors = vectors.at[i + 1].set(v1)
+    offdiags = offdiags.at[i].set(offdiag)
+    diags = diags.at[i].set(diag)
+
+    return (v1, offdiag, v0), (vectors, diags, offdiags)
+
+
+def _fwd_step_apply(matvec, vec, b, vec_previous, *params):
+    """Apply Lanczos' recurrence.
+
+    Solve
+    A x_{k} = b_{k-1} x_{k-1} + a_k x_k + b_k x_{k+1}
+    for x_{k+1}, a_k, and b_k, using
+    orthogonality of the x_k.
+    """
+    a = vec @ (matvec(vec, *params))
+    r = matvec(vec, *params) - a * vec - b * vec_previous
+    b = linalg.vector_norm(r)
+    x = r / b
+    return (x, b), a
+
+
+def _adjoint(*, matvec, params, initvec_norm, alphas, betas, xs, dalphas, dbetas, dxs):
+    def adjoint_step(xi_and_lambda, inputs):
+        return _adjoint_step(*xi_and_lambda, matvec=matvec, params=params, **inputs)
+
+    # Scan over all input gradients and output values
+    xs0 = xs
+    xs0 = xs0.at[-1, :].set(np.zeros_like(xs[-1, :]))
+
+    loop_over = {
+        "dx": dxs[:-1],
+        "da": dalphas,
+        "db": dbetas,
+        "xs": (xs[1:], xs[:-1]),
+        "a": alphas,
+        "b": betas,
+    }
+    init_val = (xs0, -dxs[-1], np.zeros_like(dxs[-1]))
+    (_, lambda_1, _lambda_2), (grad_summands, *other) = control_flow.scan(
+        adjoint_step, init_val, xs=loop_over, reverse=True
+    )
+
+    # Compute the gradients
+    grad_matvec = tree_util.tree_map(lambda s: np.sum(s, axis=0), grad_summands)
+    grad_initvec = ((lambda_1.T @ xs[0]) * xs[0] - lambda_1) / initvec_norm
+
+    # Return values
+    return (grad_initvec, grad_matvec), (lambda_1, *other)
+
+
+def _adjoint_step(xs_all, xi, lambda_plus, /, *, matvec, params, dx, da, db, xs, a, b):
+    # Read inputs
+    (xplus, x) = xs
+
+    # Apply formula
+    xi /= b
+    mu = db - lambda_plus.T @ x + xplus.T @ xi
+    nu = da + x.T @ xi
+    lambda_ = -xi + mu * xplus + nu * x
+
+    # Value-and-grad of matrix-vector product
+    matvec_lambda, vjp = func.vjp(lambda *p: matvec(lambda_, *p), *params)
+    (gradient_increment,) = vjp(x)
+
+    # Prepare next step
+    xi = -dx - matvec_lambda + a * lambda_ + b * lambda_plus - b * nu * xplus
+
+    # Return values
+    return (xs_all, xi, lambda_), (gradient_increment, lambda_, mu, nu, xi)
+
+
+# def tridiag_sym(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
+#
+#     class State(containers.NamedTuple):
+#         i: int
+#         basis: Array
+#         tridiag: Tuple[Array, Array]
+#         q: Array
+#         length: Array
+#
+#     def init(init_vec: Array) -> State:
+#         (ncols,) = np.shape(init_vec)
+#         if depth >= ncols or depth < 1:
+#             raise ValueError
+#
+#         if validate_unit_2_norm:
+#             init_vec = _validate_unit_2_norm(init_vec)
+#
+#         diag = np.zeros((depth + 1,))
+#         offdiag = np.zeros((depth,))
+#         basis = np.zeros((depth + 1, ncols))
+#
+#         return State(0, basis, (diag, offdiag), init_vec, 1.0)
+#
+#     def apply(state: State, *parameters) -> State:
+#         i, basis, (diag, offdiag), vec, length = state
+#
+#         # Compute the next off-diagonal entry
+#         offdiag = offdiag.at[i - 1].set(length)
+#
+#         # Re-orthogonalise against ALL basis elements before storing.
+#         # Note: we re-orthogonalise against ALL columns of Q, not just
+#         # the ones we have already computed. This increases the complexity
+#         # of the whole iteration from n(n+1)/2 to n^2, but has the advantage
+#         # that the whole computation has static bounds (thus we can JIT it all).
+#         # Since 'Q' is padded with zeros, the numerical values are identical
+#         # between both modes of computing.
+#         vec, *_ = _gram_schmidt_classical(vec, basis)
+#
+#         # Store new basis element
+#         basis = basis.at[i, :].set(vec)
+#
+#         # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
+#         #  that Q is initialised with zeros.
+#         vec = Av(vec, *parameters)
+#         basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
+#         vec, length, (coeff, _) = _gram_schmidt_classical(vec, basis_vectors_previous)
+#         diag = diag.at[i].set(coeff)
+#
+#         return State(i + 1, basis, (diag, offdiag), vec, length)
+#
+#     def extract(state: State, /):
+#         # todo: return final output "_ignored"
+#         _, basis, (diag, offdiag), *_ignored = state
+#         return basis, (diag, offdiag)
+#
+#     alg = _LanczosAlg(
+#         init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
+#     )
+#     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
 def bidiag(
@@ -278,20 +474,59 @@ def _eigh_tridiag_sym(diag, off_diag):
     return eigvals, eigvecs
 
 
-def hessenberg(matvec, krylov_depth, /, *, reortho: str = "full"):
-    """Construct an implementation of the Arnoldi iteration."""
+def hessenberg(
+    matvec,
+    krylov_depth,
+    /,
+    *,
+    reortho: str,
+    custom_vjp: bool = True,
+    reortho_vjp: str = "match",
+):
     reortho_expected = ["none", "full"]
     if reortho not in reortho_expected:
         msg = f"Unexpected input for {reortho}: either of {reortho_expected} expected."
         raise TypeError(msg)
 
-    def estimate(v, *params):
-        return _forward(matvec, krylov_depth, v, *params, reortho=reortho)
+    def estimate_public(v, *params):
+        matvec_convert, aux_args = func.closure_convert(matvec, v, *params)
+        return estimate_backend(matvec_convert, v, *params, *aux_args)
 
-    return estimate
+    def estimate_backend(matvec_convert: Callable, v, *params):
+        reortho_ = reortho_vjp if reortho_vjp != "match" else reortho_vjp
+        return _hessenberg_forward(
+            matvec_convert, krylov_depth, v, *params, reortho=reortho_
+        )
+
+    def estimate_fwd(matvec_convert: Callable, v, *params):
+        outputs = estimate_backend(matvec_convert, v, *params)
+        return outputs, (outputs, params)
+
+    def estimate_bwd(matvec_convert: Callable, cache, vjp_incoming):
+        (Q, H, r, c), params = cache
+        dQ, dH, dr, dc = vjp_incoming
+
+        return _hessenberg_adjoint(
+            matvec_convert,
+            *params,
+            Q=Q,
+            H=H,
+            r=r,
+            c=c,
+            dQ=dQ,
+            dH=dH,
+            dr=dr,
+            dc=dc,
+            reortho=reortho,
+        )
+
+    if custom_vjp:
+        estimate_backend = func.custom_vjp(estimate_backend, nondiff_argnums=(0,))
+        estimate_backend.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
+    return estimate_public
 
 
-def _forward(matvec, krylov_depth, v, *params, reortho: str):
+def _hessenberg_forward(matvec, krylov_depth, v, *params, reortho: str):
     if krylov_depth < 1 or krylov_depth > len(v):
         msg = f"Parameter depth {krylov_depth} is outside the expected range"
         raise ValueError(msg)
@@ -300,19 +535,19 @@ def _forward(matvec, krylov_depth, v, *params, reortho: str):
     (n,), k = np.shape(v), krylov_depth
     Q = np.zeros((n, k), dtype=v.dtype)
     H = np.zeros((k, k), dtype=v.dtype)
-    initlength = linalg.vector_norm(v)
+    initlength = np.sqrt(linalg.inner(v, v))
     init = (Q, H, v, initlength)
 
     # Fix the step function
     def forward_step(i, val):
-        return _forward_step(*val, matvec, *params, idx=i, reortho=reortho)
+        return _hessenberg_forward_step(*val, matvec, *params, idx=i, reortho=reortho)
 
     # Loop and return
     Q, H, v, _length = control_flow.fori_loop(0, k, forward_step, init)
     return Q, H, v, 1 / initlength
 
 
-def _forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
+def _hessenberg_forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
     # Save
     v /= length
     Q = Q.at[:, idx].set(v)
@@ -329,10 +564,132 @@ def _forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
         v = v - Q @ (Q.T @ v)
 
     # Read the length
-    length = linalg.vector_norm(v)
+    length = np.sqrt(linalg.inner(v, v))
 
     # Save
     h = h.at[idx + 1].set(length)
     H = H.at[:, idx].set(h)
 
     return Q, H, v, length
+
+
+def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: str):
+    # Extract the matrix shapes from Q
+    _, krylov_depth = np.shape(Q)
+
+    # Prepare a bunch of auxiliary matrices
+
+    def lower(m):
+        m_tril = np.tril(m)
+        return m_tril - 0.5 * _extract_diag(m_tril)
+
+    e_1, e_K = np.eye(krylov_depth)[[0, -1], :]
+    lower_mask = lower(np.ones((krylov_depth, krylov_depth)))
+
+    # Initialise
+    eta = dH @ e_K - Q.T @ dr
+    lambda_k = dr + Q @ eta
+    Lambda = np.zeros_like(Q)
+    Gamma = np.zeros_like(dQ.T @ Q)
+    dp = tree_util.tree_map(np.zeros_like, params)
+
+    # Prepare more  auxiliary matrices
+    Pi_xi = dQ.T + linalg.outer(eta, r)
+    Pi_gamma = -dc * c * linalg.outer(e_1, e_1) + H @ dH.T - (dQ.T @ Q)
+
+    # Prepare reorthogonalisation:
+    P = Q.T
+    ps = dH.T
+    ps_mask = np.tril(np.ones((krylov_depth, krylov_depth)), 1)
+
+    # Loop over those values
+    indices = np.arange(0, len(H), step=1)
+    beta_minuses = np.concatenate([np.ones((1,)), linalg.diagonal(H, -1)])
+    alphas = linalg.diagonal(H)
+    beta_pluses = H - _extract_diag(H) - _extract_diag(H, -1)
+    scan_over = {
+        "beta_minus": beta_minuses,
+        "alpha": alphas,
+        "beta_plus": beta_pluses,
+        "idx": indices,
+        "lower_mask": lower_mask,
+        "Pi_gamma": Pi_gamma,
+        "Pi_xi": Pi_xi,
+        "p": ps,
+        "p_mask": ps_mask,
+        "q": Q.T,
+    }
+
+    # Fix the step function
+    def adjoint_step(x, y):
+        output = _hessenberg_adjoint_step(
+            *x, **y, matvec=matvec, params=params, Q=Q, reortho=reortho
+        )
+        return output, ()
+
+    # Scan
+    init = (lambda_k, Lambda, Gamma, P, dp)
+    result, _ = control_flow.scan(adjoint_step, init, xs=scan_over, reverse=True)
+    (lambda_k, Lambda, Gamma, _P, dp) = result
+
+    # Solve for the input gradient
+    dv = lambda_k * c
+
+    return dv, *dp
+
+
+def _hessenberg_adjoint_step(
+    # Running variables
+    lambda_k,
+    Lambda,
+    Gamma,
+    P,
+    dp,
+    *,
+    # Matrix-vector product
+    matvec,
+    params,
+    # Loop over: index
+    idx,
+    # Loop over: submatrices of H
+    beta_minus,
+    alpha,
+    beta_plus,
+    # Loop over: auxiliary variables for Gamma
+    lower_mask,
+    Pi_gamma,
+    Pi_xi,
+    q,
+    # Loop over: reorthogonalisation
+    p,
+    p_mask,
+    # Other parameters
+    Q,
+    reortho: str,
+):
+    # Reorthogonalise
+    if reortho == "full":
+        P = p_mask[:, None] * P
+        p = p_mask * p
+        lambda_k = lambda_k - P.T @ (P @ lambda_k) + P.T @ p
+
+    # Transposed matvec and parameter-gradient in a single matvec
+    _, vjp = func.vjp(lambda u, v: matvec(u, *v), q, params)
+    vecmat_lambda, dp_increment = vjp(lambda_k)
+    dp = tree_util.tree_map(lambda g, h: g + h, dp, dp_increment)
+
+    # Solve for (Gamma + Gamma.T) e_K
+    tmp = lower_mask * (Pi_gamma - vecmat_lambda @ Q)
+    Gamma = Gamma.at[idx, :].set(tmp)
+
+    # Solve for the next lambda (backward substitution step)
+    Lambda = Lambda.at[:, idx].set(lambda_k)
+    xi = Pi_xi + (Gamma + Gamma.T)[idx, :] @ Q.T
+    lambda_k = xi - (alpha * lambda_k - vecmat_lambda) - beta_plus @ Lambda.T
+    lambda_k /= beta_minus
+    return lambda_k, Lambda, Gamma, P, dp
+
+
+def _extract_diag(x, offset=0):
+    diag = linalg.diagonal(x, offset=offset)
+    return linalg.diagonal_matrix(diag, offset=offset)
