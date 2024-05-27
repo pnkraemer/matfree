@@ -19,7 +19,7 @@ def A(n, num_significant_eigvals):
 @testing.parametrize("order", [10])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_sym(A, order):
+def test_logdet_spd(A, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
 
@@ -41,7 +41,7 @@ def test_logdet_sym(A, order):
 @testing.parametrize("n", [50])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_sym_exact_for_full_order_lanczos(n):
+def test_logdet_spd_exact_for_full_order_lanczos(n):
     r"""Computing v^\top f(A) v with max-order Lanczos should be exact for _any_ v."""
     # Construct a (numerically nice) matrix
     eigvals = np.arange(1.0, 1.0 + n, step=1.0)
