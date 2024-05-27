@@ -64,7 +64,6 @@ print(logdet)
 # For reference: flatten all arguments
 # and compute the dense log-determinant:
 
-x0_flat, unravel_func_x = jax.flatten_util.ravel_pytree(x0)
 f0_flat, unravel_func_f = jax.flatten_util.ravel_pytree(f0)
 
 

@@ -122,24 +122,12 @@ def sum(x, /, axis=None):  # noqa: A001
     return jnp.sum(x, axis)
 
 
-def array_min(x, /):
-    return jnp.amin(x)
-
-
-def array_max(x, /, axis=None):
-    return jnp.amax(x, axis=axis)
-
-
 def argmax(x, /, axis=None):
     return jnp.argmax(x, axis=axis)
 
 
 def argsort(x, /):
     return jnp.argsort(x)
-
-
-def elementwise_max(x1, x2, /):
-    return jnp.maximum(x1, x2)
 
 
 def nanmean(x, /, axis=None):
