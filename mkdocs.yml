@@ -44,7 +44,7 @@ plugins:
             show_signature_annotations: true
             separate_signature: false
             docstring_section_style: list
-            show_source: false
+            show_source: true
 watch: [matfree]
 extra:
   social:
