@@ -191,3 +191,7 @@ def convolve(a, b, /, mode="full"):
 
 def tril(x, /, shift=0):
     return jnp.tril(x, shift)
+
+
+def triu(x, /, shift=0):
+    return jnp.triu(x, shift)
