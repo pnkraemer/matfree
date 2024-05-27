@@ -68,7 +68,9 @@ class _LanczosAlg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def tridiag_sym(matvec, krylov_depth, /, *, reortho: str, custom_vjp: bool = True):
+def tridiag_sym(
+    matvec, krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = True
+):
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -109,15 +111,13 @@ def _tridiag_reortho_full(matvec, krylov_depth, /, *, custom_vjp):
 
 def _tridiag_reortho_none(matvec, krylov_depth, /, *, custom_vjp):
     def estimate(vec, *params):
-        *values, _ = _forward(matvec, krylov_depth, vec, *params)
+        *values, _ = _tridiag_forward(matvec, krylov_depth, vec, *params)
         return values
 
     def estimate_fwd(vec, *params):
         value = estimate(vec, *params)
         return value, (value, (linalg.vector_norm(vec), *params))
 
-    # todo: for full-rank decompositions, the final b_K is almost zero
-    #  which blows up the initial step of the backward pass already. Solve this!
     def estimate_bwd(cache, vjp_incoming):
         # Read incoming gradients and stack related quantities
         (dxs, (dalphas, dbetas)), (dx_last, dbeta_last) = vjp_incoming
@@ -130,7 +130,7 @@ def _tridiag_reortho_none(matvec, krylov_depth, /, *, custom_vjp):
         betas = np.concatenate((betas, beta_last[None]))
 
         # Compute the adjoints, discard the adjoint states, and return the gradients
-        grads, _lambdas_and_mus_and_nus = _adjoint(
+        grads, _lambdas_and_mus_and_nus = _tridiag_adjoint(
             matvec=matvec,
             params=params,
             initvec_norm=vector_norm,
@@ -150,7 +150,7 @@ def _tridiag_reortho_none(matvec, krylov_depth, /, *, custom_vjp):
     return estimate
 
 
-def _forward(matvec, krylov_depth, vec, *params):
+def _tridiag_forward(matvec, krylov_depth, vec, *params):
     # Pre-allocate
     vectors = np.zeros((krylov_depth + 1, len(vec)))
     offdiags = np.zeros((krylov_depth,))
@@ -161,7 +161,7 @@ def _forward(matvec, krylov_depth, vec, *params):
     vectors = vectors.at[0].set(v0)
 
     # Lanczos initialisation
-    ((v1, offdiag), diag) = _fwd_init(matvec, v0, *params)
+    ((v1, offdiag), diag) = _tridiag_fwd_init(matvec, v0, *params)
 
     # Store results
     k = 0
@@ -171,7 +171,7 @@ def _forward(matvec, krylov_depth, vec, *params):
 
     # Run Lanczos-loop
     init = (v1, offdiag, v0), (vectors, diags, offdiags)
-    step_fun = func.partial(_fwd_step, matvec, params)
+    step_fun = func.partial(_tridiag_fwd_step, matvec, params)
     _, (vectors, diags, offdiags) = control_flow.fori_loop(
         lower=1, upper=krylov_depth, body_fun=step_fun, init_val=init
     )
@@ -182,7 +182,7 @@ def _forward(matvec, krylov_depth, vec, *params):
     return decomposition, remainder, 1 / linalg.vector_norm(vec)
 
 
-def _fwd_init(matvec, vec, *params):
+def _tridiag_fwd_init(matvec, vec, *params):
     """Initialize Lanczos' algorithm.
 
     Solve A x_{k} = a_k x_k + b_k x_{k+1}
@@ -196,9 +196,12 @@ def _fwd_init(matvec, vec, *params):
     return (x, b), a
 
 
-def _fwd_step(matvec, params, i, val):
+def _tridiag_fwd_step(matvec, params, i, val):
     (v1, offdiag, v0), (vectors, diags, offdiags) = val
-    ((v1, offdiag), diag), v0 = _fwd_step_apply(matvec, v1, offdiag, v0, *params), v1
+    ((v1, offdiag), diag), v0 = (
+        _tridiag_fwd_step_apply(matvec, v1, offdiag, v0, *params),
+        v1,
+    )
 
     # Store results
     vectors = vectors.at[i + 1].set(v1)
@@ -208,14 +211,8 @@ def _fwd_step(matvec, params, i, val):
     return (v1, offdiag, v0), (vectors, diags, offdiags)
 
 
-def _fwd_step_apply(matvec, vec, b, vec_previous, *params):
-    """Apply Lanczos' recurrence.
-
-    Solve
-    A x_{k} = b_{k-1} x_{k-1} + a_k x_k + b_k x_{k+1}
-    for x_{k+1}, a_k, and b_k, using
-    orthogonality of the x_k.
-    """
+def _tridiag_fwd_step_apply(matvec, vec, b, vec_previous, *params):
+    """Apply Lanczos' recurrence."""
     a = vec @ (matvec(vec, *params))
     r = matvec(vec, *params) - a * vec - b * vec_previous
     b = linalg.vector_norm(r)
@@ -223,9 +220,13 @@ def _fwd_step_apply(matvec, vec, b, vec_previous, *params):
     return (x, b), a
 
 
-def _adjoint(*, matvec, params, initvec_norm, alphas, betas, xs, dalphas, dbetas, dxs):
+def _tridiag_adjoint(
+    *, matvec, params, initvec_norm, alphas, betas, xs, dalphas, dbetas, dxs
+):
     def adjoint_step(xi_and_lambda, inputs):
-        return _adjoint_step(*xi_and_lambda, matvec=matvec, params=params, **inputs)
+        return _tridiag_adjoint_step(
+            *xi_and_lambda, matvec=matvec, params=params, **inputs
+        )
 
     # Scan over all input gradients and output values
     xs0 = xs
@@ -252,7 +253,9 @@ def _adjoint(*, matvec, params, initvec_norm, alphas, betas, xs, dalphas, dbetas
     return (grad_initvec, grad_matvec), (lambda_1, *other)
 
 
-def _adjoint_step(xs_all, xi, lambda_plus, /, *, matvec, params, dx, da, db, xs, a, b):
+def _tridiag_adjoint_step(
+    xs_all, xi, lambda_plus, /, *, matvec, params, dx, da, db, xs, a, b
+):
     # Read inputs
     (xplus, x) = xs
 
@@ -271,67 +274,6 @@ def _adjoint_step(xs_all, xi, lambda_plus, /, *, matvec, params, dx, da, db, xs,
 
     # Return values
     return (xs_all, xi, lambda_), (gradient_increment, lambda_, mu, nu, xi)
-
-
-# def tridiag_sym(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
-#
-#     class State(containers.NamedTuple):
-#         i: int
-#         basis: Array
-#         tridiag: Tuple[Array, Array]
-#         q: Array
-#         length: Array
-#
-#     def init(init_vec: Array) -> State:
-#         (ncols,) = np.shape(init_vec)
-#         if depth >= ncols or depth < 1:
-#             raise ValueError
-#
-#         if validate_unit_2_norm:
-#             init_vec = _validate_unit_2_norm(init_vec)
-#
-#         diag = np.zeros((depth + 1,))
-#         offdiag = np.zeros((depth,))
-#         basis = np.zeros((depth + 1, ncols))
-#
-#         return State(0, basis, (diag, offdiag), init_vec, 1.0)
-#
-#     def apply(state: State, *parameters) -> State:
-#         i, basis, (diag, offdiag), vec, length = state
-#
-#         # Compute the next off-diagonal entry
-#         offdiag = offdiag.at[i - 1].set(length)
-#
-#         # Re-orthogonalise against ALL basis elements before storing.
-#         # Note: we re-orthogonalise against ALL columns of Q, not just
-#         # the ones we have already computed. This increases the complexity
-#         # of the whole iteration from n(n+1)/2 to n^2, but has the advantage
-#         # that the whole computation has static bounds (thus we can JIT it all).
-#         # Since 'Q' is padded with zeros, the numerical values are identical
-#         # between both modes of computing.
-#         vec, *_ = _gram_schmidt_classical(vec, basis)
-#
-#         # Store new basis element
-#         basis = basis.at[i, :].set(vec)
-#
-#         # When i==0, Q[i-1] is Q[-1] and again, we benefit from the fact
-#         #  that Q is initialised with zeros.
-#         vec = Av(vec, *parameters)
-#         basis_vectors_previous = np.asarray([basis[i], basis[i - 1]])
-#         vec, length, (coeff, _) = _gram_schmidt_classical(vec, basis_vectors_previous)
-#         diag = diag.at[i].set(coeff)
-#
-#         return State(i + 1, basis, (diag, offdiag), vec, length)
-#
-#     def extract(state: State, /):
-#         # todo: return final output "_ignored"
-#         _, basis, (diag, offdiag), *_ignored = state
-#         return basis, (diag, offdiag)
-#
-#     alg = _LanczosAlg(
-#         init=init, step=apply, extract=extract, lower_upper=(0, depth + 1)
-#     )
-#     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
 def bidiag(

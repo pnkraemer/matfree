@@ -15,7 +15,7 @@ Examples
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
 >>> matfun_vec = funm_lanczos_sym(jnp.log, 4, lambda s: A @ s)
 >>> matfun_vec(v)
-Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
+Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
 
 from matfree import decomp
@@ -95,6 +95,8 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matvec
 
 
+# todo: if we pass decomp.tridiag_sym instead of order & matvec,
+#  the user gets more control over questions like reorthogonalisation
 def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
@@ -106,7 +108,7 @@ def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Calla
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        basis, (diag, off_diag) = algorithm(vec, *parameters)
+        (basis, (diag, off_diag)), _ = algorithm(vec, *parameters)
         eigvals, eigvecs = _eigh_tridiag_sym(diag, off_diag)
 
         fx_eigvals = func.vmap(matfun)(eigvals)
