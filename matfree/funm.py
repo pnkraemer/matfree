@@ -20,10 +20,10 @@ Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=f
 
 from matfree import lanczos
 from matfree.backend import containers, control_flow, func, linalg, np
-from matfree.backend.typing import Array
+from matfree.backend.typing import Array, Callable
 
 
-def funm_chebyshev(matfun, order, matvec, /):
+def funm_chebyshev(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
     """Compute a matrix-function-vector product via Chebyshev's algorithm.
 
     This function assumes that the **spectrum of the matrix-vector product
@@ -98,8 +98,8 @@ def _funm_polyexpand(matrix_poly_alg, /):
 # todo: "spd" -> "sym"
 
 
-def funm_lanczos_spd(matfun, order, matvec, /):
-    """Implement a matrix-function-vector product via Lanczos' algorithm.
+def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
+    """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
     and therefore applies only to symmetric matrices.
