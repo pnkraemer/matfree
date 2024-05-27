@@ -19,7 +19,7 @@ def A(n, num_significant_eigvals):
 @testing.parametrize("order", [10])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_spd(A, order):
+def test_logdet_sym(A, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     n, _ = np.shape(A)
 
@@ -29,7 +29,7 @@ def test_logdet_spd(A, order):
     key = prng.prng_key(1)
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = hutchinson.sampler_normal(args_like, num=10)
-    integrand = funm_trace.integrand_spd_logdet(order, matvec)
+    integrand = funm_trace.integrand_sym_logdet(order, matvec)
     estimate = hutchinson.hutchinson(integrand, sampler)
     received = estimate(key)
 
@@ -41,7 +41,7 @@ def test_logdet_spd(A, order):
 @testing.parametrize("n", [50])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_spd_exact_for_full_order_lanczos(n):
+def test_logdet_sym_exact_for_full_order_lanczos(n):
     r"""Computing v^\top f(A) v with max-order Lanczos should be exact for _any_ v."""
     # Construct a (numerically nice) matrix
     eigvals = np.arange(1.0, 1.0 + n, step=1.0)
@@ -49,7 +49,7 @@ def test_logdet_spd_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = funm_trace.integrand_spd_logdet(order, lambda v: A @ v)
+    integrand = funm_trace.integrand_sym_logdet(order, lambda v: A @ v)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 10

@@ -12,18 +12,18 @@ from matfree.backend import func, linalg, np, tree_util
 #  something else.
 
 
-def integrand_spd_logdet(order, matvec, /):
+def integrand_sym_logdet(order, matvec, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
     """
-    return integrand_spd(np.log, order, matvec)
+    return integrand_sym(np.log, order, matvec)
 
 
-def integrand_spd(matfun, order, matvec, /):
-    """Quadratic form for stochastic Lanczos quadrature.
+def integrand_sym(matfun, order, matvec, /):
+    """Construct the integrand for matrix-function-trace estimation.
 
-    This function assumes a symmetric, positive definite matrix.
+    This function assumes a symmetric matrix.
     """
 
     def quadform(v0, *parameters):
@@ -68,7 +68,7 @@ def integrand_product_schatten_norm(power, depth, matvec, vecmat, /):
 
 
 def integrand_product(matfun, depth, matvec, vecmat, /):
-    r"""Construct the integrand for the trace of a function of a matrix-product.
+    """Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
