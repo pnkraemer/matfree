@@ -29,7 +29,7 @@ x_like = jnp.ones((nrows,), dtype=float)  # use to determine shapes of vectors
 order = 3
 problem = funm_trace.integrand_sym_logdet(order, matvec)
 sampler = hutchinson.sampler_normal(x_like, num=1_000)
-estimator = hutchinson.estimator(problem, sample_fun=sampler)
+estimator = hutchinson.estimator(problem, sampler=sampler)
 logdet = estimator(jax.random.PRNGKey(1))
 print(logdet)
 
@@ -60,7 +60,7 @@ def vecmat_left(x):
 order = 3
 problem = funm_trace.integrand_product_logdet(order, matvec_right, vecmat_left)
 sampler = hutchinson.sampler_normal(x_like, num=1_000)
-estimator = hutchinson.estimator(problem, sample_fun=sampler)
+estimator = hutchinson.estimator(problem, sampler=sampler)
 logdet = estimator(jax.random.PRNGKey(1))
 print(logdet)
 

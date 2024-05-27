@@ -24,7 +24,7 @@ def test_trace():
     # Estimate the matrix function
     problem = hutchinson.integrand_trace(jvp)
     sampler = hutchinson.sampler_normal(args_like, num=100_000)
-    estimate = hutchinson.estimator(problem, sample_fun=sampler)
+    estimate = hutchinson.estimator(problem, sampler=sampler)
     received = estimate(key)
 
     def compare(a, b):
