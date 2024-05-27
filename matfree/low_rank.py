@@ -83,7 +83,7 @@ def _cholesky_partial_body(fn: Callable, n: int, *args):
 
     def body(i, L):
         element = matrix_element(i, i)
-        l_ii = np.sqrt(element - linalg.vecdot(L[i], L[i]))
+        l_ii = np.sqrt(element - linalg.inner(L[i], L[i]))
 
         column = matrix_column(i)
         l_ji = column - L @ L[i, :]
@@ -141,7 +141,7 @@ def _cholesky_partial_pivot_body(fn: Callable, n: int, *args):
         diagonal = matrix_diagonal_p(permute=P_matrix)
 
         # Find the largest entry for the residuals
-        residual_diag = diagonal - func.vmap(linalg.vecdot)(L, L)
+        residual_diag = diagonal - func.vmap(linalg.inner)(L, L)
         res = np.abs(residual_diag)
         k = np.argmax(res)
 
@@ -158,7 +158,7 @@ def _cholesky_partial_pivot_body(fn: Callable, n: int, *args):
         # (The first line could also be accessed via
         #  residual_diag[k], but it might
         #  be more readable to do it again)
-        l_ii_squared = element - linalg.vecdot(L[i], L[i])
+        l_ii_squared = element - linalg.inner(L[i], L[i])
         l_ii = np.sqrt(l_ii_squared)
         l_ji = column - L @ L[i, :]
         l_ji /= l_ii

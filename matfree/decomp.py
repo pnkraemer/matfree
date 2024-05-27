@@ -224,7 +224,7 @@ def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
 
 
 def _gram_schmidt_classical_step(vec1, vec2):
-    coeff = linalg.vecdot(vec1, vec2)
+    coeff = linalg.inner(vec1, vec2)
     vec_ortho = vec1 - coeff * vec2
     return vec_ortho, coeff
 
@@ -299,7 +299,7 @@ def _forward(matvec, krylov_depth, v, *params, reortho: str):
     (n,), k = np.shape(v), krylov_depth
     Q = np.zeros((n, k), dtype=v.dtype)
     H = np.zeros((k, k), dtype=v.dtype)
-    initlength = np.sqrt(linalg.vecdot(v.conj(), v))
+    initlength = linalg.vector_norm(v)
     init = (Q, H, v, initlength)
 
     # Fix the step function
@@ -320,15 +320,15 @@ def _forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
     v = matvec(v, *params)
 
     # Orthonormalise
-    h = Q.T.conj() @ v
+    h = Q.T @ v
     v = v - Q @ h
 
     # Re-orthonormalise
     if reortho != "none":
-        v = v - Q @ (Q.T.conj() @ v)
+        v = v - Q @ (Q.T @ v)
 
     # Read the length
-    length = np.sqrt(linalg.vecdot(v.conj(), v))
+    length = linalg.vector_norm(v)
 
     # Save
     h = h.at[idx + 1].set(length)

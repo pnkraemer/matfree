@@ -63,7 +63,7 @@ def integrand_trace(matvec, /):
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
-        return linalg.vecdot(v_flat, Qv_flat)
+        return linalg.inner(v_flat, Qv_flat)
 
     return integrand
 
@@ -75,7 +75,7 @@ def integrand_trace_and_diagonal(matvec, /):
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
-        trace_form = linalg.vecdot(v_flat, Qv_flat)
+        trace_form = linalg.inner(v_flat, Qv_flat)
         diagonal_form = unflatten(v_flat * Qv_flat)
         return {"trace": trace_form, "diagonal": diagonal_form}
 
@@ -88,7 +88,7 @@ def integrand_frobeniusnorm_squared(matvec, /):
     def integrand(vec, *parameters):
         x = matvec(vec, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(x)
-        return linalg.vecdot(v_flat, v_flat)
+        return linalg.inner(v_flat, v_flat)
 
     return integrand
 

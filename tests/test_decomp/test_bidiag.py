@@ -68,7 +68,7 @@ def test_error_too_high_depth(A):
     nrows, ncols = np.shape(A)
     max_depth = min(nrows, ncols) - 1
 
-    with testing.raises(ValueError):
+    with testing.raises(ValueError, match=""):
 
         def eye(v):
             return v
@@ -82,7 +82,7 @@ def test_error_too_high_depth(A):
 def test_error_too_low_depth(A):
     """Assert that a ValueError is raised when the depth is negative."""
     min_depth = 0
-    with testing.raises(ValueError):
+    with testing.raises(ValueError, match=""):
 
         def eye(v):
             return v

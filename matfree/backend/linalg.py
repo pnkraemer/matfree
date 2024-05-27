@@ -36,8 +36,9 @@ def slogdet(x, /):
     return jnp.linalg.slogdet(x)
 
 
-def vecdot(x1, x2, /):
-    return jnp.dot(x1, x2)
+def inner(x1, x2, /):
+    # todo: distinguish vecdot, vdot, dot, and matmul?
+    return jnp.inner(x1, x2)
 
 
 def outer(a, b, /):

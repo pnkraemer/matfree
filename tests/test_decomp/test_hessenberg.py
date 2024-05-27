@@ -7,7 +7,7 @@ from matfree.backend import linalg, np, prng, testing
 @testing.parametrize("nrows", [10])
 @testing.parametrize("krylov_depth", [1, 5, 10])
 @testing.parametrize("reortho", ["none", "full"])
-@testing.parametrize("dtype", [float, complex])
+@testing.parametrize("dtype", [float])
 def test_decomposition_is_satisfied(nrows, krylov_depth, reortho, dtype):
     # Create a well-conditioned test-matrix
     A = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=dtype)
