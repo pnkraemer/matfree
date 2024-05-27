@@ -80,7 +80,7 @@ def _chebyshev_nodes(n, /):
 
 
 def _funm_polyexpand(matrix_poly_alg, /):
-    """Implement a matrix-function-vector product via a polynomial expansion."""
+    """Compute a matrix-function-vector product via a polynomial expansion."""
     (lower, upper), init_func, step_func, extract_func = matrix_poly_alg
 
     def matvec(vec, *parameters):
@@ -95,11 +95,14 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matvec
 
 
+# todo: "spd" -> "sym"
+
+
 def funm_lanczos_spd(matfun, order, matvec, /):
     """Implement a matrix-function-vector product via Lanczos' algorithm.
 
-    This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation
-    and therefore applies only to symmetric, positive definite matrices.
+    This algorithm uses Lanczos' tridiagonalisation
+    and therefore applies only to symmetric matrices.
     """
     algorithm = lanczos.alg_tridiag_full_reortho(matvec, order)
 

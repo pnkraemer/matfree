@@ -2,6 +2,10 @@
 
 from matfree.backend import func, linalg, np, prng, tree_util
 
+# todo: rename this module. Why? Because
+#  stochastic trace estimation should not be tied that closely to Hutchinson's name,
+#  since others have influenced it massively, too.
+
 
 def hutchinson(integrand_fun, /, sample_fun):
     """Construct Hutchinson's estimator.
