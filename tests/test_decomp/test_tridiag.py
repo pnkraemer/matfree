@@ -23,7 +23,7 @@ def test_max_order(A):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     v0 /= linalg.vector_norm(v0)
-    algorithm = decomp.alg_tridiag_full_reortho(lambda v: A @ v, order)
+    algorithm = decomp.tridiag_full_reortho(lambda v: A @ v, order)
     Q, (d_m, e_m) = algorithm(v0)
 
     # Lanczos is not stable.
@@ -35,7 +35,7 @@ def test_max_order(A):
     assert np.allclose(Q.T @ Q, np.eye(n), **tols_decomp), Q.T @ Q
 
     # T = Q A Qt
-    T = _sym_tridiagonal_dense(d_m, e_m)
+    T = test_util.to_dense_tridiag_sym(d_m, e_m)
     QAQt = Q @ A @ Q.T
     assert np.shape(T) == (order + 1, order + 1)
 
@@ -65,7 +65,7 @@ def test_identity(A, order):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(n,))
     v0 /= linalg.vector_norm(v0)
-    algorithm = decomp.alg_tridiag_full_reortho(lambda v: A @ v, order)
+    algorithm = decomp.tridiag_full_reortho(lambda v: A @ v, order)
     Q, tridiag = algorithm(v0)
     (d_m, e_m) = tridiag
 
@@ -76,7 +76,7 @@ def test_identity(A, order):
     assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_decomp), Q @ Q.T
 
     # T = Q A Qt
-    T = _sym_tridiagonal_dense(d_m, e_m)
+    T = test_util.to_dense_tridiag_sym(d_m, e_m)
     QAQt = Q @ A @ Q.T
     assert np.shape(T) == (order + 1, order + 1)
 
@@ -87,13 +87,6 @@ def test_identity(A, order):
 
     # Test the full decomposition
     assert np.allclose(QAQt, T, **tols_decomp)
-
-
-def _sym_tridiagonal_dense(d, e):
-    diag = linalg.diagonal_matrix(d)
-    offdiag1 = linalg.diagonal_matrix(e, 1)
-    offdiag2 = linalg.diagonal_matrix(e, -1)
-    return diag + offdiag1 + offdiag2
 
 
 @testing.parametrize("n", [50])
@@ -107,7 +100,7 @@ def test_validate_unit_norm(A, order):
     # Not normalized!
     v0 = prng.normal(key, shape=(n,)) + 1.0
 
-    algorithm = decomp.alg_tridiag_full_reortho(
+    algorithm = decomp.tridiag_full_reortho(
         lambda v: A @ v, order, validate_unit_2_norm=True
     )
     Q, (d_m, e_m) = algorithm(v0)

@@ -28,3 +28,16 @@ def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
     A /= nrows * ncols
     U, S, Vt = linalg.svd(A, full_matrices=False)
     return U @ linalg.diagonal(vals) @ Vt
+
+
+def to_dense_bidiag(d, e, /, offset=1):
+    diag = linalg.diagonal_matrix(d)
+    offdiag = linalg.diagonal_matrix(e, offset=offset)
+    return diag + offdiag
+
+
+def to_dense_tridiag_sym(d, e, /):
+    diag = linalg.diagonal_matrix(d)
+    offdiag1 = linalg.diagonal_matrix(e, offset=1)
+    offdiag2 = linalg.diagonal_matrix(e, offset=-1)
+    return diag + offdiag1 + offdiag2

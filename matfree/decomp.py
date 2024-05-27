@@ -40,7 +40,7 @@ def svd_approx(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = alg_bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
+    algorithm = bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
     u, (d, e), vt, _ = algorithm(v0)
 
     # Compute SVD of factorisation
@@ -67,7 +67,7 @@ class _LanczosAlg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def alg_tridiag_full_reortho(
+def tridiag_full_reortho(
     Av: Callable, depth, /, validate_unit_2_norm=False
 ) -> Callable:
     """Construct an implementation of **tridiagonalisation**.
@@ -140,7 +140,7 @@ def alg_tridiag_full_reortho(
     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
-def alg_bidiag_full_reortho(
+def bidiag_full_reortho(
     Av: Callable, vA: Callable, depth, /, matrix_shape, validate_unit_2_norm=False
 ):
     """Construct an implementation of **bidiagonalisation**.
