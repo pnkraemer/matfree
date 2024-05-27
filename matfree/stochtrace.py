@@ -3,10 +3,6 @@
 from matfree.backend import func, linalg, np, prng, tree_util
 from matfree.backend.typing import Callable
 
-# todo: rename this module. Why? Because
-#  stochastic trace estimation should not be tied that closely to Hutchinson's name,
-#  since others have influenced it massively, too.
-
 
 def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     """Construct a stochastic trace-/diagonal-estimator.
