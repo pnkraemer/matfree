@@ -101,7 +101,7 @@ def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Calla
     This algorithm uses Lanczos' tridiagonalisation
     and therefore applies only to symmetric matrices.
     """
-    algorithm = decomp.tridiag_full_reortho(matvec, order)
+    algorithm = decomp.tridiag(matvec, order)
 
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)

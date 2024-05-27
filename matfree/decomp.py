@@ -40,7 +40,7 @@ def svd_approx(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
+    algorithm = bidiag(Av, vA, depth, matrix_shape=matrix_shape)
     u, (d, e), vt, _ = algorithm(v0)
 
     # Compute SVD of factorisation
@@ -67,12 +67,10 @@ class _LanczosAlg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def tridiag_full_reortho(
-    Av: Callable, depth, /, validate_unit_2_norm=False
-) -> Callable:
+def tridiag(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
     """Construct an implementation of **tridiagonalisation**.
 
-    Uses pre-allocation. Fully reorthogonalise vectors at every step.
+    Uses pre-allocation and full reorthogonalisation.
 
     This algorithm assumes a **symmetric matrix**.
 
@@ -140,12 +138,12 @@ def tridiag_full_reortho(
     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
-def bidiag_full_reortho(
+def bidiag(
     Av: Callable, vA: Callable, depth, /, matrix_shape, validate_unit_2_norm=False
 ):
     """Construct an implementation of **bidiagonalisation**.
 
-    Uses pre-allocation. Fully reorthogonalise vectors at every step.
+    Uses pre-allocation and full reorthogonalisation.
 
     Works for **arbitrary matrices**. No symmetry required.
 
@@ -208,6 +206,8 @@ def bidiag_full_reortho(
 
 
 def _validate_unit_2_norm(v, /):
+    # todo: replace this functionality with normalising internally.
+    #
     # Lanczos assumes a unit-2-norm vector as an input
     # We cannot raise an error based on values of the init_vec,
     # but we can make it obvious that the result is unusable.

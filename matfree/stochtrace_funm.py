@@ -37,7 +37,7 @@ def integrand_sym(matfun, order, matvec, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = decomp.tridiag_full_reortho(matvec_flat, order)
+        algorithm = decomp.tridiag(matvec_flat, order)
         _, (diag, off_diag) = algorithm(v0_flat, *parameters)
         eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
 
@@ -95,7 +95,7 @@ def integrand_product(matfun, depth, matvec, vecmat, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = decomp.bidiag_full_reortho(
+        algorithm = decomp.bidiag(
             lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
         )
         output = algorithm(v0_flat, *parameters)
