@@ -18,7 +18,7 @@ Examples
 Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
 """
 
-from matfree import lanczos
+from matfree import decomp
 from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable
 
@@ -101,13 +101,13 @@ def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Calla
     This algorithm uses Lanczos' tridiagonalisation
     and therefore applies only to symmetric matrices.
     """
-    algorithm = lanczos.alg_tridiag_full_reortho(matvec, order)
+    algorithm = decomp.tridiag_sym(matvec, order)
 
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
         basis, (diag, off_diag) = algorithm(vec, *parameters)
-        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
+        eigvals, eigvecs = _eigh_tridiag_sym(diag, off_diag)
 
         fx_eigvals = func.vmap(matfun)(eigvals)
         return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
@@ -115,7 +115,7 @@ def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Calla
     return estimate
 
 
-def _eigh_tridiag(diag, off_diag):
+def _eigh_tridiag_sym(diag, off_diag):
     # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
     #  use it here. Until then: an eigen-decomposition of size (order + 1)
     #  does not hurt too much...

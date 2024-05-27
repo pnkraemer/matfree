@@ -1,7 +1,7 @@
-"""Lanczos-style matrix decompositions.
+"""Matrix-free matrix decompositions.
 
 This module includes various Lanczos-decompositions of matrices
-(tridiagonalisation, bidiagonalisation, etc.).
+(tri-diagonal, bi-diagonal, etc.).
 
 For stochastic Lanczos quadrature, see
 [matfree.stochtrace_funm][matfree.stochtrace_funm].
@@ -11,10 +11,6 @@ For matrix-function-vector products, see
 
 from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable, Tuple
-
-# todo: rename this module, because we may easily include arnoldi here, too.
-#  what do we rename it to? krylov.py? decomp.py? krylovbasis.py?
-
 
 # todo: rename svd_approx to svd_partial() because the algorithm is called
 #  "Partial SVD", not "Approximate SVD".
@@ -44,7 +40,7 @@ def svd_approx(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = alg_bidiag_full_reortho(Av, vA, depth, matrix_shape=matrix_shape)
+    algorithm = bidiag(Av, vA, depth, matrix_shape=matrix_shape)
     u, (d, e), vt, _ = algorithm(v0)
 
     # Compute SVD of factorisation
@@ -71,12 +67,10 @@ class _LanczosAlg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def alg_tridiag_full_reortho(
-    Av: Callable, depth, /, validate_unit_2_norm=False
-) -> Callable:
+def tridiag_sym(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
     """Construct an implementation of **tridiagonalisation**.
 
-    Uses pre-allocation. Fully reorthogonalise vectors at every step.
+    Uses pre-allocation and full reorthogonalisation.
 
     This algorithm assumes a **symmetric matrix**.
 
@@ -144,12 +138,12 @@ def alg_tridiag_full_reortho(
     return func.partial(_decompose_fori_loop, algorithm=alg)
 
 
-def alg_bidiag_full_reortho(
+def bidiag(
     Av: Callable, vA: Callable, depth, /, matrix_shape, validate_unit_2_norm=False
 ):
     """Construct an implementation of **bidiagonalisation**.
 
-    Uses pre-allocation. Fully reorthogonalise vectors at every step.
+    Uses pre-allocation and full reorthogonalisation.
 
     Works for **arbitrary matrices**. No symmetry required.
 
@@ -212,6 +206,8 @@ def alg_bidiag_full_reortho(
 
 
 def _validate_unit_2_norm(v, /):
+    # todo: replace this functionality with normalising internally.
+    #
     # Lanczos assumes a unit-2-norm vector as an input
     # We cannot raise an error based on values of the init_vec,
     # but we can make it obvious that the result is unusable.
@@ -270,7 +266,7 @@ def _bidiagonal_dense(d, e):
     return diag + offdiag
 
 
-def _eigh_tridiag(diag, off_diag):
+def _eigh_tridiag_sym(diag, off_diag):
     # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
     #  use it here. Until then: an eigen-decomposition of size (order + 1)
     #  does not hurt too much...

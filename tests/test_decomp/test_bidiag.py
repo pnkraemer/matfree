@@ -1,6 +1,6 @@
 """Test the Golub-Kahan-Lanczos bi-diagonalisation with full re-orthogonalisation."""
 
-from matfree import lanczos, test_util
+from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -18,7 +18,7 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("ncols", [49])
 @testing.parametrize("num_significant_singular_vals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_lanczos_bidiag_full_reortho(A, order):
+def test_bidiag(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
@@ -30,7 +30,7 @@ def test_lanczos_bidiag_full_reortho(A, order):
     def vA(v):
         return v @ A
 
-    algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, order, matrix_shape=np.shape(A))
+    algorithm = decomp.bidiag(Av, vA, order, matrix_shape=np.shape(A))
     v0 /= linalg.vector_norm(v0)
     Us, Bs, Vs, (b, v) = algorithm(v0)
     (d_m, e_m) = Bs
@@ -47,7 +47,7 @@ def test_lanczos_bidiag_full_reortho(A, order):
     assert np.allclose(linalg.diagonal(UAVt), d_m, **tols_decomp)
     assert np.allclose(linalg.diagonal(UAVt, 1), e_m, **tols_decomp)
 
-    B = _bidiagonal_dense(d_m, e_m)
+    B = test_util.to_dense_bidiag(d_m, e_m)
     assert np.shape(B) == (order + 1, order + 1)
     assert np.allclose(UAVt, B, **tols_decomp)
 
@@ -58,12 +58,6 @@ def test_lanczos_bidiag_full_reortho(A, order):
     VtBtb_plus_bve = Vs.T @ B.T + b * v[:, None] @ em[None, :]
     assert np.allclose(AVt, UtB, **tols_decomp)
     assert np.allclose(AtUt, VtBtb_plus_bve, **tols_decomp)
-
-
-def _bidiagonal_dense(d, e):
-    diag = linalg.diagonal_matrix(d)
-    offdiag = linalg.diagonal_matrix(e, 1)
-    return diag + offdiag
 
 
 @testing.parametrize("nrows", [5])
@@ -79,9 +73,7 @@ def test_error_too_high_depth(A):
         def eye(v):
             return v
 
-        _ = lanczos.alg_bidiag_full_reortho(
-            eye, eye, max_depth + 1, matrix_shape=np.shape(A)
-        )
+        _ = decomp.bidiag(eye, eye, max_depth + 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [5])
@@ -95,9 +87,7 @@ def test_error_too_low_depth(A):
         def eye(v):
             return v
 
-        _ = lanczos.alg_bidiag_full_reortho(
-            eye, eye, min_depth - 1, matrix_shape=np.shape(A)
-        )
+        _ = decomp.bidiag(eye, eye, min_depth - 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [15])
@@ -115,7 +105,7 @@ def test_no_error_zero_depth(A):
     def vA(v):
         return v @ A
 
-    algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, 0, matrix_shape=np.shape(A))
+    algorithm = decomp.bidiag(Av, vA, 0, matrix_shape=np.shape(A))
     Us, Bs, Vs, (b, v) = algorithm(v0)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)
@@ -144,7 +134,7 @@ def test_validate_unit_norm(A, order):
     def vA(v):
         return v @ A
 
-    algorithm = lanczos.alg_bidiag_full_reortho(
+    algorithm = decomp.bidiag(
         Av, vA, order, matrix_shape=np.shape(A), validate_unit_2_norm=True
     )
     Us, (d_m, e_m), Vs, (b, v) = algorithm(v0)
