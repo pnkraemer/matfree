@@ -29,7 +29,7 @@ def test_decomposition_is_satisfied(nrows, krylov_depth, reortho, dtype):
 
     # Test the decompositions
     e0, ek = np.eye(krylov_depth)[[0, -1], :]
-    assert np.allclose(A @ Q - Q @ H - np.outer(r, ek), 0.0, **tols)
+    assert np.allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0, **tols)
     assert np.allclose(Q.T.conj() @ Q - np.eye(krylov_depth), 0.0, **tols)
     assert np.allclose(Q @ e0, c * v, **tols)
 
@@ -58,7 +58,7 @@ def test_reorthogonalisation_improves_the_estimate(nrows, krylov_depth, reortho)
 
     # Test the decompositions
     e0, ek = np.eye(krylov_depth)[[0, -1], :]
-    assert np.allclose(A @ Q - Q @ H - np.outer(r, ek), 0.0, **tols)
+    assert np.allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0, **tols)
     assert np.allclose(Q.T @ Q - np.eye(krylov_depth), 0.0, **tols)
     assert np.allclose(Q @ e0, c * v, **tols)
 

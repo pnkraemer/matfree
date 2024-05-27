@@ -40,6 +40,10 @@ def vecdot(x1, x2, /):
     return jnp.dot(x1, x2)
 
 
+def outer(a, b, /):
+    return jnp.outer(a, b)
+
+
 def hilbert(n, /):
     return jax.scipy.linalg.hilbert(n)
 

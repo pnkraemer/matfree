@@ -57,10 +57,6 @@ def concatenate(list_of_arrays, /):
     return jnp.concatenate(list_of_arrays)
 
 
-def outer(a, b, /):
-    return jnp.outer(a, b)
-
-
 # Element-wise functions
 
 
