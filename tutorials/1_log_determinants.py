@@ -27,7 +27,7 @@ x_like = jnp.ones((nrows,), dtype=float)  # use to determine shapes of vectors
 # Estimate log-determinants with stochastic Lanczos quadrature.
 
 order = 3
-problem = funm_trace.integrand_spd_logdet(order, matvec)
+problem = funm_trace.integrand_sym_logdet(order, matvec)
 sampler = hutchinson.sampler_normal(x_like, num=1_000)
 estimator = hutchinson.hutchinson(problem, sample_fun=sampler)
 logdet = estimator(jax.random.PRNGKey(1))

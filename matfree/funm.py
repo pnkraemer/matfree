@@ -13,17 +13,17 @@ Examples
 >>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
 >>>
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
->>> matfun_vec = funm_lanczos_spd(jnp.log, 4, lambda s: A @ s)
+>>> matfun_vec = funm_lanczos_sym(jnp.log, 4, lambda s: A @ s)
 >>> matfun_vec(v)
 Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
 """
 
 from matfree import lanczos
 from matfree.backend import containers, control_flow, func, linalg, np
-from matfree.backend.typing import Array
+from matfree.backend.typing import Array, Callable
 
 
-def funm_chebyshev(matfun, order, matvec, /):
+def funm_chebyshev(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
     """Compute a matrix-function-vector product via Chebyshev's algorithm.
 
     This function assumes that the **spectrum of the matrix-vector product
@@ -80,7 +80,7 @@ def _chebyshev_nodes(n, /):
 
 
 def _funm_polyexpand(matrix_poly_alg, /):
-    """Implement a matrix-function-vector product via a polynomial expansion."""
+    """Compute a matrix-function-vector product via a polynomial expansion."""
     (lower, upper), init_func, step_func, extract_func = matrix_poly_alg
 
     def matvec(vec, *parameters):
@@ -95,11 +95,11 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matvec
 
 
-def funm_lanczos_spd(matfun, order, matvec, /):
-    """Implement a matrix-function-vector product via Lanczos' algorithm.
+def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
+    """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
-    This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation
-    and therefore applies only to symmetric, positive definite matrices.
+    This algorithm uses Lanczos' tridiagonalisation
+    and therefore applies only to symmetric matrices.
     """
     algorithm = lanczos.alg_tridiag_full_reortho(matvec, order)
 

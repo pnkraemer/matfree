@@ -53,7 +53,7 @@ def make_matvec(alpha):
 
 matvec = make_matvec(alpha=0.1)
 order = 3
-integrand = funm_trace.integrand_spd_logdet(order, matvec)
+integrand = funm_trace.integrand_sym_logdet(order, matvec)
 sample_fun = hutchinson.sampler_normal(f0, num=10)
 estimator = hutchinson.hutchinson(integrand, sample_fun=sample_fun)
 key = jax.random.PRNGKey(1)

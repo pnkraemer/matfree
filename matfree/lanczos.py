@@ -12,6 +12,13 @@ For matrix-function-vector products, see
 from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable, Tuple
 
+# todo: rename this module, because we may easily include arnoldi here, too.
+#  what do we rename it to? krylov.py? decomp.py? krylovbasis.py?
+
+
+# todo: rename svd_approx to svd_partial() because the algorithm is called
+#  "Partial SVD", not "Approximate SVD".
+
 
 def svd_approx(
     v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int, ...]
