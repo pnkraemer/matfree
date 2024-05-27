@@ -14,7 +14,7 @@ Laplacians without forming full Jacobian matrices:
 import jax
 import jax.numpy as jnp
 
-from matfree import hutchinson
+from matfree import stochtrace
 
 # ## Divergences and Laplacians
 #
@@ -64,9 +64,9 @@ def divergence_matfree(vf, /, *, num):
 
     def divergence(k, x):
         _fx, jvp = jax.linearize(vf, x)
-        integrand_laplacian = hutchinson.integrand_trace(jvp)
-        normal = hutchinson.sampler_normal(x, num=num)
-        estimator = hutchinson.hutchinson(integrand_laplacian, sample_fun=normal)
+        integrand_laplacian = stochtrace.integrand_trace(jvp)
+        normal = stochtrace.sampler_normal(x, num=num)
+        estimator = stochtrace.estimator(integrand_laplacian, sampler=normal)
         return estimator(k)
 
     return divergence

@@ -1,6 +1,6 @@
 """Test the estimation of squared Frobenius-norms."""
 
-from matfree import hutchinson
+from matfree import stochtrace
 from matfree.backend import func, linalg, np, prng, tree_util
 
 
@@ -22,9 +22,9 @@ def test_frobeniusnorm_squared():
     expected = linalg.trace(J.T @ J)
 
     # Estimate the matrix function
-    problem = hutchinson.integrand_frobeniusnorm_squared(jvp)
-    sampler = hutchinson.sampler_rademacher(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    problem = stochtrace.integrand_frobeniusnorm_squared(jvp)
+    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     received = estimate(key)
 
     assert np.allclose(expected, received, rtol=1e-2)

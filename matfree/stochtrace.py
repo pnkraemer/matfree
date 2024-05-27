@@ -1,40 +1,38 @@
 """Stochastic estimation of traces, diagonals, and more."""
 
 from matfree.backend import func, linalg, np, prng, tree_util
-
-# todo: rename this module. Why? Because
-#  stochastic trace estimation should not be tied that closely to Hutchinson's name,
-#  since others have influenced it massively, too.
+from matfree.backend.typing import Callable
 
 
-def hutchinson(integrand_fun, /, sample_fun):
-    """Construct Hutchinson's estimator.
+def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
+    """Construct a stochastic trace-/diagonal-estimator.
 
     Parameters
     ----------
-    integrand_fun
+    integrand
         The integrand function. For example, the return-value of
-        [integrand_trace][matfree.hutchinson.integrand_trace].
+        [integrand_trace][matfree.stochtrace.integrand_trace].
         But any other integrand works, too.
-    sample_fun
+    sampler
         The sample function. Usually, either
-        [sampler_normal][matfree.hutchinson.sampler_normal] or
-        [sampler_rademacher][matfree.hutchinson.sampler_rademacher].
+        [sampler_normal][matfree.stochtrace.sampler_normal] or
+        [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
 
     Returns
     -------
-    integrand_fun
+    estimate
         A function that maps a random key to an estimate.
-        This function can be jitted, vmapped, or looped over as the user desires.
+        This function can be compiled, vectorised, differentiated,
+        or looped over as the user desires.
 
     """
 
-    def sample(key, *parameters):
-        samples = sample_fun(key)
-        Qs = func.vmap(lambda vec: integrand_fun(vec, *parameters))(samples)
+    def estimate(key, *parameters):
+        samples = sampler(key)
+        Qs = func.vmap(lambda vec: integrand(vec, *parameters))(samples)
         return tree_util.tree_map(lambda s: np.mean(s, axis=0), Qs)
 
-    return sample
+    return estimate
 
 
 def integrand_diagonal(matvec, /):
@@ -95,12 +93,12 @@ def integrand_frobeniusnorm_squared(matvec, /):
     return integrand
 
 
-def integrand_wrap_moments(integrand_fun, /, moments):
+def integrand_wrap_moments(integrand, /, moments):
     """Wrap an integrand into another integrand that computes moments.
 
     Parameters
     ----------
-    integrand_fun
+    integrand
         Any integrand function compatible with Hutchinson-style estimation.
     moments
         Any Pytree (tuples, lists, dictionaries) whose leafs that are
@@ -112,7 +110,7 @@ def integrand_wrap_moments(integrand_fun, /, moments):
 
     Returns
     -------
-    integrand_fun
+    integrand
         An integrand function compatible with Hutchinson-style estimation whose
         output has a PyTree-structure that mirrors the structure of the ``moments``
         argument.
@@ -120,7 +118,7 @@ def integrand_wrap_moments(integrand_fun, /, moments):
     """
 
     def integrand_wrapped(vec, *parameters):
-        Qs = integrand_fun(vec, *parameters)
+        Qs = integrand(vec, *parameters)
         return tree_util.tree_map(moment_fun, Qs)
 
     def moment_fun(x, /):
@@ -139,11 +137,11 @@ def sampler_rademacher(*args_like, num):
     return _sampler_from_jax_random(prng.rademacher, *args_like, num=num)
 
 
-def _sampler_from_jax_random(sample_func, *args_like, num):
+def _sampler_from_jax_random(sampler, *args_like, num):
     x_flat, unflatten = tree_util.ravel_pytree(*args_like)
 
     def sample(key):
-        samples = sample_func(key, shape=(num, *x_flat.shape), dtype=x_flat.dtype)
+        samples = sampler(key, shape=(num, *x_flat.shape), dtype=x_flat.dtype)
         return func.vmap(unflatten)(samples)
 
     return sample

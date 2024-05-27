@@ -46,7 +46,7 @@ Import matfree and JAX, and set up a test problem.
 ```python
 >>> import jax
 >>> import jax.numpy as jnp
->>> from matfree import hutchinson
+>>> from matfree import stochtrace
 >>>
 >>> jnp.set_printoptions(1)
 
@@ -63,14 +63,14 @@ Estimate the trace of the matrix:
 ```python
 >>> # Determine the shape of the base-samples
 >>> input_like = jnp.zeros((2,), dtype=float)
->>> sampler = hutchinson.sampler_rademacher(input_like, num=10_000)
+>>> sampler = stochtrace.sampler_rademacher(input_like, num=10_000)
 >>>
 >>> # Set Hutchinson's method up to compute the traces
 >>> # (instead of, e.g., diagonals)
->>> integrand = hutchinson.integrand_trace(matvec)
+>>> integrand = stochtrace.integrand_trace(matvec)
 >>>
 >>> # Compute an estimator
->>> estimate = hutchinson.hutchinson(integrand, sampler)
+>>> estimate = stochtrace.estimator(integrand, sampler)
 
 >>> # Estimate
 >>> key = jax.random.PRNGKey(1)

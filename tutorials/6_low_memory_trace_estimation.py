@@ -15,7 +15,7 @@ in such a scenario to save memory.
 import jax
 import jax.numpy as jnp
 
-from matfree import hutchinson
+from matfree import stochtrace
 
 # ## Stochastic trace estimation
 #
@@ -30,11 +30,11 @@ def large_matvec(v):
     return 1.2345 * v
 
 
-integrand = hutchinson.integrand_trace(large_matvec)
+integrand = stochtrace.integrand_trace(large_matvec)
 
 x0 = jnp.ones((nrows,))
-sampler = hutchinson.sampler_rademacher(x0, num=nsamples)
-estimate = hutchinson.hutchinson(integrand, sampler)
+sampler = stochtrace.sampler_rademacher(x0, num=nsamples)
+estimate = stochtrace.estimator(integrand, sampler)
 
 key = jax.random.PRNGKey(1)
 trace = estimate(key)
@@ -46,8 +46,8 @@ print(trace)
 # Instead, we can loop around estimate() to do the following:
 # The below code requires nrows $\times$ 1 storage:
 
-sampler = hutchinson.sampler_rademacher(x0, num=1)
-estimate = hutchinson.hutchinson(integrand, sampler)
+sampler = stochtrace.sampler_rademacher(x0, num=1)
+estimate = stochtrace.estimator(integrand, sampler)
 
 key = jax.random.PRNGKey(2)
 keys = jax.random.split(key, num=nsamples)

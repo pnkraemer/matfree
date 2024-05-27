@@ -1,6 +1,6 @@
 """Test the estimation with multiple statistics."""
 
-from matfree import hutchinson
+from matfree import stochtrace
 from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
@@ -20,12 +20,12 @@ def test_yields_correct_tree_structure():
     _, jvp = func.linearize(fun, args_like)
 
     # Estimate the matrix function
-    problem = hutchinson.integrand_diagonal(jvp)
-    problem = hutchinson.integrand_wrap_moments(
+    problem = stochtrace.integrand_diagonal(jvp)
+    problem = stochtrace.integrand_wrap_moments(
         problem, moments={"moment_1st": 1, "moment_2nd": 2}
     )
-    sampler = hutchinson.sampler_normal(args_like, num=100_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    sampler = stochtrace.sampler_normal(args_like, num=100_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     received = estimate(key)
 
     irrelevant_value = 1.1
@@ -60,10 +60,10 @@ def test_yields_correct_variance_normal(J_and_jvp, key):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
     J, jvp, args_like = J_and_jvp
-    problem = hutchinson.integrand_trace(jvp)
-    problem = hutchinson.integrand_wrap_moments(problem, moments=[1, 2])
-    sampler = hutchinson.sampler_normal(args_like, num=1_000_000)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    problem = stochtrace.integrand_trace(jvp)
+    problem = stochtrace.integrand_wrap_moments(problem, moments=[1, 2])
+    sampler = stochtrace.sampler_normal(args_like, num=1_000_000)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     first, second = estimate(key)
 
     # Assert the trace is correct
@@ -80,10 +80,10 @@ def test_yields_correct_variance_rademacher(J_and_jvp, key):
     # Estimate the trace
     J, jvp, args_like = J_and_jvp
 
-    problem = hutchinson.integrand_trace(jvp)
-    problem = hutchinson.integrand_wrap_moments(problem, moments=[1, 2])
-    sampler = hutchinson.sampler_rademacher(args_like, num=500)
-    estimate = hutchinson.hutchinson(problem, sample_fun=sampler)
+    problem = stochtrace.integrand_trace(jvp)
+    problem = stochtrace.integrand_wrap_moments(problem, moments=[1, 2])
+    sampler = stochtrace.sampler_rademacher(args_like, num=500)
+    estimate = stochtrace.estimator(problem, sampler=sampler)
     first, second = estimate(key)
 
     # Assert the trace is correct
