@@ -37,9 +37,9 @@ def integrand_sym(matfun, order, matvec, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = decomp.tridiag(matvec_flat, order)
+        algorithm = decomp.tridiag_sym(matvec_flat, order)
         _, (diag, off_diag) = algorithm(v0_flat, *parameters)
-        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
+        eigvals, eigvecs = _eigh_tridiag_sym(diag, off_diag)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
@@ -120,7 +120,7 @@ def _bidiagonal_dense(d, e):
     return diag + offdiag
 
 
-def _eigh_tridiag(diag, off_diag):
+def _eigh_tridiag_sym(diag, off_diag):
     # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
     #  use it here. Until then: an eigen-decomposition of size (order + 1)
     #  does not hurt too much...

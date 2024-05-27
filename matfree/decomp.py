@@ -67,7 +67,7 @@ class _LanczosAlg(containers.NamedTuple):
     """Range of the for-loop used to decompose a matrix."""
 
 
-def tridiag(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
+def tridiag_sym(Av: Callable, depth, /, validate_unit_2_norm=False) -> Callable:
     """Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -266,7 +266,7 @@ def _bidiagonal_dense(d, e):
     return diag + offdiag
 
 
-def _eigh_tridiag(diag, off_diag):
+def _eigh_tridiag_sym(diag, off_diag):
     # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
     #  use it here. Until then: an eigen-decomposition of size (order + 1)
     #  does not hurt too much...
