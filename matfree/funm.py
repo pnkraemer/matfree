@@ -18,7 +18,7 @@ Examples
 Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
 """
 
-from matfree import lanczos
+from matfree import decomp
 from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable
 
@@ -101,7 +101,7 @@ def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Calla
     This algorithm uses Lanczos' tridiagonalisation
     and therefore applies only to symmetric matrices.
     """
-    algorithm = lanczos.alg_tridiag_full_reortho(matvec, order)
+    algorithm = decomp.alg_tridiag_full_reortho(matvec, order)
 
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)

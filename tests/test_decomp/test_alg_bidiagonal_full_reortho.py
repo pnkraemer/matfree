@@ -1,6 +1,6 @@
 """Test the Golub-Kahan-Lanczos bi-diagonalisation with full re-orthogonalisation."""
 
-from matfree import lanczos, test_util
+from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -18,7 +18,7 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("ncols", [49])
 @testing.parametrize("num_significant_singular_vals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_lanczos_bidiag_full_reortho(A, order):
+def test_decomp_bidiag_full_reortho(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
@@ -30,7 +30,7 @@ def test_lanczos_bidiag_full_reortho(A, order):
     def vA(v):
         return v @ A
 
-    algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, order, matrix_shape=np.shape(A))
+    algorithm = decomp.alg_bidiag_full_reortho(Av, vA, order, matrix_shape=np.shape(A))
     v0 /= linalg.vector_norm(v0)
     Us, Bs, Vs, (b, v) = algorithm(v0)
     (d_m, e_m) = Bs
@@ -79,7 +79,7 @@ def test_error_too_high_depth(A):
         def eye(v):
             return v
 
-        _ = lanczos.alg_bidiag_full_reortho(
+        _ = decomp.alg_bidiag_full_reortho(
             eye, eye, max_depth + 1, matrix_shape=np.shape(A)
         )
 
@@ -95,7 +95,7 @@ def test_error_too_low_depth(A):
         def eye(v):
             return v
 
-        _ = lanczos.alg_bidiag_full_reortho(
+        _ = decomp.alg_bidiag_full_reortho(
             eye, eye, min_depth - 1, matrix_shape=np.shape(A)
         )
 
@@ -115,7 +115,7 @@ def test_no_error_zero_depth(A):
     def vA(v):
         return v @ A
 
-    algorithm = lanczos.alg_bidiag_full_reortho(Av, vA, 0, matrix_shape=np.shape(A))
+    algorithm = decomp.alg_bidiag_full_reortho(Av, vA, 0, matrix_shape=np.shape(A))
     Us, Bs, Vs, (b, v) = algorithm(v0)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)
@@ -144,7 +144,7 @@ def test_validate_unit_norm(A, order):
     def vA(v):
         return v @ A
 
-    algorithm = lanczos.alg_bidiag_full_reortho(
+    algorithm = decomp.alg_bidiag_full_reortho(
         Av, vA, order, matrix_shape=np.shape(A), validate_unit_2_norm=True
     )
     Us, (d_m, e_m), Vs, (b, v) = algorithm(v0)

@@ -4,7 +4,7 @@ This module extends [matfree.stochtrace][matfree.stochtrace].
 
 """
 
-from matfree import lanczos
+from matfree import decomp
 from matfree.backend import func, linalg, np, tree_util
 
 # todo: currently, all dense matrix-functions are computed
@@ -37,7 +37,7 @@ def integrand_sym(matfun, order, matvec, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = lanczos.alg_tridiag_full_reortho(matvec_flat, order)
+        algorithm = decomp.alg_tridiag_full_reortho(matvec_flat, order)
         _, (diag, off_diag) = algorithm(v0_flat, *parameters)
         eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
 
@@ -95,7 +95,7 @@ def integrand_product(matfun, depth, matvec, vecmat, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = lanczos.alg_bidiag_full_reortho(
+        algorithm = decomp.alg_bidiag_full_reortho(
             lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
         )
         output = algorithm(v0_flat, *parameters)
