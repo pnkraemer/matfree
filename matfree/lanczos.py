@@ -24,148 +24,8 @@ Examples
 Array([-4. , -2.1, -2.7, -1.9, -1.3, -3.5, -0.5, -0.1,  0.3,  1.5],      dtype=float32)
 """
 
-from matfree.backend import containers, control_flow, func, linalg, np, tree_util
+from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable, Tuple
-
-
-def integrand_spd_logdet(order, matvec, /):
-    """Construct the integrand for the log-determinant.
-
-    This function assumes a symmetric, positive definite matrix.
-    """
-    return integrand_spd(np.log, order, matvec)
-
-
-def integrand_spd(matfun, order, matvec, /):
-    """Quadratic form for stochastic Lanczos quadrature.
-
-    This function assumes a symmetric, positive definite matrix.
-    """
-
-    def quadform(v0, *parameters):
-        v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
-        length = linalg.vector_norm(v0_flat)
-        v0_flat /= length
-
-        def matvec_flat(v_flat, *p):
-            v = v_unflatten(v_flat)
-            Av = matvec(v, *p)
-            flat, unflatten = tree_util.ravel_pytree(Av)
-            return flat
-
-        algorithm = alg_tridiag_full_reortho(matvec_flat, order)
-        _, (diag, off_diag) = algorithm(v0_flat, *parameters)
-        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
-
-        # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
-        # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        fx_eigvals = func.vmap(matfun)(eigvals)
-        return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
-
-    return quadform
-
-
-def integrand_product_logdet(depth, matvec, vecmat, /):
-    r"""Construct the integrand for the log-determinant of a matrix-product.
-
-    Here, "product" refers to $X = A^\top A$.
-    """
-    return integrand_product(np.log, depth, matvec, vecmat)
-
-
-def integrand_product_schatten_norm(power, depth, matvec, vecmat, /):
-    r"""Construct the integrand for the p-th power of the Schatten-p norm."""
-
-    def matfun(x):
-        """Matrix-function for Schatten-p norms."""
-        return x ** (power / 2)
-
-    return integrand_product(matfun, depth, matvec, vecmat)
-
-
-def integrand_product(matfun, depth, matvec, vecmat, /):
-    r"""Construct the integrand for the trace of a function of a matrix-product.
-
-    Instead of the trace of a function of a matrix,
-    compute the trace of a function of the product of matrices.
-    Here, "product" refers to $X = A^\top A$.
-    """
-
-    def quadform(v0, *parameters):
-        v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
-        length = linalg.vector_norm(v0_flat)
-        v0_flat /= length
-
-        def matvec_flat(v_flat, *p):
-            v = v_unflatten(v_flat)
-            Av = matvec(v, *p)
-            flat, unflatten = tree_util.ravel_pytree(Av)
-            return flat, tree_util.partial_pytree(unflatten)
-
-        w0_flat, w_unflatten = func.eval_shape(matvec_flat, v0_flat)
-        matrix_shape = (*np.shape(w0_flat), *np.shape(v0_flat))
-
-        def vecmat_flat(w_flat):
-            w = w_unflatten(w_flat)
-            wA = vecmat(w, *parameters)
-            return tree_util.ravel_pytree(wA)[0]
-
-        # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = alg_bidiag_full_reortho(
-            lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
-        )
-        output = algorithm(v0_flat, *parameters)
-        u, (d, e), vt, _ = output
-
-        # Compute SVD of factorisation
-        B = _bidiagonal_dense(d, e)
-        _, S, Vt = linalg.svd(B, full_matrices=False)
-
-        # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
-        # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
-        eigvals, eigvecs = S**2, Vt.T
-        fx_eigvals = func.vmap(matfun)(eigvals)
-        return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
-
-    return quadform
-
-
-def _bidiagonal_dense(d, e):
-    diag = linalg.diagonal_matrix(d)
-    offdiag = linalg.diagonal_matrix(e, 1)
-    return diag + offdiag
-
-
-def funm_vector_product_spd(matfun, order, matvec, /):
-    """Implement a matrix-function-vector product via Lanczos' algorithm.
-
-    This algorithm uses Lanczos' tridiagonalisation with full re-orthogonalisation
-    and therefore applies only to symmetric, positive definite matrices.
-    """
-    algorithm = alg_tridiag_full_reortho(matvec, order)
-
-    def estimate(vec, *parameters):
-        length = linalg.vector_norm(vec)
-        vec /= length
-        basis, (diag, off_diag) = algorithm(vec, *parameters)
-        eigvals, eigvecs = _eigh_tridiag(diag, off_diag)
-
-        fx_eigvals = func.vmap(matfun)(eigvals)
-        return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
-
-    return estimate
-
-
-def _eigh_tridiag(diag, off_diag):
-    # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-    #  use it here. Until then: an eigen-decomposition of size (order + 1)
-    #  does not hurt too much...
-    diag = linalg.diagonal_matrix(diag)
-    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-    dense_matrix = diag + offdiag1 + offdiag2
-    eigvals, eigvecs = linalg.eigh(dense_matrix)
-    return eigvals, eigvecs
 
 
 def svd_approx(
@@ -410,3 +270,21 @@ def _decompose_fori_loop(v0, *parameters, algorithm: _LanczosAlg):
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return extract(result)
+
+
+def _bidiagonal_dense(d, e):
+    diag = linalg.diagonal_matrix(d)
+    offdiag = linalg.diagonal_matrix(e, 1)
+    return diag + offdiag
+
+
+def _eigh_tridiag(diag, off_diag):
+    # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
+    #  use it here. Until then: an eigen-decomposition of size (order + 1)
+    #  does not hurt too much...
+    diag = linalg.diagonal_matrix(diag)
+    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
+    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
+    dense_matrix = diag + offdiag1 + offdiag2
+    eigvals, eigvecs = linalg.eigh(dense_matrix)
+    return eigvals, eigvecs

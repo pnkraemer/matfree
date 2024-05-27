@@ -1,10 +1,10 @@
 """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
 
-from matfree import polynomial, test_util
+from matfree import funm, test_util
 from matfree.backend import linalg, np, prng
 
 
-def test_funm_vector_product_chebyshev(n=12):
+def test_funm_chebyshev(n=12):
     """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
@@ -27,7 +27,7 @@ def test_funm_vector_product_chebyshev(n=12):
 
     # Create an implementation of the Chebyshev-algorithm
     order = 6
-    matfun_vec = polynomial.funm_vector_product_chebyshev(fun, order, matvec)
+    matfun_vec = funm.funm_chebyshev(fun, order, matvec)
 
     # Compute the matrix-function vector product
     received = matfun_vec(v, matrix)
