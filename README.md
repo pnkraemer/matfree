@@ -11,7 +11,7 @@ Builds on [JAX](https://jax.readthedocs.io/en/latest/).
 
 - ⚡ Stochastic **trace estimation** including batching, control variates, and uncertainty quantification
 - ⚡ A stand-alone implementation of **stochastic Lanczos quadrature**
-- ⚡ Matrix-decomposition algorithms for **large sparse eigenvalue problems**
+- ⚡ Matrix-decomposition algorithms for **large sparse eigenvalue problems**: tridiagonalisation, bidiagonalisation, Hessenberg factorisation via Lanczos and Arnoldi iterations
 - ⚡ Polynomial methods for approximating **functions of large matrices**
 - ⚡ Partial Cholesky **preconditioners** with and without pivoting
 

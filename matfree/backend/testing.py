@@ -21,8 +21,8 @@ def check_grads(fun, /, args, *, order, atol, rtol):
     return jax.test_util.check_grads(fun, args, order=order, atol=atol, rtol=rtol)
 
 
-def raises(err, /):
-    return pytest.raises(err)
+def raises(err, /, match):
+    return pytest.raises(err, match=match)
 
 
 def warns(warning, /):

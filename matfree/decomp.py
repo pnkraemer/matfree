@@ -224,7 +224,7 @@ def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
 
 
 def _gram_schmidt_classical_step(vec1, vec2):
-    coeff = linalg.vecdot(vec1, vec2)
+    coeff = linalg.inner(vec1, vec2)
     vec_ortho = vec1 - coeff * vec2
     return vec_ortho, coeff
 
@@ -276,3 +276,63 @@ def _eigh_tridiag_sym(diag, off_diag):
     dense_matrix = diag + offdiag1 + offdiag2
     eigvals, eigvecs = linalg.eigh(dense_matrix)
     return eigvals, eigvecs
+
+
+def hessenberg(matvec, krylov_depth, /, *, reortho: str = "full"):
+    """Construct an implementation of the Arnoldi iteration."""
+    reortho_expected = ["none", "full"]
+    if reortho not in reortho_expected:
+        msg = f"Unexpected input for {reortho}: either of {reortho_expected} expected."
+        raise TypeError(msg)
+
+    def estimate(v, *params):
+        return _forward(matvec, krylov_depth, v, *params, reortho=reortho)
+
+    return estimate
+
+
+def _forward(matvec, krylov_depth, v, *params, reortho: str):
+    if krylov_depth < 1 or krylov_depth > len(v):
+        msg = f"Parameter depth {krylov_depth} is outside the expected range"
+        raise ValueError(msg)
+
+    # Initialise the variables
+    (n,), k = np.shape(v), krylov_depth
+    Q = np.zeros((n, k), dtype=v.dtype)
+    H = np.zeros((k, k), dtype=v.dtype)
+    initlength = linalg.vector_norm(v)
+    init = (Q, H, v, initlength)
+
+    # Fix the step function
+    def forward_step(i, val):
+        return _forward_step(*val, matvec, *params, idx=i, reortho=reortho)
+
+    # Loop and return
+    Q, H, v, _length = control_flow.fori_loop(0, k, forward_step, init)
+    return Q, H, v, 1 / initlength
+
+
+def _forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
+    # Save
+    v /= length
+    Q = Q.at[:, idx].set(v)
+
+    # Evaluate
+    v = matvec(v, *params)
+
+    # Orthonormalise
+    h = Q.T @ v
+    v = v - Q @ h
+
+    # Re-orthonormalise
+    if reortho != "none":
+        v = v - Q @ (Q.T @ v)
+
+    # Read the length
+    length = linalg.vector_norm(v)
+
+    # Save
+    h = h.at[idx + 1].set(length)
+    H = H.at[:, idx].set(h)
+
+    return Q, H, v, length

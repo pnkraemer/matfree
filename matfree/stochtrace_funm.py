@@ -44,7 +44,7 @@ def integrand_sym(matfun, order, matvec, /):
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
         fx_eigvals = func.vmap(matfun)(eigvals)
-        return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
+        return length**2 * linalg.inner(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
 
@@ -109,7 +109,7 @@ def integrand_product(matfun, depth, matvec, vecmat, /):
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
         eigvals, eigvecs = S**2, Vt.T
         fx_eigvals = func.vmap(matfun)(eigvals)
-        return length**2 * linalg.vecdot(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
+        return length**2 * linalg.inner(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
 
     return quadform
 
