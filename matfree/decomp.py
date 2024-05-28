@@ -553,6 +553,14 @@ def bidiag(
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
+
+    ??? note "A note about differentiability"
+        Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or
+        [hessenberg][matfree.decomp.hessenberg], this function's reverse-mode
+        derivatives are very efficient. Custom gradients for bidiagonalisation
+        are a work in progress, and if you need to differentiate the decompositions,
+        consider using [tridiag_sym][matfree.decomp.tridiag_sym] for the time being.
+
     """
     nrows, ncols = matrix_shape
     max_depth = min(nrows, ncols) - 1
