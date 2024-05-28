@@ -32,7 +32,7 @@ class _LanczosAlg(containers.NamedTuple):
 def tridiag_sym(
     matvec, krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = True
 ):
-    """Construct an implementation of **tridiagonalisation**.
+    r"""Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
     It tends to be a good idea to use full reorthogonalisation.
@@ -53,8 +53,8 @@ def tridiag_sym(
         ```bibtex
         @article{kraemer2024gradients,
             title={Gradients of functions of large matrices},
-            author={Kr\"amer, Nicholas and Moreno-Mu\\~noz, Pablo and
-            Roy, Hrittik and Hauberg, S\\o{}ren},
+            author={Kr\"amer, Nicholas and Moreno-Mu\~noz, Pablo and
+            Roy, Hrittik and Hauberg, S\o{}ren},
             journal={arXiv preprint arXiv:2405.17277},
             year={2024}
         }
@@ -265,7 +265,7 @@ def hessenberg(
     custom_vjp: bool = True,
     reortho_vjp: str = "match",
 ):
-    """Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
+    r"""Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
 
     Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
     It tends to be a good idea to use full reorthogonalisation.
@@ -283,8 +283,8 @@ def hessenberg(
         ```bibtex
         @article{kraemer2024gradients,
             title={Gradients of functions of large matrices},
-            author={Kr\"amer, Nicholas and Moreno-Mu\\~noz, Pablo and
-            Roy, Hrittik and Hauberg, S\\o{}ren},
+            author={Kr\"amer, Nicholas and Moreno-Mu\~noz, Pablo and
+            Roy, Hrittik and Hauberg, S\o{}ren},
             journal={arXiv preprint arXiv:2405.17277},
             year={2024}
         }
