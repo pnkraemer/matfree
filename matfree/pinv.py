@@ -8,7 +8,8 @@ from matfree.backend.typing import Callable
 def _warn_deprecated():
     msg = "The module matfree.pinv has been deprecated and will be removed soon. "
     msg += "The removal will happen either in v0.0.17 or in v0.1.0, "
-    msg += "depending on what comes first. "
+    msg += "or on the 15th of June 2024, "
+    msg += "depending on which of the three comes first. "
     msg += "If your code relies on matfree.pinv, create an issue *now*."
 
     warnings.warn(msg, DeprecationWarning, stacklevel=1)
