@@ -114,7 +114,7 @@ We would appreciate if you cited it as follows:
 ```bibtex
 @article{kraemer2024gradients,
     title={Gradients of functions of large matrices},
-    author={Kr\"amer, Nicholas and Moreno-Mu\~noz, Pablo and Roy, Hrittik and Hauberg S\o{}ren},
+    author={Kr\"amer, Nicholas and Moreno-Mu\~noz, Pablo and Roy, Hrittik and Hauberg, S{\o}ren},
     journal={arXiv preprint arXiv:2405.17277},
     year={2024}
 }
