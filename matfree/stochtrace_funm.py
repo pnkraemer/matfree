@@ -38,7 +38,7 @@ def integrand_sym(matfun, order, matvec, /):
             return flat
 
         algorithm = decomp.tridiag_sym(matvec_flat, order)
-        _, (diag, off_diag) = algorithm(v0_flat, *parameters)
+        (_, (diag, off_diag)), _ = algorithm(v0_flat, *parameters)
         eigvals, eigvecs = _eigh_tridiag_sym(diag, off_diag)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],

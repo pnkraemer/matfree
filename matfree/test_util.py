@@ -1,6 +1,6 @@
 """Test utilities."""
 
-from matfree.backend import linalg, np
+from matfree.backend import linalg, np, prng, tree_util
 
 
 def symmetric_matrix_from_eigenvalues(eigvals, /):
@@ -41,3 +41,9 @@ def to_dense_tridiag_sym(d, e, /):
     offdiag1 = linalg.diagonal_matrix(e, offset=1)
     offdiag2 = linalg.diagonal_matrix(e, offset=-1)
     return diag + offdiag1 + offdiag2
+
+
+def tree_random_like(key, tree, *, generate_func=prng.normal):
+    flat, unflatten = tree_util.ravel_pytree(tree)
+    flat_like = generate_func(key, shape=flat.shape, dtype=flat.dtype)
+    return unflatten(flat_like)

@@ -1,108 +1,64 @@
-"""Test the Lanczos tri-diagonalisation with full re-orthogonalisation."""
+"""Test the tri-diagonalisation."""
 
 from matfree import decomp, test_util
-from matfree.backend import linalg, np, prng, testing
+from matfree.backend import linalg, np, testing
 
 
-@testing.fixture()
-def A(n, num_significant_eigvals):
-    """Make a positive definite matrix with certain spectrum."""
-    # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
-    d = np.arange(n) + 10.0
-    d = d.at[num_significant_eigvals:].set(0.001)
+@testing.parametrize("reortho", ["full", "none"])
+@testing.parametrize("ndim", [12])
+def test_full_rank_reconstruction_is_exact(reortho, ndim):
+    # Set up a test-matrix and an initial vector
+    eigvals = np.arange(1.0, 2.0, step=1 / ndim)
+    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
-    return test_util.symmetric_matrix_from_eigenvalues(d)
+    # Run Lanczos approximation
+    algorithm = decomp.tridiag_sym(lambda s, p: p @ s, ndim, reortho=reortho)
+    (lanczos_vectors, tridiag), _ = algorithm(vector, matrix)
 
+    # Reconstruct the original matrix from the full-order approximation
+    dense_matrix = _dense_tridiag_sym(*tridiag)
+    matrix_reconstructed = lanczos_vectors.T @ dense_matrix @ lanczos_vectors
 
-@testing.parametrize("n", [6])
-@testing.parametrize("num_significant_eigvals", [6])
-def test_max_order(A):
-    """If m == n, the matrix should be equal to the full tridiagonal."""
-    n, _ = np.shape(A)
-    order = n - 1
-    key = prng.prng_key(1)
-    v0 = prng.normal(key, shape=(n,))
-    v0 /= linalg.vector_norm(v0)
-    algorithm = decomp.tridiag_sym(lambda v: A @ v, order)
-    Q, (d_m, e_m) = algorithm(v0)
+    if reortho == "full":
+        tols = {"atol": 1e-5, "rtol": 1e-5}
+    else:
+        tols = {"atol": 1e-1, "rtol": 1e-1}
 
-    # Lanczos is not stable.
-    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
+    # Assert the reconstruction was "exact"
+    assert np.allclose(matrix_reconstructed, matrix, **tols)
 
-    # Since full-order mode: Q must be unitary
-    assert np.shape(Q) == (order + 1, n)
-    assert np.allclose(Q @ Q.T, np.eye(n), **tols_decomp), Q @ Q.T
-    assert np.allclose(Q.T @ Q, np.eye(n), **tols_decomp), Q.T @ Q
-
-    # T = Q A Qt
-    T = test_util.to_dense_tridiag_sym(d_m, e_m)
-    QAQt = Q @ A @ Q.T
-    assert np.shape(T) == (order + 1, order + 1)
-
-    # Fail early if the (off)diagonals don't coincide
-    assert np.allclose(linalg.diagonal(QAQt), d_m, **tols_decomp)
-    assert np.allclose(linalg.diagonal(QAQt, 1), e_m, **tols_decomp)
-    assert np.allclose(linalg.diagonal(QAQt, -1), e_m, **tols_decomp)
-
-    # Test the full decomposition
-    # (i.e. assert that the off-tridiagonal elements are actually small)
-    # be loose with this test. off-diagonal elements accumulate quickly.
-    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
-    assert np.allclose(QAQt, T, **tols_decomp)
-
-    # Since full-order mode: Qt T Q = A
-    # Since Q is unitary and T = Q A Qt, this test
-    # should always pass.
-    assert np.allclose(Q.T @ T @ Q, A, **tols_decomp)
+    # Assert all vectors are orthogonal
+    eye = np.eye(len(lanczos_vectors))
+    assert np.allclose(lanczos_vectors @ lanczos_vectors.T, eye, **tols)
+    assert np.allclose(lanczos_vectors.T @ lanczos_vectors, eye, **tols)
 
 
-@testing.parametrize("n", [50])
-@testing.parametrize("num_significant_eigvals", [4])
-@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_identity(A, order):
-    """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
-    n, _ = np.shape(A)
-    key = prng.prng_key(1)
-    v0 = prng.normal(key, shape=(n,))
-    v0 /= linalg.vector_norm(v0)
-    algorithm = decomp.tridiag_sym(lambda v: A @ v, order)
-    Q, tridiag = algorithm(v0)
-    (d_m, e_m) = tridiag
+# anything 0 <= k < n works; k=n is full reconstruction
+# and the (q, b) values become meaningless
+@testing.parametrize("krylov_depth", [1, 5, 11])
+@testing.parametrize("ndim", [12])
+@testing.parametrize("reortho", ["full", "none"])
+def test_mid_rank_reconstruction_satisfies_decomposition(ndim, krylov_depth, reortho):
+    # Set up a test-matrix and an initial vector
+    eigvals = np.arange(1.0, 2.0, step=1 / ndim)
+    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
-    # Lanczos is not stable.
-    tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
+    # Run Lanczos approximation
+    algorithm = decomp.tridiag_sym(lambda s, p: p @ s, krylov_depth, reortho=reortho)
+    (lanczos_vectors, tridiag), (q, b) = algorithm(vector, matrix)
 
-    assert np.shape(Q) == (order + 1, n)
-    assert np.allclose(Q @ Q.T, np.eye(order + 1), **tols_decomp), Q @ Q.T
-
-    # T = Q A Qt
-    T = test_util.to_dense_tridiag_sym(d_m, e_m)
-    QAQt = Q @ A @ Q.T
-    assert np.shape(T) == (order + 1, order + 1)
-
-    # Fail early if the (off)diagonals don't coincide
-    assert np.allclose(linalg.diagonal(QAQt), d_m, **tols_decomp)
-    assert np.allclose(linalg.diagonal(QAQt, 1), e_m, **tols_decomp)
-    assert np.allclose(linalg.diagonal(QAQt, -1), e_m, **tols_decomp)
-
-    # Test the full decomposition
-    assert np.allclose(QAQt, T, **tols_decomp)
+    # Verify the decomposition
+    Q, T = lanczos_vectors, _dense_tridiag_sym(*tridiag)
+    tols = {"atol": 1e-5, "rtol": 1e-5}
+    e_K = np.eye(krylov_depth)[-1]
+    assert np.allclose(matrix @ Q.T, Q.T @ T + linalg.outer(e_K, q * b).T, **tols)
 
 
-@testing.parametrize("n", [50])
-@testing.parametrize("num_significant_eigvals", [4])
-@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_validate_unit_norm(A, order):
-    """Test that the outputs are NaN if the input is not normalized."""
-    n, _ = np.shape(A)
-    key = prng.prng_key(1)
-
-    # Not normalized!
-    v0 = prng.normal(key, shape=(n,)) + 1.0
-
-    algorithm = decomp.tridiag_sym(lambda v: A @ v, order, validate_unit_2_norm=True)
-    Q, (d_m, e_m) = algorithm(v0)
-
-    # Since v0 is not normalized, all inputs are NaN
-    for x in (Q, d_m, e_m):
-        assert np.all(np.isnan(x))
+def _dense_tridiag_sym(diagonal, off_diagonal):
+    return (
+        linalg.diagonal_matrix(diagonal)
+        + linalg.diagonal_matrix(off_diagonal, 1)
+        + linalg.diagonal_matrix(off_diagonal, -1)
+    )
