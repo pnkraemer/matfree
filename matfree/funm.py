@@ -1,5 +1,4 @@
-"""Functions of matrices implemented as matrix-function-vector products.
-
+"""Matrix-free implementations of functions of matrices.
 
 Examples
 --------
