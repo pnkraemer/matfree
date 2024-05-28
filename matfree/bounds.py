@@ -1,4 +1,4 @@
-"""Bounds on functions of matrices."""
+"""Matrix-free bounds on functions of matrices."""
 
 from matfree.backend import linalg, np
 

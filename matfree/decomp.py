@@ -12,45 +12,6 @@ For matrix-function-vector products, see
 from matfree.backend import containers, control_flow, func, linalg, np, tree_util
 from matfree.backend.typing import Array, Callable, Tuple
 
-# todo: rename svd_approx to svd_partial() because the algorithm is called
-#  "Partial SVD", not "Approximate SVD".
-# todo: move svd_approx to a dedicated eigenvalue-module?
-
-
-def svd_approx(
-    v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int, ...]
-):
-    """Approximate singular value decomposition.
-
-    Uses GKL with full reorthogonalisation to bi-diagonalise the target matrix
-    and computes the full SVD of the (small) bidiagonal matrix.
-
-    Parameters
-    ----------
-    v0:
-        Initial vector for Golub-Kahan-Lanczos bidiagonalisation.
-    depth:
-        Depth of the Krylov space constructed by Golub-Kahan-Lanczos bidiagonalisation.
-        Choosing `depth = min(nrows, ncols) - 1` would yield behaviour similar to
-        e.g. `np.linalg.svd`.
-    Av:
-        Matrix-vector product function.
-    vA:
-        Vector-matrix product function.
-    matrix_shape:
-        Shape of the matrix involved in matrix-vector and vector-matrix products.
-    """
-    # Factorise the matrix
-    algorithm = bidiag(Av, vA, depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = algorithm(v0)
-
-    # Compute SVD of factorisation
-    B = _bidiagonal_dense(d, e)
-    U, S, Vt = linalg.svd(B, full_matrices=False)
-
-    # Combine orthogonal transformations
-    return u @ U, S, Vt @ vt
-
 
 class _LanczosAlg(containers.NamedTuple):
     """Lanczos decomposition algorithm."""
@@ -670,21 +631,3 @@ def _decompose_fori_loop(v0, *parameters, algorithm: _LanczosAlg):
 
     result = control_flow.fori_loop(lower, upper, body_fun=body_fun, init_val=init_val)
     return extract(result)
-
-
-def _bidiagonal_dense(d, e):
-    diag = linalg.diagonal_matrix(d)
-    offdiag = linalg.diagonal_matrix(e, 1)
-    return diag + offdiag
-
-
-def _eigh_tridiag_sym(diag, off_diag):
-    # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
-    #  use it here. Until then: an eigen-decomposition of size (order + 1)
-    #  does not hurt too much...
-    diag = linalg.diagonal_matrix(diag)
-    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-    dense_matrix = diag + offdiag1 + offdiag2
-    eigvals, eigvecs = linalg.eigh(dense_matrix)
-    return eigvals, eigvecs
