@@ -98,6 +98,7 @@ These tutorials include, among other things:
 - **Control variates:** Use control variates and multilevel schemes to reduce variances.
 - **Higher moments and UQ:** Compute means, variances, and other moments simultaneously.
 - **Vector calculus:** Use matrix-free linear algebra to implement vector calculus.
+- **Low-memory trace estimation:** Combine Matfree's API with JAX's function transformations for low-memory stochastic trace estimation.
 
 
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use matfree for!
