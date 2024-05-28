@@ -73,12 +73,31 @@ def tridiag_sym(
 ):
     """Construct an implementation of **tridiagonalisation**.
 
-    Uses pre-allocation and full reorthogonalisation.
+    Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
+    It tends to be a good idea to use full reorthogonalisation.
 
     This algorithm assumes a **symmetric matrix**.
 
     Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
+
+    Setting `custom_vjp` to `True` implies using efficient, numerically stable
+    gradients of the Lanczos iteration according to what has been proposed by
+    Krämer et al. (2024).
+    These gradients are exact, so there is little reason not to use them.
+    If you use this configuration, please consider
+    citing Krämer et al. (2024; bibtex below).
+
+    ??? note "BibTex for Krämer et al. (2024)"
+        ```bibtex
+        @article{kraemer2024gradients,
+            title={Gradients of functions of large matrices},
+            author={Kr\"amer, Nicholas and Moreno-Mu\\~noz, Pablo and
+            Roy, Hrittik and Hauberg S\\o{}ren},
+            journal={arXiv preprint arXiv:2405.17277},
+            year={2024}
+        }
+        ```
 
     """
 
@@ -425,6 +444,32 @@ def hessenberg(
     custom_vjp: bool = True,
     reortho_vjp: str = "match",
 ):
+    """Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
+
+    Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
+    It tends to be a good idea to use full reorthogonalisation.
+
+    This algorithm works for **arbitrary matrices**.
+
+    Setting `custom_vjp` to `True` implies using efficient, numerically stable
+    gradients of the Arnoldi iteration according to what has been proposed by
+    Krämer et al. (2024).
+    These gradients are exact, so there is little reason not to use them.
+    If you use this configuration,
+    please consider citing Krämer et al. (2024; bibtex below).
+
+    ??? note "BibTex for Krämer et al. (2024)"
+        ```bibtex
+        @article{kraemer2024gradients,
+            title={Gradients of functions of large matrices},
+            author={Kr\"amer, Nicholas and Moreno-Mu\\~noz, Pablo and
+            Roy, Hrittik and Hauberg S\\o{}ren},
+            journal={arXiv preprint arXiv:2405.17277},
+            year={2024}
+        }
+        ```
+
+    """
     reortho_expected = ["none", "full"]
     if reortho not in reortho_expected:
         msg = f"Unexpected input for {reortho}: either of {reortho_expected} expected."

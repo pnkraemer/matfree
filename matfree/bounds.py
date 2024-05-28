@@ -18,7 +18,7 @@ def baigolub96_logdet_spd(bound_spectrum, /, nrows, trace, norm_frobenius_square
 
 
     ??? note "BibTex for Bai and Golub (1996)"
-        ```tex
+        ```bibtex
         @article{bai1996bounds,
             title={Bounds for the trace of the inverse and the
             determinant of symmetric positive definite matrices},
