@@ -5,14 +5,15 @@
 [![image](https://img.shields.io/pypi/l/matfree.svg)](https://pypi.python.org/pypi/matfree)
 [![image](https://img.shields.io/pypi/pyversions/matfree.svg)](https://pypi.python.org/pypi/matfree)
 
-Randomised and deterministic matrix-free methods for trace estimation, matrix functions, and/or matrix factorisations.
+Randomised and deterministic matrix-free methods for trace estimation, functions of matrices, and/or matrix factorisations.
 Builds on [JAX](https://jax.readthedocs.io/en/latest/).
 
 
 - ⚡ Stochastic **trace estimation** including batching, control variates, and uncertainty quantification
-- ⚡ A stand-alone implementation of **stochastic Lanczos quadrature**
+- ⚡ A stand-alone implementation of **stochastic Lanczos quadrature** for traces of functions of matrices
 - ⚡ Matrix-decomposition algorithms for **large sparse eigenvalue problems**: tridiagonalisation, bidiagonalisation, Hessenberg factorisation via Lanczos and Arnoldi iterations
-- ⚡ Polynomial methods for approximating **functions of large matrices**
+- ⚡ Chebyshev, Lanczos, and Arnoldi-based methods for approximating **functions of large matrices**
+- ⚡ **Gradients of functions of large matrices** (like in [this paper](https://arxiv.org/abs/2405.17277)) via differentiable Lanczos and Arnoldi iterations
 - ⚡ Partial Cholesky **preconditioners** with and without pivoting
 
 and many other things.
@@ -100,6 +101,27 @@ These tutorials include, among other things:
 
 
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use matfree for!
+
+
+**Citation**
+
+Thank you for using Matfree!
+If you are using Matfree's differentiable Lanczos or Arnoldi iterations, then you
+are using the algorithms from [this paper](https://arxiv.org/abs/2405.17277).
+We would appreciate if you cited it as follows:
+
+```bibtex
+@article{kraemer2024gradients,
+    title={Gradients of functions of large matrices},
+    author={Kr\"amer, Nicholas and Moreno-Mu\~noz, Pablo and Roy, Hrittik and Hauberg S\o{}ren},
+    journal={arXiv preprint arXiv:2405.17277},
+    year={2024}
+}
+```
+
+Some of Matfree's docstrings contain additional bibliographic information.
+For example, the functions in `matfree.bounds` link to bibtex entries for the articles associated with each bound.
+Go check out the [API documentation](https://pnkraemer.github.io/matfree/).
 
 
 ## Use Matfree's continuous integration
