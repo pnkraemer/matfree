@@ -26,7 +26,3 @@ doc-build:
 	python scripts/readme_to_dev_docs.py
 	python scripts/tutorials_to_py_light.py
 	mkdocs build
-
-run-benchmarks:
-	python docs/benchmarks/control_variates.py
-	python docs/benchmarks/jacobian_squared.py
