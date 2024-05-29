@@ -13,8 +13,9 @@ Examples
 >>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
 >>>
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
+>>> matfun = dense_funm_sym_eigh(jnp.log)
 >>> tridiag = decomp.tridiag_sym(lambda s: A @ s, 4)
->>> matfun_vec = funm_lanczos_sym(jnp.log, tridiag)
+>>> matfun_vec = funm_lanczos_sym(matfun, tridiag)
 >>> matfun_vec(v)
 Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
@@ -95,7 +96,7 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matvec
 
 
-def funm_lanczos_sym(matfun: Callable, tridiag_sym: Callable, /) -> Callable:
+def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
@@ -103,33 +104,51 @@ def funm_lanczos_sym(matfun: Callable, tridiag_sym: Callable, /) -> Callable:
 
     Parameters
     ----------
-    matfun
-        Matrix function.
+    dense_funm
+        An implementation of a function of a dense matrix.
+        For example, the output of
+        [decomp.dense_funm_sym_eigh][matfree.decomp.dense_funm_sym_eigh]
+        [decomp.dense_funm_schur][matfree.decomp.dense_funm_schur]
     tridiag_sym
-        Tridiagonalisation implementation.
-        Output of [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
+        An implementation of tridiagonalisation.
+        E.g., the output of
+        [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
     """
 
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
         (basis, (diag, off_diag)), _ = tridiag_sym(vec, *parameters)
-        eigvals, eigvecs = _eigh_tridiag_sym(diag, off_diag)
+        matrix = _todense_tridiag_sym(diag, off_diag)
 
-        fx_eigvals = func.vmap(matfun)(eigvals)
-        return length * (basis.T @ (eigvecs @ (fx_eigvals * eigvecs[0, :])))
+        funm = dense_funm(matrix)
+        e1 = np.eye(len(matrix))[0, :]
+        return length * (basis.T @ funm @ e1)
 
     return estimate
 
 
-def _eigh_tridiag_sym(diag, off_diag):
+def dense_funm_sym_eigh(matfun):
+    def fun(dense_matrix):
+        eigvals, eigvecs = linalg.eigh(dense_matrix)
+        fx_eigvals = func.vmap(matfun)(eigvals)
+        return eigvecs @ linalg.diagonal(fx_eigvals) @ eigvecs.T
+
+    return fun
+
+
+def dense_funm_schur(matfun):
+    def fun(dense_matrix):
+        return linalg.funm_schur(dense_matrix, matfun)
+
+    return fun
+
+
+def _todense_tridiag_sym(diag, off_diag):
     # todo: once jax supports eigh_tridiagonal(eigvals_only=False),
     #  use it here. Until then: an eigen-decomposition of size (order + 1)
     #  does not hurt too much...
     diag = linalg.diagonal_matrix(diag)
     offdiag1 = linalg.diagonal_matrix(off_diag, -1)
     offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-    dense_matrix = diag + offdiag1 + offdiag2
-
-    eigvals, eigvecs = linalg.eigh(dense_matrix)
-    return eigvals, eigvecs
+    return diag + offdiag1 + offdiag2

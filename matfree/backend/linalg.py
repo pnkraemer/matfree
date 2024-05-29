@@ -77,3 +77,7 @@ def solve(A, b, /):
 
 def cg(Av, b, /):
     return jax.scipy.sparse.linalg.cg(Av, b)
+
+
+def funm_schur(A, f, /):
+    return jax.scipy.linalg.funm(A, f)
