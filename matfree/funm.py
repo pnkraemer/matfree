@@ -4,6 +4,7 @@ Examples
 --------
 >>> import jax.random
 >>> import jax.numpy as jnp
+>>> from matfree import decomp
 >>>
 >>> jnp.set_printoptions(1)
 >>>
@@ -12,12 +13,12 @@ Examples
 >>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
 >>>
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
->>> matfun_vec = funm_lanczos_sym(jnp.log, 4, lambda s: A @ s)
+>>> tridiag = decomp.tridiag_sym(lambda s: A @ s, 4)
+>>> matfun_vec = funm_lanczos_sym(jnp.log, tridiag)
 >>> matfun_vec(v)
 Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
 
-from matfree import decomp
 from matfree.backend import containers, control_flow, func, linalg, np
 from matfree.backend.typing import Array, Callable
 
@@ -94,20 +95,25 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matvec
 
 
-# todo: if we pass decomp.tridiag_sym instead of order & matvec,
-#  the user gets more control over questions like reorthogonalisation
-def funm_lanczos_sym(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
+def funm_lanczos_sym(matfun: Callable, tridiag_sym: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
     and therefore applies only to symmetric matrices.
+
+    Parameters
+    ----------
+    matfun
+        Matrix function.
+    tridiag_sym
+        Tridiagonalisation implementation.
+        Output of [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
     """
-    algorithm = decomp.tridiag_sym(matvec, order)
 
     def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        (basis, (diag, off_diag)), _ = algorithm(vec, *parameters)
+        (basis, (diag, off_diag)), _ = tridiag_sym(vec, *parameters)
         eigvals, eigvecs = _eigh_tridiag_sym(diag, off_diag)
 
         fx_eigvals = func.vmap(matfun)(eigvals)
