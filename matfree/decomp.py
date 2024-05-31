@@ -12,9 +12,7 @@ from matfree.backend import containers, control_flow, func, linalg, np, tree_uti
 from matfree.backend.typing import Array, Callable
 
 
-def tridiag_sym(
-    matvec, krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = True
-):
+def tridiag_sym(krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = True):
     r"""Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
@@ -46,21 +44,21 @@ def tridiag_sym(
     """
 
     if reortho == "full":
-        return _tridiag_reortho_full(matvec, krylov_depth, custom_vjp=custom_vjp)
+        return _tridiag_reortho_full(krylov_depth, custom_vjp=custom_vjp)
     if reortho == "none":
-        return _tridiag_reortho_none(matvec, krylov_depth, custom_vjp=custom_vjp)
+        return _tridiag_reortho_none(krylov_depth, custom_vjp=custom_vjp)
 
     msg = f"reortho={reortho} unsupported. Choose eiter {'full', 'none'}."
     raise ValueError(msg)
 
 
-def _tridiag_reortho_full(matvec, krylov_depth, /, *, custom_vjp):
+def _tridiag_reortho_full(krylov_depth, /, *, custom_vjp):
     # Implement via Arnoldi to use the reorthogonalised adjoints.
     # The complexity difference is minimal with full reortho.
-    alg = hessenberg(matvec, krylov_depth, custom_vjp=custom_vjp, reortho="full")
+    alg = hessenberg(krylov_depth, custom_vjp=custom_vjp, reortho="full")
 
-    def estimate(vec, *params):
-        Q, H, v, _norm = alg(vec, *params)
+    def estimate(matvec, vec, *params):
+        Q, H, v, _norm = alg(matvec, vec, *params)
 
         T = 0.5 * (H + H.T)
         diags = linalg.diagonal(T, offset=0)
@@ -72,16 +70,16 @@ def _tridiag_reortho_full(matvec, krylov_depth, /, *, custom_vjp):
     return estimate
 
 
-def _tridiag_reortho_none(matvec, krylov_depth, /, *, custom_vjp):
-    def estimate(vec, *params):
+def _tridiag_reortho_none(krylov_depth, /, *, custom_vjp):
+    def estimate(matvec, vec, *params):
         *values, _ = _tridiag_forward(matvec, krylov_depth, vec, *params)
         return values
 
-    def estimate_fwd(vec, *params):
-        value = estimate(vec, *params)
+    def estimate_fwd(matvec, vec, *params):
+        value = estimate(matvec, vec, *params)
         return value, (value, (linalg.vector_norm(vec), *params))
 
-    def estimate_bwd(cache, vjp_incoming):
+    def estimate_bwd(matvec, cache, vjp_incoming):
         # Read incoming gradients and stack related quantities
         (dxs, (dalphas, dbetas)), (dx_last, dbeta_last) = vjp_incoming
         dxs = np.concatenate((dxs, dx_last[None]))
@@ -107,7 +105,7 @@ def _tridiag_reortho_none(matvec, krylov_depth, /, *, custom_vjp):
         return grads
 
     if custom_vjp:
-        estimate = func.custom_vjp(estimate)
+        estimate = func.custom_vjp(estimate, nondiff_argnums=[0])
         estimate.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
 
     return estimate
@@ -240,7 +238,6 @@ def _tridiag_adjoint_step(
 
 
 def hessenberg(
-    matvec,
     krylov_depth,
     /,
     *,
@@ -279,18 +276,18 @@ def hessenberg(
         msg = f"Unexpected input for {reortho}: either of {reortho_expected} expected."
         raise TypeError(msg)
 
-    def estimate_public(v, *params):
+    def estimate(matvec, v, *params):
         matvec_convert, aux_args = func.closure_convert(matvec, v, *params)
-        return estimate_backend(matvec_convert, v, *params, *aux_args)
+        return _estimate(matvec_convert, v, *params, *aux_args)
 
-    def estimate_backend(matvec_convert: Callable, v, *params):
+    def _estimate(matvec_convert: Callable, v, *params):
         reortho_ = reortho_vjp if reortho_vjp != "match" else reortho_vjp
         return _hessenberg_forward(
             matvec_convert, krylov_depth, v, *params, reortho=reortho_
         )
 
     def estimate_fwd(matvec_convert: Callable, v, *params):
-        outputs = estimate_backend(matvec_convert, v, *params)
+        outputs = _estimate(matvec_convert, v, *params)
         return outputs, (outputs, params)
 
     def estimate_bwd(matvec_convert: Callable, cache, vjp_incoming):
@@ -312,9 +309,9 @@ def hessenberg(
         )
 
     if custom_vjp:
-        estimate_backend = func.custom_vjp(estimate_backend, nondiff_argnums=(0,))
-        estimate_backend.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
-    return estimate_public
+        _estimate = func.custom_vjp(_estimate, nondiff_argnums=(0,))
+        _estimate.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
+    return estimate
 
 
 def _hessenberg_forward(matvec, krylov_depth, v, *params, reortho: str):
@@ -486,7 +483,7 @@ def _extract_diag(x, offset=0):
     return linalg.diagonal_matrix(diag, offset=offset)
 
 
-def bidiag(Av: Callable, vA: Callable, depth, /, matrix_shape):
+def bidiag(depth: int, /, matrix_shape):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -512,12 +509,16 @@ def bidiag(Av: Callable, vA: Callable, depth, /, matrix_shape):
         msg3 = f"for a matrix with shape {matrix_shape}."
         raise ValueError(msg1 + msg2 + msg3)
 
-    def estimate(v0, *parameters):
+    # todo: move the matvecs to the estimate() functions
+    #  of tridiag and hessenberg. Then, update the SLQ functions
+    #  then, give all methods here a materialise=True argument
+    #  and simplify SLQ code massively.
+    def estimate(Av: Callable, vA: Callable, v0, *parameters):
         v0_norm, length = _normalise(v0)
         init_val = init(v0_norm)
 
         def body_fun(_, s):
-            return step(s, *parameters)
+            return step(Av, vA, s, *parameters)
 
         result = control_flow.fori_loop(
             0, depth + 1, body_fun=body_fun, init_val=init_val
@@ -541,7 +542,7 @@ def bidiag(Av: Callable, vA: Callable, depth, /, matrix_shape):
         v0, _ = _normalise(init_vec)
         return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
-    def step(state: State, *parameters) -> State:
+    def step(Av, vA, state: State, *parameters) -> State:
         i, Us, Vs, alphas, betas, beta, vk = state
         Vs = Vs.at[i].set(vk)
         betas = betas.at[i].set(beta)

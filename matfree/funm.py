@@ -231,10 +231,9 @@ def integrand_funm_product(matfun, depth, matvec, vecmat, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = decomp.bidiag(
-            lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
-        )
-        output = algorithm(v0_flat, *parameters)
+        algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape)
+        matvec_flat_p = lambda v: matvec_flat(v)[0]  # noqa: E731
+        output = algorithm(matvec_flat_p, vecmat_flat, v0_flat, *parameters)
         u, (d, e), vt, *_ = output
 
         # Compute SVD of factorisation
