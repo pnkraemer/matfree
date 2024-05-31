@@ -30,7 +30,7 @@ def test_bidiag_decomposition_is_satisfied(A, order):
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(order, matrix_shape=np.shape(A))
+    algorithm = decomp.bidiag(order, matrix_shape=np.shape(A), materialize=False)
     Us, Bs, Vs, (b, v), ln = algorithm(Av, vA, v0)
     (d_m, e_m) = Bs
 
@@ -70,7 +70,7 @@ def test_error_too_high_depth(A):
     max_depth = min(nrows, ncols) - 1
 
     with testing.raises(ValueError, match=""):
-        _ = decomp.bidiag(max_depth + 1, matrix_shape=np.shape(A))
+        _ = decomp.bidiag(max_depth + 1, matrix_shape=np.shape(A), materialize=False)
 
 
 @testing.parametrize("nrows", [5])
@@ -80,7 +80,7 @@ def test_error_too_low_depth(A):
     """Assert that a ValueError is raised when the depth is negative."""
     min_depth = 0
     with testing.raises(ValueError, match=""):
-        _ = decomp.bidiag(min_depth - 1, matrix_shape=np.shape(A))
+        _ = decomp.bidiag(min_depth - 1, matrix_shape=np.shape(A), materialize=False)
 
 
 @testing.parametrize("nrows", [15])
@@ -98,7 +98,7 @@ def test_no_error_zero_depth(A):
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(0, matrix_shape=np.shape(A))
+    algorithm = decomp.bidiag(0, matrix_shape=np.shape(A), materialize=False)
     Us, Bs, Vs, (b, v), ln = algorithm(Av, vA, v0)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)

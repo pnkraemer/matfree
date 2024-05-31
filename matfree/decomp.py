@@ -12,7 +12,14 @@ from matfree.backend import containers, control_flow, func, linalg, np, tree_uti
 from matfree.backend.typing import Array, Callable
 
 
-def tridiag_sym(krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = True):
+def tridiag_sym(
+    krylov_depth,
+    /,
+    *,
+    materialize: bool = True,
+    reortho: str = "full",
+    custom_vjp: bool = True,
+):
     r"""Construct an implementation of **tridiagonalisation**.
 
     Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
@@ -44,15 +51,19 @@ def tridiag_sym(krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = Tr
     """
 
     if reortho == "full":
-        return _tridiag_reortho_full(krylov_depth, custom_vjp=custom_vjp)
+        return _tridiag_reortho_full(
+            krylov_depth, custom_vjp=custom_vjp, materialize=materialize
+        )
     if reortho == "none":
-        return _tridiag_reortho_none(krylov_depth, custom_vjp=custom_vjp)
+        return _tridiag_reortho_none(
+            krylov_depth, custom_vjp=custom_vjp, materialize=materialize
+        )
 
     msg = f"reortho={reortho} unsupported. Choose eiter {'full', 'none'}."
     raise ValueError(msg)
 
 
-def _tridiag_reortho_full(krylov_depth, /, *, custom_vjp):
+def _tridiag_reortho_full(krylov_depth: int, /, *, custom_vjp: bool, materialize: bool):
     # Implement via Arnoldi to use the reorthogonalised adjoints.
     # The complexity difference is minimal with full reortho.
     alg = hessenberg(krylov_depth, custom_vjp=custom_vjp, reortho="full")
@@ -60,27 +71,50 @@ def _tridiag_reortho_full(krylov_depth, /, *, custom_vjp):
     def estimate(matvec, vec, *params):
         Q, H, v, _norm = alg(matvec, vec, *params)
 
+        remainder = (v / linalg.vector_norm(v), linalg.vector_norm(v))
+
         T = 0.5 * (H + H.T)
         diags = linalg.diagonal(T, offset=0)
         offdiags = linalg.diagonal(T, offset=1)
+
+        if materialize:
+            matrix = _todense_tridiag_sym(diags, offdiags)
+            decomposition = (Q.T, matrix)
+            return decomposition, remainder
+
         decomposition = (Q.T, (diags, offdiags))
-        remainder = (v / linalg.vector_norm(v), linalg.vector_norm(v))
         return decomposition, remainder
 
     return estimate
 
 
-def _tridiag_reortho_none(krylov_depth, /, *, custom_vjp):
+def _todense_tridiag_sym(diag, off_diag):
+    diag = linalg.diagonal_matrix(diag)
+    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
+    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
+    return diag + offdiag1 + offdiag2
+
+
+def _tridiag_reortho_none(krylov_depth: int, /, *, custom_vjp: bool, materialize: bool):
     def estimate(matvec, vec, *params):
+        (Q, H), v = _estimate(matvec, vec, *params)
+
+        if materialize:
+            H = _todense_tridiag_sym(*H)
+        return (Q, H), v
+
+    def _estimate(matvec, vec, *params):
         *values, _ = _tridiag_forward(matvec, krylov_depth, vec, *params)
         return values
 
     def estimate_fwd(matvec, vec, *params):
-        value = estimate(matvec, vec, *params)
+        value = _estimate(matvec, vec, *params)
         return value, (value, (linalg.vector_norm(vec), *params))
 
     def estimate_bwd(matvec, cache, vjp_incoming):
         # Read incoming gradients and stack related quantities
+        print(tree_util.tree_map(np.shape, vjp_incoming))
+
         (dxs, (dalphas, dbetas)), (dx_last, dbeta_last) = vjp_incoming
         dxs = np.concatenate((dxs, dx_last[None]))
         dbetas = np.concatenate((dbetas, dbeta_last[None]))
@@ -105,8 +139,8 @@ def _tridiag_reortho_none(krylov_depth, /, *, custom_vjp):
         return grads
 
     if custom_vjp:
-        estimate = func.custom_vjp(estimate, nondiff_argnums=[0])
-        estimate.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
+        _estimate = func.custom_vjp(_estimate, nondiff_argnums=[0])
+        _estimate.defvjp(estimate_fwd, estimate_bwd)  # type: ignore
 
     return estimate
 
@@ -483,7 +517,7 @@ def _extract_diag(x, offset=0):
     return linalg.diagonal_matrix(diag, offset=offset)
 
 
-def bidiag(depth: int, /, matrix_shape):
+def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -509,10 +543,6 @@ def bidiag(depth: int, /, matrix_shape):
         msg3 = f"for a matrix with shape {matrix_shape}."
         raise ValueError(msg1 + msg2 + msg3)
 
-    # todo: move the matvecs to the estimate() functions
-    #  of tridiag and hessenberg. Then, update the SLQ functions
-    #  then, give all methods here a materialise=True argument
-    #  and simplify SLQ code massively.
     def estimate(Av: Callable, vA: Callable, v0, *parameters):
         v0_norm, length = _normalise(v0)
         init_val = init(v0_norm)
@@ -561,6 +591,11 @@ def bidiag(depth: int, /, matrix_shape):
 
     def extract(state: State, /):
         _, uk_all, vk_all, alphas, betas, beta, vk = state
+
+        if materialize:
+            B = _todense_bidiag(alphas, betas[1:])
+            return uk_all.T, B, vk_all, (beta, vk)
+
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
 
     def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
@@ -576,5 +611,10 @@ def bidiag(depth: int, /, matrix_shape):
     def _normalise(vec):
         length = linalg.vector_norm(vec)
         return vec / length, length
+
+    def _todense_bidiag(d, e):
+        diag = linalg.diagonal_matrix(d)
+        offdiag = linalg.diagonal_matrix(e, 1)
+        return diag + offdiag
 
     return estimate

@@ -23,7 +23,7 @@ def test_adjoint_vjp_matches_jax_vjp(reortho, n=10, krylov_order=4):
 
     # Construct a vector-to-vector decomposition function
     def decompose(f, *, custom_vjp):
-        kwargs = {"reortho": reortho, "custom_vjp": custom_vjp}
+        kwargs = {"reortho": reortho, "custom_vjp": custom_vjp, "materialize": False}
         algorithm = decomp.tridiag_sym(krylov_order, **kwargs)
         output = algorithm(matvec, *unflatten(f))
         return tree_util.ravel_pytree(output)[0]

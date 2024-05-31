@@ -30,11 +30,10 @@ def svd_partial(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, *_ = algorithm(Av, vA, v0)
+    algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape, materialize=True)
+    u, B, vt, *_ = algorithm(Av, vA, v0)
 
     # Compute SVD of factorisation
-    B = _bidiagonal_dense(d, e)
     U, S, Vt = linalg.svd(B, full_matrices=False)
 
     # Combine orthogonal transformations
