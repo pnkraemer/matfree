@@ -32,8 +32,8 @@ Examples
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
 >>> matfun = dense_funm_sym_eigh(jnp.log)
 >>> tridiag = decomp.tridiag_sym(4)
->>> matfun_vec = funm_lanczos_sym(matfun, tridiag)
->>> matfun_vec(lambda s: A @ s, v)
+>>> matfun_vec = funm_lanczos_sym(lambda s: A @ s, matfun, tridiag)
+>>> matfun_vec(v)
 Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
 
@@ -102,7 +102,7 @@ def _funm_polyexpand(matrix_poly_alg, /):
     """Compute a matrix-function-vector product via a polynomial expansion."""
     (lower, upper), init_func, step_func, extract_func = matrix_poly_alg
 
-    def matvec(vec, *parameters):
+    def matrix_function_vector_product(vec, *parameters):
         final_state = control_flow.fori_loop(
             lower=lower,
             upper=upper,
@@ -111,10 +111,12 @@ def _funm_polyexpand(matrix_poly_alg, /):
         )
         return extract_func(final_state)
 
-    return matvec
+    return matrix_function_vector_product
 
 
-def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable:
+def funm_lanczos_sym(
+    matvec: Callable, dense_funm: Callable, tridiag_sym: Callable, /
+) -> Callable:
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
@@ -122,6 +124,8 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
 
     Parameters
     ----------
+    matvec
+        Matrix-vector product.
     dense_funm
         An implementation of a function of a dense matrix.
         For example, the output of
@@ -133,7 +137,7 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
         [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
     """
 
-    def estimate(matvec, vec, *parameters):
+    def estimate(vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
         (basis, (diag, off_diag)), _ = tridiag_sym(matvec, vec, *parameters)

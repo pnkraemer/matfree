@@ -29,6 +29,6 @@ def test_funm_lanczos_sym_matches_eigh_implementation(dense_funm, n=11):
     # Compute the matrix-function vector product
     dense_funm = dense_funm(fun)
     lanczos = decomp.tridiag_sym(6)
-    matfun_vec = funm.funm_lanczos_sym(dense_funm, lanczos)
-    received = matfun_vec(matvec, v, matrix)
+    matfun_vec = funm.funm_lanczos_sym(matvec, dense_funm, lanczos)
+    received = matfun_vec(v, matrix)
     assert np.allclose(expected, received, atol=1e-6)
