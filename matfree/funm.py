@@ -31,9 +31,9 @@ Examples
 >>>
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
 >>> matfun = dense_funm_sym_eigh(jnp.log)
->>> tridiag = decomp.tridiag_sym(lambda s: A @ s, 4)
+>>> tridiag = decomp.tridiag_sym(4)
 >>> matfun_vec = funm_lanczos_sym(matfun, tridiag)
->>> matfun_vec(v)
+>>> matfun_vec(lambda s: A @ s, v)
 Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
 
@@ -133,10 +133,10 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
         [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
     """
 
-    def estimate(vec, *parameters):
+    def estimate(matvec, vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        (basis, (diag, off_diag)), _ = tridiag_sym(vec, *parameters)
+        (basis, (diag, off_diag)), _ = tridiag_sym(matvec, vec, *parameters)
         matrix = _todense_tridiag_sym(diag, off_diag)
 
         funm = dense_funm(matrix)
@@ -174,8 +174,8 @@ def integrand_funm_sym(matfun, order, matvec, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = decomp.tridiag_sym(matvec_flat, order)
-        (_, (diag, off_diag)), _ = algorithm(v0_flat, *parameters)
+        algorithm = decomp.tridiag_sym(order)
+        (_, (diag, off_diag)), _ = algorithm(matvec_flat, v0_flat, *parameters)
 
         dense = _todense_tridiag_sym(diag, off_diag)
         fA = dense_funm(dense)
