@@ -107,8 +107,8 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     dense_funm
         An implementation of a function of a dense matrix.
         For example, the output of
-        [decomp.dense_funm_sym_eigh][matfree.decomp.dense_funm_sym_eigh]
-        [decomp.dense_funm_schur][matfree.decomp.dense_funm_schur]
+        [funm.dense_funm_sym_eigh][matfree.funm.dense_funm_sym_eigh]
+        [funm.dense_funm_schur][matfree.funm.dense_funm_schur]
     tridiag_sym
         An implementation of tridiagonalisation.
         E.g., the output of
@@ -129,6 +129,8 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
 
 
 def dense_funm_sym_eigh(matfun):
+    """Implement dense matrix-functions via symmetric eigendecompositions."""
+
     def fun(dense_matrix):
         eigvals, eigvecs = linalg.eigh(dense_matrix)
         fx_eigvals = func.vmap(matfun)(eigvals)
@@ -138,6 +140,8 @@ def dense_funm_sym_eigh(matfun):
 
 
 def dense_funm_schur(matfun):
+    """Implement dense matrix-functions via symmetric Schur decompositions."""
+
     def fun(dense_matrix):
         return linalg.funm_schur(dense_matrix, matfun)
 

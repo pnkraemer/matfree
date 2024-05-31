@@ -58,7 +58,7 @@ def integrand_product_logdet(depth, matvec, vecmat, /):
 
 
 def integrand_product_schatten_norm(power, depth, matvec, vecmat, /):
-    r"""Construct the integrand for the p-th power of the Schatten-p norm."""
+    r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
@@ -68,7 +68,7 @@ def integrand_product_schatten_norm(power, depth, matvec, vecmat, /):
 
 
 def integrand_product(matfun, depth, matvec, vecmat, /):
-    """Construct the integrand for matrix-function-trace estimation.
+    r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
