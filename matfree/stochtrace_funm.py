@@ -12,15 +12,15 @@ from matfree.backend import func, linalg, np, tree_util
 #  something else.
 
 
-def integrand_sym_logdet(order, matvec, /):
+def integrand_funm_sym_logdet(order, matvec, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
     """
-    return integrand_sym(np.log, order, matvec)
+    return integrand_funm_sym(np.log, order, matvec)
 
 
-def integrand_sym(matfun, order, matvec, /):
+def integrand_funm_sym(matfun, order, matvec, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
@@ -49,25 +49,25 @@ def integrand_sym(matfun, order, matvec, /):
     return quadform
 
 
-def integrand_product_logdet(depth, matvec, vecmat, /):
+def integrand_funm_product_logdet(depth, matvec, vecmat, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return integrand_product(np.log, depth, matvec, vecmat)
+    return integrand_funm_product(np.log, depth, matvec, vecmat)
 
 
-def integrand_product_schatten_norm(power, depth, matvec, vecmat, /):
+def integrand_funm_product_schatten_norm(power, depth, matvec, vecmat, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return integrand_product(matfun, depth, matvec, vecmat)
+    return integrand_funm_product(matfun, depth, matvec, vecmat)
 
 
-def integrand_product(matfun, depth, matvec, vecmat, /):
+def integrand_funm_product(matfun, depth, matvec, vecmat, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,

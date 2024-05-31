@@ -53,7 +53,7 @@ def make_matvec(alpha):
 
 matvec = make_matvec(alpha=0.1)
 order = 3
-integrand = stochtrace_funm.integrand_sym_logdet(order, matvec)
+integrand = stochtrace_funm.integrand_funm_sym_logdet(order, matvec)
 sample_fun = stochtrace.sampler_normal(f0, num=10)
 estimator = stochtrace.estimator(integrand, sampler=sample_fun)
 key = jax.random.PRNGKey(1)
