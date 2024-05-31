@@ -486,9 +486,7 @@ def _extract_diag(x, offset=0):
     return linalg.diagonal_matrix(diag, offset=offset)
 
 
-def bidiag(
-    Av: Callable, vA: Callable, depth, /, matrix_shape, validate_unit_2_norm=False
-):
+def bidiag(Av: Callable, vA: Callable, depth, /, matrix_shape):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -515,7 +513,8 @@ def bidiag(
         raise ValueError(msg1 + msg2 + msg3)
 
     def estimate(v0, *parameters):
-        init_val = init(v0)
+        v0_norm, length = _normalise(v0)
+        init_val = init(v0_norm)
 
         def body_fun(_, s):
             return step(s, *parameters)
@@ -523,7 +522,7 @@ def bidiag(
         result = control_flow.fori_loop(
             0, depth + 1, body_fun=body_fun, init_val=init_val
         )
-        return extract(result)
+        return *extract(result), 1 / length
 
     class State(containers.NamedTuple):
         i: int
@@ -535,9 +534,6 @@ def bidiag(
         vk: Array
 
     def init(init_vec: Array) -> State:
-        if validate_unit_2_norm:
-            init_vec = _validate_unit_2_norm(init_vec)
-
         alphas = np.zeros((depth + 1,))
         betas = np.zeros((depth + 1,))
         Us = np.zeros((depth + 1, nrows))
@@ -565,19 +561,6 @@ def bidiag(
     def extract(state: State, /):
         _, uk_all, vk_all, alphas, betas, beta, vk = state
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
-
-    def _validate_unit_2_norm(v, /):
-        # todo: replace this functionality with normalising internally.
-        #
-        # Lanczos assumes a unit-2-norm vector as an input
-        # We cannot raise an error based on values of the init_vec,
-        # but we can make it obvious that the result is unusable.
-        is_not_normalized = np.abs(linalg.vector_norm(v) - 1.0) > 10 * np.finfo_eps(
-            v.dtype
-        )
-        return control_flow.cond(
-            is_not_normalized, lambda s: np.nan() * np.ones_like(s), lambda s: s, v
-        )
 
     def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
         vec, coeffs = control_flow.scan(_gram_schmidt_classical_step, vec, xs=vectors)

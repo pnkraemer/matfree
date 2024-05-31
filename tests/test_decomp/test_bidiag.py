@@ -32,7 +32,7 @@ def test_bidiag(A, order):
 
     algorithm = decomp.bidiag(Av, vA, order, matrix_shape=np.shape(A))
     v0 /= linalg.vector_norm(v0)
-    Us, Bs, Vs, (b, v) = algorithm(v0)
+    Us, Bs, Vs, (b, v), ln = algorithm(v0)
     (d_m, e_m) = Bs
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -58,6 +58,8 @@ def test_bidiag(A, order):
     VtBtb_plus_bve = Vs.T @ B.T + b * v[:, None] @ em[None, :]
     assert np.allclose(AVt, UtB, **tols_decomp)
     assert np.allclose(AtUt, VtBtb_plus_bve, **tols_decomp)
+
+    assert np.allclose(ln, 1.0 / linalg.vector_norm(v0))
 
 
 @testing.parametrize("nrows", [5])
@@ -106,7 +108,7 @@ def test_no_error_zero_depth(A):
         return v @ A
 
     algorithm = decomp.bidiag(Av, vA, 0, matrix_shape=np.shape(A))
-    Us, Bs, Vs, (b, v) = algorithm(v0)
+    Us, Bs, Vs, (b, v), ln = algorithm(v0)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)
     assert np.shape(Vs) == (1, ncols)
@@ -114,31 +116,4 @@ def test_no_error_zero_depth(A):
     assert np.shape(e_m) == (0,)
     assert np.shape(b) == ()
     assert np.shape(v) == (ncols,)
-
-
-@testing.parametrize("nrows", [15])
-@testing.parametrize("ncols", [3])
-@testing.parametrize("num_significant_singular_vals", [3])
-@testing.parametrize("order", [2])
-def test_validate_unit_norm(A, order):
-    """Test that the outputs are NaN if the input is not normalized."""
-    nrows, ncols = np.shape(A)
-    key = prng.prng_key(1)
-
-    # Not normalized!
-    v0 = prng.normal(key, shape=(ncols,)) + 1.0
-
-    def Av(v):
-        return A @ v
-
-    def vA(v):
-        return v @ A
-
-    algorithm = decomp.bidiag(
-        Av, vA, order, matrix_shape=np.shape(A), validate_unit_2_norm=True
-    )
-    Us, (d_m, e_m), Vs, (b, v) = algorithm(v0)
-
-    # Since v0 is not normalized, all inputs are NaN
-    for x in (Us, d_m, e_m, Vs, b, v):
-        assert np.all(np.isnan(x))
+    assert np.shape(ln) == ()

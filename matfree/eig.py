@@ -30,7 +30,7 @@ def svd_partial(
     """
     # Factorise the matrix
     algorithm = decomp.bidiag(Av, vA, depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, _ = algorithm(v0)
+    u, (d, e), vt, *_ = algorithm(v0)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)
