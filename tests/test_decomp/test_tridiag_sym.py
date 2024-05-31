@@ -13,11 +13,10 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
     # Run Lanczos approximation
-    algorithm = decomp.tridiag_sym(ndim, reortho=reortho)
-    (lanczos_vectors, tridiag), _ = algorithm(lambda s, p: p @ s, vector, matrix)
+    algorithm = decomp.tridiag_sym(ndim, reortho=reortho, materialize=True)
+    (lanczos_vectors, dense_matrix), _ = algorithm(lambda s, p: p @ s, vector, matrix)
 
     # Reconstruct the original matrix from the full-order approximation
-    dense_matrix = _dense_tridiag_sym(*tridiag)
     matrix_reconstructed = lanczos_vectors.T @ dense_matrix @ lanczos_vectors
 
     if reortho == "full":
@@ -46,19 +45,10 @@ def test_mid_rank_reconstruction_satisfies_decomposition(ndim, krylov_depth, reo
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
     # Run Lanczos approximation
-    algorithm = decomp.tridiag_sym(krylov_depth, reortho=reortho)
-    (lanczos_vectors, tridiag), (q, b) = algorithm(lambda s, p: p @ s, vector, matrix)
+    algorithm = decomp.tridiag_sym(krylov_depth, reortho=reortho, materialize=True)
+    (Q, T), (q, b) = algorithm(lambda s, p: p @ s, vector, matrix)
 
     # Verify the decomposition
-    Q, T = lanczos_vectors, _dense_tridiag_sym(*tridiag)
     tols = {"atol": 1e-5, "rtol": 1e-5}
     e_K = np.eye(krylov_depth)[-1]
     assert np.allclose(matrix @ Q.T, Q.T @ T + linalg.outer(e_K, q * b).T, **tols)
-
-
-def _dense_tridiag_sym(diagonal, off_diagonal):
-    return (
-        linalg.diagonal_matrix(diagonal)
-        + linalg.diagonal_matrix(off_diagonal, 1)
-        + linalg.diagonal_matrix(off_diagonal, -1)
-    )

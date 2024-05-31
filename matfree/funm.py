@@ -136,8 +136,8 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     def estimate(matvec: Callable, vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        (basis, (diag, off_diag)), _ = tridiag_sym(matvec, vec, *parameters)
-        matrix = _todense_tridiag_sym(diag, off_diag)
+        (basis, matrix), _ = tridiag_sym(matvec, vec, *parameters)
+        # matrix = _todense_tridiag_sym(diag, off_diag)
 
         funm = dense_funm(matrix)
         e1 = np.eye(len(matrix))[0, :]
@@ -161,7 +161,7 @@ def integrand_funm_sym(matfun, order, /):
     """
     # Todo: expect these to be passed by the user.
     dense_funm = dense_funm_sym_eigh(matfun)
-    algorithm = decomp.tridiag_sym(order)
+    algorithm = decomp.tridiag_sym(order, materialize=True)
 
     def quadform(matvec, v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
@@ -174,9 +174,8 @@ def integrand_funm_sym(matfun, order, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        (_, (diag, off_diag)), _ = algorithm(matvec_flat, v0_flat, *parameters)
+        (_, dense), _ = algorithm(matvec_flat, v0_flat, *parameters)
 
-        dense = _todense_tridiag_sym(diag, off_diag)
         fA = dense_funm(dense)
         e1 = np.eye(len(fA))[0, :]
         return length**2 * linalg.inner(e1, fA @ e1)
@@ -224,6 +223,7 @@ def integrand_funm_product(matfun, depth, /):
 
         w0_flat, w_unflatten = func.eval_shape(matvec_flat, v0_flat)
         matrix_shape = (*np.shape(w0_flat), *np.shape(v0_flat))
+        algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape, materialize=True)
 
         def vecmat_flat(w_flat):
             w = w_unflatten(w_flat)
@@ -231,14 +231,11 @@ def integrand_funm_product(matfun, depth, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape)
         matvec_flat_p = lambda v: matvec_flat(v)[0]  # noqa: E731
         output = algorithm(matvec_flat_p, vecmat_flat, v0_flat, *parameters)
-        u, (d, e), vt, *_ = output
+        u, B, vt, *_ = output
 
         # Compute SVD of factorisation
-        B = _todense_bidiag(d, e)
-
         # todo: turn the following lines into dense_funm_svd()
         _, S, Vt = linalg.svd(B, full_matrices=False)
 
@@ -277,21 +274,3 @@ def dense_funm_schur(matfun):
         return linalg.funm_schur(dense_matrix, matfun)
 
     return fun
-
-
-# todo: if we move this logic to the decomposition algorithms
-#  (e.g. with a materalize=True flag in the decomposition construction),
-#  then all trace_of_funm implementation reduce to very few lines.
-
-
-def _todense_tridiag_sym(diag, off_diag):
-    diag = linalg.diagonal_matrix(diag)
-    offdiag1 = linalg.diagonal_matrix(off_diag, -1)
-    offdiag2 = linalg.diagonal_matrix(off_diag, 1)
-    return diag + offdiag1 + offdiag2
-
-
-def _todense_bidiag(d, e):
-    diag = linalg.diagonal_matrix(d)
-    offdiag = linalg.diagonal_matrix(e, 1)
-    return diag + offdiag
