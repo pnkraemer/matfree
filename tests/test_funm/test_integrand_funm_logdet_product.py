@@ -1,6 +1,6 @@
 """Test stochastic Lanczos quadrature for log-determinants of matrix-products."""
 
-from matfree import stochtrace, stochtrace_funm, test_util
+from matfree import funm, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -31,7 +31,7 @@ def test_logdet_product(A, order):
 
     x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = stochtrace.sampler_normal(x_like, num=400)
-    problem = stochtrace_funm.integrand_funm_product_logdet(order, matvec, vecmat)
+    problem = funm.integrand_funm_product_logdet(order, matvec, vecmat)
     estimate = stochtrace.estimator(problem, fun)
     received = estimate(key)
 
@@ -53,7 +53,7 @@ def test_logdet_product_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = stochtrace_funm.integrand_funm_product_logdet(
+    integrand = funm.integrand_funm_product_logdet(
         order, lambda v: A @ v, lambda v: v @ A
     )
 

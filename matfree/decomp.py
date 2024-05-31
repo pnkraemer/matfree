@@ -3,9 +3,8 @@
 This module includes various Lanczos-decompositions of matrices
 (tri-diagonal, bi-diagonal, etc.).
 
-For stochastic Lanczos quadrature, see
-[matfree.stochtrace_funm][matfree.stochtrace_funm].
-For matrix-function-vector products, see
+For stochastic Lanczos quadrature and
+matrix-function-vector products, see
 [matfree.funm][matfree.funm].
 """
 
