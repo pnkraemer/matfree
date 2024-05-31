@@ -163,9 +163,9 @@ def integrand_funm_sym(matfun, order, matvec, /):
 
     This function assumes a symmetric matrix.
     """
-    # todo: if we ask the user to flatten their matvecs,
-    #  then we can give this code the same API as funm_lanczos_sym.
+    # Todo: expect these to be passed by the user.
     dense_funm = dense_funm_sym_eigh(matfun)
+    algorithm = decomp.tridiag_sym(order)
 
     def quadform(v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
@@ -178,7 +178,6 @@ def integrand_funm_sym(matfun, order, matvec, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = decomp.tridiag_sym(order)
         (_, (diag, off_diag)), _ = algorithm(matvec_flat, v0_flat, *parameters)
 
         dense = _todense_tridiag_sym(diag, off_diag)
