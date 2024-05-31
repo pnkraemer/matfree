@@ -13,8 +13,8 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
     # Run Lanczos approximation
-    algorithm = decomp.tridiag_sym(lambda s, p: p @ s, ndim, reortho=reortho)
-    (lanczos_vectors, tridiag), _ = algorithm(vector, matrix)
+    algorithm = decomp.tridiag_sym(ndim, reortho=reortho)
+    (lanczos_vectors, tridiag), _ = algorithm(lambda s, p: p @ s, vector, matrix)
 
     # Reconstruct the original matrix from the full-order approximation
     dense_matrix = _dense_tridiag_sym(*tridiag)
@@ -46,8 +46,8 @@ def test_mid_rank_reconstruction_satisfies_decomposition(ndim, krylov_depth, reo
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
     # Run Lanczos approximation
-    algorithm = decomp.tridiag_sym(lambda s, p: p @ s, krylov_depth, reortho=reortho)
-    (lanczos_vectors, tridiag), (q, b) = algorithm(vector, matrix)
+    algorithm = decomp.tridiag_sym(krylov_depth, reortho=reortho)
+    (lanczos_vectors, tridiag), (q, b) = algorithm(lambda s, p: p @ s, vector, matrix)
 
     # Verify the decomposition
     Q, T = lanczos_vectors, _dense_tridiag_sym(*tridiag)

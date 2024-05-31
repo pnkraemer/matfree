@@ -31,9 +31,9 @@ def test_logdet_product(A, order):
 
     x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = stochtrace.sampler_normal(x_like, num=400)
-    problem = funm.integrand_funm_product_logdet(order, matvec, vecmat)
+    problem = funm.integrand_funm_product_logdet(order)
     estimate = stochtrace.estimator(problem, fun)
-    received = estimate(key)
+    received = estimate((matvec, vecmat), key)
 
     expected = linalg.slogdet(A.T @ A)[1]
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
@@ -53,15 +53,13 @@ def test_logdet_product_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = funm.integrand_funm_product_logdet(
-        order, lambda v: A @ v, lambda v: v @ A
-    )
+    integrand = funm.integrand_funm_product_logdet(order)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 1
 
     # Compute v^\top @ log(A) @ v via Lanczos
-    received = integrand(x)
+    received = integrand((lambda v: A @ v, lambda v: v @ A), x)
 
     # Compute the "true" value of v^\top @ log(A) @ v via eigenvalues
     eigvals, eigvecs = linalg.eigh(A.T @ A)

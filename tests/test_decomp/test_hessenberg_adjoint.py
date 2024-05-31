@@ -7,21 +7,21 @@ from matfree.backend import config, func, linalg, np, prng, testing
 @testing.parametrize("reortho", ["none", "full"])
 @testing.parametrize("dtype", [float])
 def test_adjoint_matches_jax_dot_vjp(nrows, krylov_depth, reortho, dtype):
-    # todo: see which components simplify for symmetric matrices
-
     # Create a matrix and a direction as a test-case
     A = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=dtype)
     v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=dtype)
 
     # Set up the algorithms
     algorithm_autodiff = decomp.hessenberg(
-        lambda s, p: p @ s, krylov_depth, reortho=reortho, custom_vjp=False
+        krylov_depth, reortho=reortho, custom_vjp=False
     )
     algorithm_adjoint = decomp.hessenberg(
-        lambda s, p: p @ s, krylov_depth, reortho=reortho, custom_vjp=True
+        krylov_depth, reortho=reortho, custom_vjp=True
     )
 
     # Forward pass
+    algorithm_autodiff = func.partial(algorithm_autodiff, lambda s, p: p @ s)
+    algorithm_adjoint = func.partial(algorithm_adjoint, lambda s, p: p @ s)
     (Q, H, r, c), vjp_autodiff = func.vjp(algorithm_autodiff, v, A)
     (_Q, _H, _r, _c), vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
 
@@ -62,13 +62,15 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
 
     # Set up the algorithms
     algorithm_autodiff = decomp.hessenberg(
-        matvec, krylov_depth, reortho=reortho, custom_vjp=False
+        krylov_depth, reortho=reortho, custom_vjp=False
     )
     algorithm_adjoint = decomp.hessenberg(
-        matvec, krylov_depth, reortho=reortho, custom_vjp=True
+        krylov_depth, reortho=reortho, custom_vjp=True
     )
 
     # Forward pass
+    algorithm_autodiff = func.partial(algorithm_autodiff, matvec)
+    algorithm_adjoint = func.partial(algorithm_adjoint, matvec)
     (Q, H, r, c), vjp_autodiff = func.vjp(algorithm_autodiff, v, A)
     (_Q, _H, _r, _c), vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
 
@@ -105,4 +107,4 @@ def test_raises_type_error_for_wrong_reorthogonalisation_flag(reortho_wrong):
 
     # Set up the algorithms
     with testing.raises(TypeError, match="Unexpected input"):
-        _ = decomp.hessenberg(lambda s: s, 1, reortho=reortho_wrong)
+        _ = decomp.hessenberg(1, reortho=reortho_wrong)

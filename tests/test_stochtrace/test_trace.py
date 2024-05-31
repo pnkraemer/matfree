@@ -22,10 +22,10 @@ def test_trace():
     expected = linalg.trace(J)
 
     # Estimate the matrix function
-    problem = stochtrace.integrand_trace(jvp)
+    problem = stochtrace.integrand_trace()
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
-    received = estimate(key)
+    received = estimate(jvp, key)
 
     def compare(a, b):
         return np.allclose(a, b, rtol=1e-2)

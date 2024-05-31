@@ -3,14 +3,14 @@
 This includes matrix-function-vector products
 
 $$
-(f, v, p) \\mapsto f(A(p))v
+(f, A, v, p) \\mapsto f(A(p))v
 $$
 
 as well as matrix-function extensions for stochastic trace estimation,
 which provide
 
 $$
-(f, v, p) \\mapsto v^\\top f(A(p))v.
+(f, A, v, p) \\mapsto v^\\top f(A(p))v.
 $$
 
 Plug these integrands into
@@ -31,9 +31,9 @@ Examples
 >>>
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
 >>> matfun = dense_funm_sym_eigh(jnp.log)
->>> tridiag = decomp.tridiag_sym(lambda s: A @ s, 4)
+>>> tridiag = decomp.tridiag_sym(4)
 >>> matfun_vec = funm_lanczos_sym(matfun, tridiag)
->>> matfun_vec(v)
+>>> matfun_vec(lambda s: A @ s, v)
 Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
 
@@ -102,7 +102,7 @@ def _funm_polyexpand(matrix_poly_alg, /):
     """Compute a matrix-function-vector product via a polynomial expansion."""
     (lower, upper), init_func, step_func, extract_func = matrix_poly_alg
 
-    def matvec(vec, *parameters):
+    def matrix_function_vector_product(vec, *parameters):
         final_state = control_flow.fori_loop(
             lower=lower,
             upper=upper,
@@ -111,7 +111,7 @@ def _funm_polyexpand(matrix_poly_alg, /):
         )
         return extract_func(final_state)
 
-    return matvec
+    return matrix_function_vector_product
 
 
 def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable:
@@ -133,10 +133,10 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
         [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
     """
 
-    def estimate(vec, *parameters):
+    def estimate(matvec: Callable, vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        (basis, (diag, off_diag)), _ = tridiag_sym(vec, *parameters)
+        (basis, (diag, off_diag)), _ = tridiag_sym(matvec, vec, *parameters)
         matrix = _todense_tridiag_sym(diag, off_diag)
 
         funm = dense_funm(matrix)
@@ -146,24 +146,24 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     return estimate
 
 
-def integrand_funm_sym_logdet(order, matvec, /):
+def integrand_funm_sym_logdet(order, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
     """
-    return integrand_funm_sym(np.log, order, matvec)
+    return integrand_funm_sym(np.log, order)
 
 
-def integrand_funm_sym(matfun, order, matvec, /):
+def integrand_funm_sym(matfun, order, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
     """
-    # todo: if we ask the user to flatten their matvecs,
-    #  then we can give this code the same API as funm_lanczos_sym.
+    # Todo: expect these to be passed by the user.
     dense_funm = dense_funm_sym_eigh(matfun)
+    algorithm = decomp.tridiag_sym(order)
 
-    def quadform(v0, *parameters):
+    def quadform(matvec, v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
@@ -174,8 +174,7 @@ def integrand_funm_sym(matfun, order, matvec, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        algorithm = decomp.tridiag_sym(matvec_flat, order)
-        (_, (diag, off_diag)), _ = algorithm(v0_flat, *parameters)
+        (_, (diag, off_diag)), _ = algorithm(matvec_flat, v0_flat, *parameters)
 
         dense = _todense_tridiag_sym(diag, off_diag)
         fA = dense_funm(dense)
@@ -185,25 +184,25 @@ def integrand_funm_sym(matfun, order, matvec, /):
     return quadform
 
 
-def integrand_funm_product_logdet(depth, matvec, vecmat, /):
+def integrand_funm_product_logdet(depth, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return integrand_funm_product(np.log, depth, matvec, vecmat)
+    return integrand_funm_product(np.log, depth)
 
 
-def integrand_funm_product_schatten_norm(power, depth, matvec, vecmat, /):
+def integrand_funm_product_schatten_norm(power, depth, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return integrand_funm_product(matfun, depth, matvec, vecmat)
+    return integrand_funm_product(matfun, depth)
 
 
-def integrand_funm_product(matfun, depth, matvec, vecmat, /):
+def integrand_funm_product(matfun, depth, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
@@ -211,7 +210,8 @@ def integrand_funm_product(matfun, depth, matvec, vecmat, /):
     Here, "product" refers to $X = A^\top A$.
     """
 
-    def quadform(v0, *parameters):
+    def quadform(matvecs, v0, *parameters):
+        matvec, vecmat = matvecs
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
@@ -231,10 +231,9 @@ def integrand_funm_product(matfun, depth, matvec, vecmat, /):
             return tree_util.ravel_pytree(wA)[0]
 
         # Decompose into orthogonal-bidiag-orthogonal
-        algorithm = decomp.bidiag(
-            lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
-        )
-        output = algorithm(v0_flat, *parameters)
+        algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape)
+        matvec_flat_p = lambda v: matvec_flat(v)[0]  # noqa: E731
+        output = algorithm(matvec_flat_p, vecmat_flat, v0_flat, *parameters)
         u, (d, e), vt, *_ = output
 
         # Compute SVD of factorisation

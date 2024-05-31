@@ -18,7 +18,7 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("ncols", [49])
 @testing.parametrize("num_significant_singular_vals", [4])
 @testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
-def test_bidiag(A, order):
+def test_bidiag_decomposition_is_satisfied(A, order):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     nrows, ncols = np.shape(A)
     key = prng.prng_key(1)
@@ -30,9 +30,8 @@ def test_bidiag(A, order):
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(Av, vA, order, matrix_shape=np.shape(A))
-    v0 /= linalg.vector_norm(v0)
-    Us, Bs, Vs, (b, v), ln = algorithm(v0)
+    algorithm = decomp.bidiag(order, matrix_shape=np.shape(A))
+    Us, Bs, Vs, (b, v), ln = algorithm(Av, vA, v0)
     (d_m, e_m) = Bs
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
@@ -71,11 +70,7 @@ def test_error_too_high_depth(A):
     max_depth = min(nrows, ncols) - 1
 
     with testing.raises(ValueError, match=""):
-
-        def eye(v):
-            return v
-
-        _ = decomp.bidiag(eye, eye, max_depth + 1, matrix_shape=np.shape(A))
+        _ = decomp.bidiag(max_depth + 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [5])
@@ -85,11 +80,7 @@ def test_error_too_low_depth(A):
     """Assert that a ValueError is raised when the depth is negative."""
     min_depth = 0
     with testing.raises(ValueError, match=""):
-
-        def eye(v):
-            return v
-
-        _ = decomp.bidiag(eye, eye, min_depth - 1, matrix_shape=np.shape(A))
+        _ = decomp.bidiag(min_depth - 1, matrix_shape=np.shape(A))
 
 
 @testing.parametrize("nrows", [15])
@@ -107,8 +98,8 @@ def test_no_error_zero_depth(A):
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(Av, vA, 0, matrix_shape=np.shape(A))
-    Us, Bs, Vs, (b, v), ln = algorithm(v0)
+    algorithm = decomp.bidiag(0, matrix_shape=np.shape(A))
+    Us, Bs, Vs, (b, v), ln = algorithm(Av, vA, v0)
     (d_m, e_m) = Bs
     assert np.shape(Us) == (nrows, 1)
     assert np.shape(Vs) == (1, ncols)

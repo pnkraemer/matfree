@@ -19,7 +19,7 @@ def py_to_py_light(*, source, target):
 
         # Transform each python file in directory
         for i, filename_with_py in enumerate(sorted(files_src)):
-            if filename_with_py[0] != "_":
+            if filename_with_py[0] != "_" and filename_with_py[-3:] == ".py":
                 # Split docstring (to be manipulated) from rest of source
                 header, rest = split_docstring_from_content(
                     f"{dir_src}/{filename_with_py}"

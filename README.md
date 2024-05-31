@@ -68,14 +68,14 @@ Estimate the trace of the matrix:
 >>>
 >>> # Set Hutchinson's method up to compute the traces
 >>> # (instead of, e.g., diagonals)
->>> integrand = stochtrace.integrand_trace(matvec)
+>>> integrand = stochtrace.integrand_trace()
 >>>
 >>> # Compute an estimator
 >>> estimate = stochtrace.estimator(integrand, sampler)
 
 >>> # Estimate
 >>> key = jax.random.PRNGKey(1)
->>> trace = jax.jit(estimate)(key)
+>>> trace = estimate(matvec, key)
 >>>
 >>> print(trace)
 508.9

@@ -12,6 +12,8 @@ Here is how we can wrap calls around the trace estimators
 in such a scenario to save memory.
 """
 
+import functools
+
 import jax
 import jax.numpy as jnp
 
@@ -30,14 +32,13 @@ def large_matvec(v):
     return 1.2345 * v
 
 
-integrand = stochtrace.integrand_trace(large_matvec)
-
+integrand = stochtrace.integrand_trace()
 x0 = jnp.ones((nrows,))
 sampler = stochtrace.sampler_rademacher(x0, num=nsamples)
 estimate = stochtrace.estimator(integrand, sampler)
 
 key = jax.random.PRNGKey(1)
-trace = estimate(key)
+trace = estimate(large_matvec, key)
 print(trace)
 
 
@@ -48,6 +49,7 @@ print(trace)
 
 sampler = stochtrace.sampler_rademacher(x0, num=1)
 estimate = stochtrace.estimator(integrand, sampler)
+estimate = functools.partial(estimate, large_matvec)
 
 key = jax.random.PRNGKey(2)
 keys = jax.random.split(key, num=nsamples)

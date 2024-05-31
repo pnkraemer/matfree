@@ -27,13 +27,11 @@ def test_schatten_norm(A, order, power):
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
     sampler = stochtrace.sampler_normal(args_like, num=500)
-    integrand = funm.integrand_funm_product_schatten_norm(
-        power, order, lambda v: A @ v, lambda v: A.T @ v
-    )
+    integrand = funm.integrand_funm_product_schatten_norm(power, order)
     estimate = stochtrace.estimator(integrand, sampler)
 
     key = prng.prng_key(1)
-    received = estimate(key)
+    received = estimate((lambda v: A @ v, lambda v: A.T @ v), key)
 
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails

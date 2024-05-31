@@ -5,6 +5,7 @@ from matfree.backend import linalg
 from matfree.backend.typing import Array, Callable, Tuple
 
 
+# todo: why does this function not return a callable?
 def svd_partial(
     v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int, ...]
 ):
@@ -29,8 +30,8 @@ def svd_partial(
         Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
-    algorithm = decomp.bidiag(Av, vA, depth, matrix_shape=matrix_shape)
-    u, (d, e), vt, *_ = algorithm(v0)
+    algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape)
+    u, (d, e), vt, *_ = algorithm(Av, vA, v0)
 
     # Compute SVD of factorisation
     B = _bidiagonal_dense(d, e)

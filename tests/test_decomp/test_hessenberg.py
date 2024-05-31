@@ -14,8 +14,8 @@ def test_decomposition_is_satisfied(nrows, krylov_depth, reortho, dtype):
     v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=dtype)
 
     # Decompose
-    algorithm = decomp.hessenberg(lambda s, p: p @ s, krylov_depth, reortho=reortho)
-    Q, H, r, c = algorithm(v, A)
+    algorithm = decomp.hessenberg(krylov_depth, reortho=reortho)
+    Q, H, r, c = algorithm(lambda s, p: p @ s, v, A)
 
     # Assert shapes
     assert Q.shape == (nrows, krylov_depth)
@@ -43,8 +43,8 @@ def test_reorthogonalisation_improves_the_estimate(nrows, krylov_depth, reortho)
     v = prng.normal(prng.prng_key(2), shape=(nrows,))
 
     # Decompose
-    algorithm = decomp.hessenberg(lambda s, p: p @ s, krylov_depth, reortho=reortho)
-    Q, H, r, c = algorithm(v, A)
+    algorithm = decomp.hessenberg(krylov_depth, reortho=reortho)
+    Q, H, r, c = algorithm(lambda s, p: p @ s, v, A)
 
     # Assert shapes
     assert Q.shape == (nrows, krylov_depth)
@@ -64,18 +64,18 @@ def test_reorthogonalisation_improves_the_estimate(nrows, krylov_depth, reortho)
 
 
 def test_raises_error_for_wrong_depth_too_small():
-    algorithm = decomp.hessenberg(lambda s: s, 0, reortho="none")
+    algorithm = decomp.hessenberg(0, reortho="none")
     with testing.raises(ValueError, match="depth"):
-        _ = algorithm(np.ones((2,)))
+        _ = algorithm(lambda s: s, np.ones((2,)))
 
 
 def test_raises_error_for_wrong_depth_too_high():
-    algorithm = decomp.hessenberg(lambda s: s, 3, reortho="none")
+    algorithm = decomp.hessenberg(3, reortho="none")
     with testing.raises(ValueError, match="depth"):
-        _ = algorithm(np.ones((2,)))
+        _ = algorithm(lambda s: s, np.ones((2,)))
 
 
 @testing.parametrize("reortho_wrong", [True, "full_with_sparsity", "None"])
 def test_raises_error_for_wrong_reorthogonalisation_flag(reortho_wrong):
     with testing.raises(TypeError, match="Unexpected input"):
-        _ = decomp.hessenberg(lambda s: s, 1, reortho=reortho_wrong)
+        _ = decomp.hessenberg(1, reortho=reortho_wrong)
