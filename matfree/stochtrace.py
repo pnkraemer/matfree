@@ -27,15 +27,15 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
 
     """
 
-    def estimate(key, *parameters):
+    def estimate(matvecs, key, *parameters):
         samples = sampler(key)
-        Qs = func.vmap(lambda vec: integrand(vec, *parameters))(samples)
+        Qs = func.vmap(lambda vec: integrand(matvecs, vec, *parameters))(samples)
         return tree_util.tree_map(lambda s: np.mean(s, axis=0), Qs)
 
     return estimate
 
 
-def integrand_diagonal(matvec, /):
+def integrand_diagonal():
     """Construct the integrand for estimating the diagonal.
 
     When plugged into the Monte-Carlo estimator,
@@ -47,7 +47,7 @@ def integrand_diagonal(matvec, /):
     where ``*args_like`` is an argument of the sampler.
     """
 
-    def integrand(v, *parameters):
+    def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
@@ -56,10 +56,10 @@ def integrand_diagonal(matvec, /):
     return integrand
 
 
-def integrand_trace(matvec, /):
+def integrand_trace():
     """Construct the integrand for estimating the trace."""
 
-    def integrand(v, *parameters):
+    def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
@@ -68,10 +68,10 @@ def integrand_trace(matvec, /):
     return integrand
 
 
-def integrand_trace_and_diagonal(matvec, /):
+def integrand_trace_and_diagonal():
     """Construct the integrand for estimating the trace and diagonal jointly."""
 
-    def integrand(v, *parameters):
+    def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(v)
         Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
@@ -82,10 +82,10 @@ def integrand_trace_and_diagonal(matvec, /):
     return integrand
 
 
-def integrand_frobeniusnorm_squared(matvec, /):
+def integrand_frobeniusnorm_squared():
     """Construct the integrand for estimating the squared Frobenius norm."""
 
-    def integrand(vec, *parameters):
+    def integrand(matvec, vec, *parameters):
         x = matvec(vec, *parameters)
         v_flat, unflatten = tree_util.ravel_pytree(x)
         return linalg.inner(v_flat, v_flat)

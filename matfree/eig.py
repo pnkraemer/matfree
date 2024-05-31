@@ -5,6 +5,7 @@ from matfree.backend import linalg
 from matfree.backend.typing import Array, Callable, Tuple
 
 
+# todo: why does this function not return a callable?
 def svd_partial(
     v0: Array, depth: int, Av: Callable, vA: Callable, matrix_shape: Tuple[int, ...]
 ):

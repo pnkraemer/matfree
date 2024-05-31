@@ -32,8 +32,8 @@ Examples
 >>> # Compute a matrix-logarithm with Lanczos' algorithm
 >>> matfun = dense_funm_sym_eigh(jnp.log)
 >>> tridiag = decomp.tridiag_sym(4)
->>> matfun_vec = funm_lanczos_sym(lambda s: A @ s, matfun, tridiag)
->>> matfun_vec(v)
+>>> matfun_vec = funm_lanczos_sym(matfun, tridiag)
+>>> matfun_vec(lambda s: A @ s, v)
 Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
 """
 
@@ -114,9 +114,7 @@ def _funm_polyexpand(matrix_poly_alg, /):
     return matrix_function_vector_product
 
 
-def funm_lanczos_sym(
-    matvec: Callable, dense_funm: Callable, tridiag_sym: Callable, /
-) -> Callable:
+def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
@@ -124,8 +122,6 @@ def funm_lanczos_sym(
 
     Parameters
     ----------
-    matvec
-        Matrix-vector product.
     dense_funm
         An implementation of a function of a dense matrix.
         For example, the output of
@@ -137,7 +133,7 @@ def funm_lanczos_sym(
         [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
     """
 
-    def estimate(vec, *parameters):
+    def estimate(matvec: Callable, vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
         (basis, (diag, off_diag)), _ = tridiag_sym(matvec, vec, *parameters)
@@ -150,15 +146,15 @@ def funm_lanczos_sym(
     return estimate
 
 
-def integrand_funm_sym_logdet(order, matvec, /):
+def integrand_funm_sym_logdet(order, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
     """
-    return integrand_funm_sym(np.log, order, matvec)
+    return integrand_funm_sym(np.log, order)
 
 
-def integrand_funm_sym(matfun, order, matvec, /):
+def integrand_funm_sym(matfun, order, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
@@ -167,7 +163,7 @@ def integrand_funm_sym(matfun, order, matvec, /):
     dense_funm = dense_funm_sym_eigh(matfun)
     algorithm = decomp.tridiag_sym(order)
 
-    def quadform(v0, *parameters):
+    def quadform(matvec, v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
@@ -188,25 +184,25 @@ def integrand_funm_sym(matfun, order, matvec, /):
     return quadform
 
 
-def integrand_funm_product_logdet(depth, matvec, vecmat, /):
+def integrand_funm_product_logdet(depth, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return integrand_funm_product(np.log, depth, matvec, vecmat)
+    return integrand_funm_product(np.log, depth)
 
 
-def integrand_funm_product_schatten_norm(power, depth, matvec, vecmat, /):
+def integrand_funm_product_schatten_norm(power, depth, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return integrand_funm_product(matfun, depth, matvec, vecmat)
+    return integrand_funm_product(matfun, depth)
 
 
-def integrand_funm_product(matfun, depth, matvec, vecmat, /):
+def integrand_funm_product(matfun, depth, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
@@ -214,7 +210,8 @@ def integrand_funm_product(matfun, depth, matvec, vecmat, /):
     Here, "product" refers to $X = A^\top A$.
     """
 
-    def quadform(v0, *parameters):
+    def quadform(matvecs, v0, *parameters):
+        matvec, vecmat = matvecs
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
