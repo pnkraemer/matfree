@@ -27,10 +27,10 @@ x_like = jnp.ones((nrows,), dtype=float)  # use to determine shapes of vectors
 # Estimate log-determinants with stochastic Lanczos quadrature.
 
 order = 3
-problem = funm.integrand_funm_sym_logdet(order, matvec)
+problem = funm.integrand_funm_sym_logdet(order)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
-logdet = estimator(jax.random.PRNGKey(1))
+logdet = estimator(matvec, jax.random.PRNGKey(1))
 print(logdet)
 
 # For comparison:
@@ -58,10 +58,10 @@ def vecmat_l(x):
 
 
 order = 3
-problem = funm.integrand_funm_product_logdet(order, matvec_r, vecmat_l)
+problem = funm.integrand_funm_product_logdet(order)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
-logdet = estimator(jax.random.PRNGKey(1))
+logdet = estimator((matvec_r, vecmat_l), jax.random.PRNGKey(1))
 print(logdet)
 
 # For comparison:

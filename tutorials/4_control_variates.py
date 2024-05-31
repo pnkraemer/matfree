@@ -24,26 +24,30 @@ sample_fun = stochtrace.sampler_normal(x_like, num=10_000)
 # First, compute the diagonal.
 
 
-problem = stochtrace.integrand_diagonal(lambda v: A @ v)
+problem = stochtrace.integrand_diagonal()
 estimate = stochtrace.estimator(problem, sample_fun)
-diagonal_ctrl = estimate(jax.random.PRNGKey(1))
+diagonal_ctrl = estimate(lambda v: A @ v, jax.random.PRNGKey(1))
 
 
 # Then, compute trace and diagonal jointly
 # using the estimate of the diagonal as a control variate.
 
 
-problem = stochtrace.integrand_trace_and_diagonal(lambda v: A @ v - diagonal_ctrl * v)
+def matvec_ctrl(v):
+    return A @ v - diagonal_ctrl * v
+
+
+problem = stochtrace.integrand_trace_and_diagonal()
 estimate = stochtrace.estimator(problem, sample_fun)
-trace_and_diagonal = estimate(jax.random.PRNGKey(2))
+trace_and_diagonal = estimate(matvec_ctrl, jax.random.PRNGKey(2))
 trace, diagonal = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 
 
 # We can, of course, compute it without a control variate as well.
 
-problem = stochtrace.integrand_trace_and_diagonal(lambda v: A @ v)
+problem = stochtrace.integrand_trace_and_diagonal()
 estimate = stochtrace.estimator(problem, sample_fun)
-trace_and_diagonal = estimate(jax.random.PRNGKey(2))
+trace_and_diagonal = estimate(lambda v: A @ v, jax.random.PRNGKey(2))
 trace_ref, diagonal_ref = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 
 

@@ -26,10 +26,10 @@ num_samples = 10_000
 # Sometimes, second and higher moments of a random variable are interesting.
 
 normal = stochtrace.sampler_normal(x_like, num=num_samples)
-integrand = stochtrace.integrand_trace(matvec)
+integrand = stochtrace.integrand_trace()
 integrand = stochtrace.integrand_wrap_moments(integrand, [1, 2])
 estimator = stochtrace.estimator(integrand, sampler=normal)
-first, second = estimator(jax.random.PRNGKey(1))
+first, second = estimator(matvec, jax.random.PRNGKey(1))
 
 
 # For normally-distributed base-samples,
