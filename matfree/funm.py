@@ -235,7 +235,7 @@ def integrand_funm_product(matfun, depth, matvec, vecmat, /):
             lambda v: matvec_flat(v)[0], vecmat_flat, depth, matrix_shape=matrix_shape
         )
         output = algorithm(v0_flat, *parameters)
-        u, (d, e), vt, _ = output
+        u, (d, e), vt, *_ = output
 
         # Compute SVD of factorisation
         B = _todense_bidiag(d, e)
