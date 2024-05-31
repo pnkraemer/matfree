@@ -12,22 +12,6 @@ from matfree.backend import containers, control_flow, func, linalg, np, tree_uti
 from matfree.backend.typing import Array, Callable, Tuple
 
 
-class _LanczosAlg(containers.NamedTuple):
-    """Lanczos decomposition algorithm."""
-
-    init: Callable
-    """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
-
-    step: Callable
-    """Compute the next iteration."""
-
-    extract: Callable
-    """Extract the solution from the state of the algorithm."""
-
-    lower_upper: Tuple[int, int]
-    """Range of the for-loop used to decompose a matrix."""
-
-
 def tridiag_sym(
     matvec, krylov_depth, /, *, reortho: str = "full", custom_vjp: bool = True
 ):
@@ -500,6 +484,22 @@ def _hessenberg_adjoint_step(
 def _extract_diag(x, offset=0):
     diag = linalg.diagonal(x, offset=offset)
     return linalg.diagonal_matrix(diag, offset=offset)
+
+
+class _LanczosAlg(containers.NamedTuple):
+    """Lanczos decomposition algorithm."""
+
+    init: Callable
+    """Initialise the state of the algorithm. Usually, this involves pre-allocation."""
+
+    step: Callable
+    """Compute the next iteration."""
+
+    extract: Callable
+    """Extract the solution from the state of the algorithm."""
+
+    lower_upper: Tuple[int, int]
+    """Range of the for-loop used to decompose a matrix."""
 
 
 def bidiag(
