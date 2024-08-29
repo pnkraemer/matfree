@@ -1,11 +1,10 @@
 """Tests for Lanczos functionality."""
 
-from matfree import funm, stochtrace, test_util
+from matfree import decomp, funm, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
-@testing.fixture()
-def A(n, num_significant_eigvals):
+def make_A(n, num_significant_eigvals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
     d = np.arange(n) / n + 1.0
@@ -19,9 +18,9 @@ def A(n, num_significant_eigvals):
 @testing.parametrize("order", [10])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_spd(A, order):
+def test_logdet_spd(n, num_significant_eigvals, order):
     """Assert that the log-determinant estimation matches the true log-determinant."""
-    n, _ = np.shape(A)
+    A = make_A(n, num_significant_eigvals)
 
     def matvec(x):
         return {"fx": A @ x["fx"]}
@@ -29,7 +28,8 @@ def test_logdet_spd(A, order):
     key = prng.prng_key(1)
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = stochtrace.sampler_normal(args_like, num=10)
-    integrand = funm.integrand_funm_sym_logdet(order)
+    tridiag_sym = decomp.tridiag_sym(order, materialize=True)
+    integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
     estimate = stochtrace.estimator(integrand, sampler)
     received = estimate(matvec, key)
 
@@ -49,7 +49,8 @@ def test_logdet_spd_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = funm.integrand_funm_sym_logdet(order)
+    tridiag_sym = decomp.tridiag_sym(order, materialize=True)
+    integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 10

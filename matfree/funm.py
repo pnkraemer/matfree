@@ -137,7 +137,6 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
         length = linalg.vector_norm(vec)
         vec /= length
         Q, matrix, *_ = tridiag_sym(matvec, vec, *parameters)
-        # matrix = _todense_tridiag_sym(diag, off_diag)
 
         funm = dense_funm(matrix)
         e1 = np.eye(len(matrix))[0, :]
@@ -177,22 +176,41 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
     return estimate
 
 
-def integrand_funm_sym_logdet(order, /):
+def integrand_funm_sym_logdet(tridiag_sym: Callable, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
+
+    Parameters
+    ----------
+    tridiag_sym
+        An implementation of tridiagonalisation.
+        E.g., the output of
+        [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
+
     """
-    return integrand_funm_sym(np.log, order)
+    dense_funm = dense_funm_sym_eigh(np.log)
+    return integrand_funm_sym(dense_funm, tridiag_sym)
 
 
-def integrand_funm_sym(matfun, order, /):
+def integrand_funm_sym(dense_funm, tridiag_sym, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
+
+    Parameters
+    ----------
+    dense_funm
+        An implementation of a function of a dense matrix.
+        For example, the output of
+        [funm.dense_funm_sym_eigh][matfree.funm.dense_funm_sym_eigh]
+        [funm.dense_funm_schur][matfree.funm.dense_funm_schur]
+    tridiag_sym
+        An implementation of tridiagonalisation.
+        E.g., the output of
+        [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
+
     """
-    # Todo: expect these to be passed by the user.
-    dense_funm = dense_funm_sym_eigh(matfun)
-    algorithm = decomp.tridiag_sym(order, materialize=True)
 
     def quadform(matvec, v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
@@ -205,7 +223,7 @@ def integrand_funm_sym(matfun, order, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        _, dense, *_ = algorithm(matvec_flat, v0_flat, *parameters)
+        _, dense, *_ = tridiag_sym(matvec_flat, v0_flat, *parameters)
 
         fA = dense_funm(dense)
         e1 = np.eye(len(fA))[0, :]
@@ -214,6 +232,7 @@ def integrand_funm_sym(matfun, order, /):
     return quadform
 
 
+# todo: expect bidiag() to be passed here
 def integrand_funm_product_logdet(depth, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
@@ -222,6 +241,7 @@ def integrand_funm_product_logdet(depth, /):
     return integrand_funm_product(np.log, depth)
 
 
+# todo: expect bidiag() to be passed here
 def integrand_funm_product_schatten_norm(power, depth, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
@@ -232,6 +252,8 @@ def integrand_funm_product_schatten_norm(power, depth, /):
     return integrand_funm_product(matfun, depth)
 
 
+# todo: expect bidiag() to be passed here
+# todo: expect dense_funm_svd() to be passed here
 def integrand_funm_product(matfun, depth, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
