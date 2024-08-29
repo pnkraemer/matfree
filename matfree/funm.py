@@ -136,12 +136,12 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     def estimate(matvec: Callable, vec, *parameters):
         length = linalg.vector_norm(vec)
         vec /= length
-        (basis, matrix), _ = tridiag_sym(matvec, vec, *parameters)
+        Q, matrix, *_ = tridiag_sym(matvec, vec, *parameters)
         # matrix = _todense_tridiag_sym(diag, off_diag)
 
         funm = dense_funm(matrix)
         e1 = np.eye(len(matrix))[0, :]
-        return length * (basis.T @ funm @ e1)
+        return length * (Q @ funm @ e1)
 
     return estimate
 
@@ -205,7 +205,7 @@ def integrand_funm_sym(matfun, order, /):
             flat, unflatten = tree_util.ravel_pytree(Av)
             return flat
 
-        (_, dense), _ = algorithm(matvec_flat, v0_flat, *parameters)
+        _, dense, *_ = algorithm(matvec_flat, v0_flat, *parameters)
 
         fA = dense_funm(dense)
         e1 = np.eye(len(fA))[0, :]
@@ -264,7 +264,7 @@ def integrand_funm_product(matfun, depth, /):
         # Decompose into orthogonal-bidiag-orthogonal
         matvec_flat_p = lambda v: matvec_flat(v)[0]  # noqa: E731
         output = algorithm(matvec_flat_p, vecmat_flat, v0_flat, *parameters)
-        u, B, vt, *_ = output
+        _u, B, *_ = output
 
         # Compute SVD of factorisation
         # todo: turn the following lines into dense_funm_svd()

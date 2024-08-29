@@ -14,10 +14,10 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
 
     # Run Lanczos approximation
     algorithm = decomp.tridiag_sym(ndim, reortho=reortho, materialize=True)
-    (lanczos_vectors, dense_matrix), _ = algorithm(lambda s, p: p @ s, vector, matrix)
+    Q, T, *_ = algorithm(lambda s, p: p @ s, vector, matrix)
 
     # Reconstruct the original matrix from the full-order approximation
-    matrix_reconstructed = lanczos_vectors.T @ dense_matrix @ lanczos_vectors
+    matrix_reconstructed = Q @ T @ Q.T
 
     if reortho == "full":
         tols = {"atol": 1e-5, "rtol": 1e-5}
@@ -28,9 +28,8 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     assert np.allclose(matrix_reconstructed, matrix, **tols)
 
     # Assert all vectors are orthogonal
-    eye = np.eye(len(lanczos_vectors))
-    assert np.allclose(lanczos_vectors @ lanczos_vectors.T, eye, **tols)
-    assert np.allclose(lanczos_vectors.T @ lanczos_vectors, eye, **tols)
+    test_util.assert_columns_orthonormal(Q)
+    test_util.assert_columns_orthonormal(Q.T)
 
 
 # anything 0 <= k < n works; k=n is full reconstruction
@@ -46,9 +45,8 @@ def test_mid_rank_reconstruction_satisfies_decomposition(ndim, krylov_depth, reo
 
     # Run Lanczos approximation
     algorithm = decomp.tridiag_sym(krylov_depth, reortho=reortho, materialize=True)
-    (Q, T), (q, b) = algorithm(lambda s, p: p @ s, vector, matrix)
+    Q, T, q, _n = algorithm(lambda s, p: p @ s, vector, matrix)
 
     # Verify the decomposition
-    tols = {"atol": 1e-5, "rtol": 1e-5}
     e_K = np.eye(krylov_depth)[-1]
-    assert np.allclose(matrix @ Q.T, Q.T @ T + linalg.outer(e_K, q * b).T, **tols)
+    test_util.assert_allclose(matrix @ Q, Q @ T + linalg.outer(q, e_K))

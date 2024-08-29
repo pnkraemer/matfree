@@ -1,6 +1,6 @@
 """Tests for Hessenberg factorisations (-> Arnoldi)."""
 
-from matfree import decomp
+from matfree import decomp, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -23,15 +23,11 @@ def test_decomposition_is_satisfied(nrows, krylov_depth, reortho, dtype):
     assert r.shape == (nrows,)
     assert c.shape == ()
 
-    # Tie the test-strictness to the floating point accuracy
-    small_value = np.sqrt(np.finfo_eps(np.dtype(H)))
-    tols = {"atol": small_value, "rtol": small_value}
-
     # Test the decompositions
     e0, ek = np.eye(krylov_depth)[[0, -1], :]
-    assert np.allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0, **tols)
-    assert np.allclose(Q.T.conj() @ Q - np.eye(krylov_depth), 0.0, **tols)
-    assert np.allclose(Q @ e0, c * v, **tols)
+    test_util.assert_allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0)
+    test_util.assert_allclose(Q.T.conj() @ Q - np.eye(krylov_depth), 0.0)
+    test_util.assert_allclose(Q @ e0, c * v)
 
 
 @testing.parametrize("nrows", [10])
@@ -52,15 +48,11 @@ def test_reorthogonalisation_improves_the_estimate(nrows, krylov_depth, reortho)
     assert r.shape == (nrows,)
     assert c.shape == ()
 
-    # Tie the test-strictness to the floating point accuracy
-    small_value = np.sqrt(np.finfo_eps(np.dtype(H)))
-    tols = {"atol": small_value, "rtol": small_value}
-
     # Test the decompositions
     e0, ek = np.eye(krylov_depth)[[0, -1], :]
-    assert np.allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0, **tols)
-    assert np.allclose(Q.T @ Q - np.eye(krylov_depth), 0.0, **tols)
-    assert np.allclose(Q @ e0, c * v, **tols)
+    test_util.assert_allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0)
+    test_util.assert_allclose(Q.T @ Q - np.eye(krylov_depth), 0.0)
+    test_util.assert_allclose(Q @ e0, c * v)
 
 
 def test_raises_error_for_wrong_depth_too_small():

@@ -47,3 +47,20 @@ def tree_random_like(key, tree, *, generate_func=prng.normal):
     flat, unflatten = tree_util.ravel_pytree(tree)
     flat_like = generate_func(key, shape=flat.shape, dtype=flat.dtype)
     return unflatten(flat_like)
+
+
+def assert_columns_orthonormal(Q, /):
+    eye_like = Q.T @ Q
+    ref = np.eye(len(eye_like))
+    assert_allclose(eye_like, ref)
+
+
+def assert_allclose(a, b, /):
+    a = np.asarray(a)
+    b = np.asarray(b)
+    tol = np.sqrt(np.finfo_eps(np.dtype(b)))
+
+    # For double precision sqrt(eps) is very tight...
+    if tol < 1e-7:
+        tol *= 10
+    assert np.allclose(a, b, atol=tol, rtol=tol)

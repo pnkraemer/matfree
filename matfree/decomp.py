@@ -9,7 +9,22 @@ matrix-function-vector products, see
 """
 
 from matfree.backend import containers, control_flow, func, linalg, np, tree_util
-from matfree.backend.typing import Array, Callable
+from matfree.backend.typing import Array, Callable, Union
+
+
+class _DecompResult(containers.NamedTuple):
+    # If an algorithm returns a single Q, place it here.
+    # If it returns multiple Qs, stack them
+    # into a tuple and place them here.
+    Q_tall: Union[Array, tuple[Array, ...]]
+
+    # If an algorithm returns a materialized matrix,
+    # place it here. If it returns a sparse representation
+    # (e.g. two vectors representing diagonals), place it here
+    J_small: Union[Array, tuple[Array, ...]]
+
+    residual: Array
+    init_length_inv: Array
 
 
 def tridiag_sym(
@@ -69,21 +84,19 @@ def _tridiag_reortho_full(krylov_depth: int, /, *, custom_vjp: bool, materialize
     alg = hessenberg(krylov_depth, custom_vjp=custom_vjp, reortho="full")
 
     def estimate(matvec, vec, *params):
-        Q, H, v, _norm = alg(matvec, vec, *params)
-
-        remainder = (v / linalg.vector_norm(v), linalg.vector_norm(v))
+        Q, H, v, norm = alg(matvec, vec, *params)
 
         T = 0.5 * (H + H.T)
         diags = linalg.diagonal(T, offset=0)
         offdiags = linalg.diagonal(T, offset=1)
 
+        matrix = (diags, offdiags)
         if materialize:
             matrix = _todense_tridiag_sym(diags, offdiags)
-            decomposition = (Q.T, matrix)
-            return decomposition, remainder
 
-        decomposition = (Q.T, (diags, offdiags))
-        return decomposition, remainder
+        return _DecompResult(
+            Q_tall=Q, J_small=matrix, residual=v, init_length_inv=1.0 / norm
+        )
 
     return estimate
 
@@ -97,11 +110,16 @@ def _todense_tridiag_sym(diag, off_diag):
 
 def _tridiag_reortho_none(krylov_depth: int, /, *, custom_vjp: bool, materialize: bool):
     def estimate(matvec, vec, *params):
-        (Q, H), v = _estimate(matvec, vec, *params)
+        (Q, H), (q, b) = _estimate(matvec, vec, *params)
+        v = b * q
 
         if materialize:
             H = _todense_tridiag_sym(*H)
-        return (Q, H), v
+
+        length = linalg.vector_norm(vec)
+        return _DecompResult(
+            Q_tall=Q.T, J_small=H, residual=v, init_length_inv=1.0 / length
+        )
 
     def _estimate(matvec, vec, *params):
         *values, _ = _tridiag_forward(matvec, krylov_depth, vec, *params)
@@ -113,8 +131,6 @@ def _tridiag_reortho_none(krylov_depth: int, /, *, custom_vjp: bool, materialize
 
     def estimate_bwd(matvec, cache, vjp_incoming):
         # Read incoming gradients and stack related quantities
-        print(tree_util.tree_map(np.shape, vjp_incoming))
-
         (dxs, (dalphas, dbetas)), (dx_last, dbeta_last) = vjp_incoming
         dxs = np.concatenate((dxs, dx_last[None]))
         dbetas = np.concatenate((dbetas, dbeta_last[None]))
@@ -366,7 +382,9 @@ def _hessenberg_forward(matvec, krylov_depth, v, *params, reortho: str):
 
     # Loop and return
     Q, H, v, _length = control_flow.fori_loop(0, k, forward_step, init)
-    return Q, H, v, 1 / initlength
+    return _DecompResult(
+        Q_tall=Q, J_small=H, residual=v, init_length_inv=1 / initlength
+    )
 
 
 def _hessenberg_forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
@@ -553,7 +571,13 @@ def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
         result = control_flow.fori_loop(
             0, depth + 1, body_fun=body_fun, init_val=init_val
         )
-        return *extract(result), 1 / length
+        uk_all_T, J, vk_all, (beta, vk) = extract(result)
+        return _DecompResult(
+            Q_tall=(uk_all_T, vk_all.T),
+            J_small=J,
+            residual=beta * vk,
+            init_length_inv=1 / length,
+        )
 
     class State(containers.NamedTuple):
         i: int
