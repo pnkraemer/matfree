@@ -70,7 +70,7 @@ Estimate the trace of the matrix:
 >>>
 >>> # Compute an estimator
 >>> estimate = stochtrace.estimator(integrand, sampler)
-
+>>>
 >>> # Estimate
 >>> key = jax.random.PRNGKey(1)
 >>> trace = estimate(matvec, key)
