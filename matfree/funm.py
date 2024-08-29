@@ -262,6 +262,8 @@ def integrand_funm_product(matfun, depth, /):
     Here, "product" refers to $X = A^\top A$.
     """
 
+    dense_funm = dense_funm_product_svd(matfun)
+
     def quadform(matvecs, v0, *parameters):
         matvec, vecmat = matvecs
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
@@ -286,19 +288,27 @@ def integrand_funm_product(matfun, depth, /):
         # Decompose into orthogonal-bidiag-orthogonal
         matvec_flat_p = lambda v: matvec_flat(v)[0]  # noqa: E731
         output = algorithm(matvec_flat_p, vecmat_flat, v0_flat, *parameters)
-        _u, B, *_ = output
+        _, B, *_ = output
 
+        fA = dense_funm(B)
+        e1 = np.eye(len(fA))[0, :]
+        return length**2 * linalg.inner(e1, fA @ e1)
+
+    return quadform
+
+
+def dense_funm_product_svd(matfun):
+    def dense_funm(matrix, /):
         # Compute SVD of factorisation
-        # todo: turn the following lines into dense_funm_svd()
-        _, S, Vt = linalg.svd(B, full_matrices=False)
+        _, S, Vt = linalg.svd(matrix, full_matrices=False)
 
         # Since Q orthogonal (orthonormal) to v0, Q v = Q[0],
         # and therefore (Q v)^T f(D) (Qv) = Q[0] * f(diag) * Q[0]
         eigvals, eigvecs = S**2, Vt.T
         fx_eigvals = func.vmap(matfun)(eigvals)
-        return length**2 * linalg.inner(eigvecs[0, :], fx_eigvals * eigvecs[0, :])
+        return eigvecs @ (fx_eigvals[:, None] * eigvecs.T)
 
-    return quadform
+    return dense_funm
 
 
 # todo: rename to *_eigh_sym
