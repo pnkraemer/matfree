@@ -232,6 +232,7 @@ def integrand_funm_sym(dense_funm, tridiag_sym, /):
     return quadform
 
 
+# todo: expect bidiag() to be passed here
 def integrand_funm_product_logdet(depth, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
@@ -240,6 +241,7 @@ def integrand_funm_product_logdet(depth, /):
     return integrand_funm_product(np.log, depth)
 
 
+# todo: expect bidiag() to be passed here
 def integrand_funm_product_schatten_norm(power, depth, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
@@ -250,6 +252,8 @@ def integrand_funm_product_schatten_norm(power, depth, /):
     return integrand_funm_product(matfun, depth)
 
 
+# todo: expect bidiag() to be passed here
+# todo: expect dense_funm_svd() to be passed here
 def integrand_funm_product(matfun, depth, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
