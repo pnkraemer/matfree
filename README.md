@@ -49,8 +49,6 @@ Import matfree and JAX, and set up a test problem.
 >>> import jax.numpy as jnp
 >>> from matfree import stochtrace
 >>>
->>> jnp.set_printoptions(1)
->>>
 >>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>>
 >>> def matvec(x):
