@@ -279,6 +279,7 @@ def integrand_funm_product(matfun, depth, /):
     return quadform
 
 
+# todo: rename to *_eigh_sym
 def dense_funm_sym_eigh(matfun):
     """Implement dense matrix-functions via symmetric eigendecompositions.
 
@@ -307,7 +308,7 @@ def dense_funm_schur(matfun):
     return fun
 
 
-def dense_funm_exp_pade():
+def dense_funm_pade_exp():
     """Implement dense matrix-exponentials using a Pade approximation.
 
     Use it to construct one of the matrix-free matrix-function implementations,
@@ -315,6 +316,6 @@ def dense_funm_exp_pade():
     """
 
     def fun(dense_matrix):
-        return linalg.funm_exp_pade(dense_matrix)
+        return linalg.funm_pade_exp(dense_matrix)
 
     return fun
