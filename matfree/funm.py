@@ -236,10 +236,10 @@ def integrand_funm_product_logdet(bidiag: Callable, /):
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return integrand_funm_product(np.log, bidiag)
+    dense_funm = dense_funm_product_svd(np.log)
+    return integrand_funm_product(dense_funm, bidiag)
 
 
-# todo: expect bidiag() to be passed here
 def integrand_funm_product_schatten_norm(power, bidiag: Callable, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
@@ -247,20 +247,17 @@ def integrand_funm_product_schatten_norm(power, bidiag: Callable, /):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return integrand_funm_product(matfun, bidiag)
+    dense_funm = dense_funm_product_svd(matfun)
+    return integrand_funm_product(dense_funm, bidiag)
 
 
-# todo: expect bidiag() to be passed here
-# todo: expect dense_funm_svd() to be passed here
-def integrand_funm_product(matfun, algorithm, /):
+def integrand_funm_product(dense_funm, algorithm, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
     Here, "product" refers to $X = A^\top A$.
     """
-
-    dense_funm = dense_funm_product_svd(matfun)
 
     def quadform(matvecs, v0, *parameters):
         matvec, vecmat = matvecs
@@ -294,6 +291,8 @@ def integrand_funm_product(matfun, algorithm, /):
 
 
 def dense_funm_product_svd(matfun):
+    """Implement dense matrix-functions of a product of matrices via SVDs."""
+
     def dense_funm(matrix, /):
         # Compute SVD of factorisation
         _, S, Vt = linalg.svd(matrix, full_matrices=False)
@@ -307,7 +306,6 @@ def dense_funm_product_svd(matfun):
     return dense_funm
 
 
-# todo: rename to *_eigh_sym
 def dense_funm_sym_eigh(matfun):
     """Implement dense matrix-functions via symmetric eigendecompositions.
 
