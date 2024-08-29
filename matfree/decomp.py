@@ -76,21 +76,19 @@ def _tridiag_reortho_full(krylov_depth: int, /, *, custom_vjp: bool, materialize
     alg = hessenberg(krylov_depth, custom_vjp=custom_vjp, reortho="full")
 
     def estimate(matvec, vec, *params):
-        Q, H, v, _norm = alg(matvec, vec, *params)
-
-        remainder = (v / linalg.vector_norm(v), linalg.vector_norm(v))
+        Q, H, v, norm = alg(matvec, vec, *params)
 
         T = 0.5 * (H + H.T)
         diags = linalg.diagonal(T, offset=0)
         offdiags = linalg.diagonal(T, offset=1)
 
+        matrix = (diags, offdiags)
         if materialize:
             matrix = _todense_tridiag_sym(diags, offdiags)
-            decomposition = (Q.T, matrix)
-            return decomposition, remainder
 
-        decomposition = (Q.T, (diags, offdiags))
-        return decomposition, remainder
+        return _DecompResult(
+            Q_tall=Q, J_small=matrix, residual=v, init_length_inv=1.0 / norm
+        )
 
     return estimate
 
@@ -104,11 +102,16 @@ def _todense_tridiag_sym(diag, off_diag):
 
 def _tridiag_reortho_none(krylov_depth: int, /, *, custom_vjp: bool, materialize: bool):
     def estimate(matvec, vec, *params):
-        (Q, H), v = _estimate(matvec, vec, *params)
+        (Q, H), (q, b) = _estimate(matvec, vec, *params)
+        v = b * q
 
         if materialize:
             H = _todense_tridiag_sym(*H)
-        return (Q, H), v
+
+        length = linalg.vector_norm(vec)
+        return _DecompResult(
+            Q_tall=Q.T, J_small=H, residual=v, init_length_inv=1.0 / length
+        )
 
     def _estimate(matvec, vec, *params):
         *values, _ = _tridiag_forward(matvec, krylov_depth, vec, *params)
@@ -120,8 +123,6 @@ def _tridiag_reortho_none(krylov_depth: int, /, *, custom_vjp: bool, materialize
 
     def estimate_bwd(matvec, cache, vjp_incoming):
         # Read incoming gradients and stack related quantities
-        print(tree_util.tree_map(np.shape, vjp_incoming))
-
         (dxs, (dalphas, dbetas)), (dx_last, dbeta_last) = vjp_incoming
         dxs = np.concatenate((dxs, dx_last[None]))
         dbetas = np.concatenate((dbetas, dbeta_last[None]))
