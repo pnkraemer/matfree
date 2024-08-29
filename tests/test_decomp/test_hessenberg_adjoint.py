@@ -22,23 +22,19 @@ def test_adjoint_matches_jax_dot_vjp(nrows, krylov_depth, reortho, dtype):
     # Forward pass
     algorithm_autodiff = func.partial(algorithm_autodiff, lambda s, p: p @ s)
     algorithm_adjoint = func.partial(algorithm_adjoint, lambda s, p: p @ s)
-    (Q, H, r, c), vjp_autodiff = func.vjp(algorithm_autodiff, v, A)
-    (_Q, _H, _r, _c), vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
+    fwd_output, vjp_autodiff = func.vjp(algorithm_autodiff, v, A)
+    _fwd_output, vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
 
     # Random input gradients (no sparsity at all)
-    (dQ, dH, dr, dc) = test_util.tree_random_like(prng.prng_key(3), (Q, H, r, c))
+    vjp_input = test_util.tree_random_like(prng.prng_key(3), fwd_output)
 
     # Call the auto-diff VJP
-    dv_autodiff, dp_autodiff = vjp_autodiff((dQ, dH, dr, dc))
-    dv_adjoint, dp_adjoint = vjp_adjoint((dQ, dH, dr, dc))
-
-    # Tie the tolerance to the floating-point accuracy
-    small_value = 10 * np.sqrt(np.finfo_eps(np.dtype(H)))
-    tols = {"atol": small_value, "rtol": small_value}
+    dv_autodiff, dp_autodiff = vjp_autodiff(vjp_input)
+    dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
 
     # Assert gradients match
-    assert np.allclose(dv_adjoint, dv_autodiff, **tols)
-    assert np.allclose(dp_adjoint, dp_autodiff, **tols)
+    test_util.assert_allclose(dv_adjoint, dv_autodiff)
+    test_util.assert_allclose(dp_adjoint, dp_autodiff)
 
     # Assert that the values are only similar, not identical
     assert not np.all(dv_adjoint == dv_autodiff)
@@ -71,23 +67,20 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
     # Forward pass
     algorithm_autodiff = func.partial(algorithm_autodiff, matvec)
     algorithm_adjoint = func.partial(algorithm_adjoint, matvec)
-    (Q, H, r, c), vjp_autodiff = func.vjp(algorithm_autodiff, v, A)
-    (_Q, _H, _r, _c), vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
+    fwd_output, vjp_autodiff = func.vjp(algorithm_autodiff, v, A)
+    _fwd_output, vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
 
     # Random input gradients (no sparsity at all)
-    (dQ, dH, dr, dc) = test_util.tree_random_like(prng.prng_key(3), (Q, H, r, c))
+    vjp_input = test_util.tree_random_like(prng.prng_key(3), fwd_output)
 
     # Call the auto-diff VJP
-    dv_autodiff, dp_autodiff = vjp_autodiff((dQ, dH, dr, dc))
-    dv_adjoint, dp_adjoint = vjp_adjoint((dQ, dH, dr, dc))
-
-    # Tie the tolerance to the floating-point accuracy
-    small_value = 10 * np.sqrt(np.finfo_eps(np.dtype(H)))
-    tols = {"atol": small_value, "rtol": small_value}
+    dv_autodiff, dp_autodiff = vjp_autodiff(vjp_input)
+    dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
 
     # Assert gradients match
-    assert np.allclose(dv_adjoint, dv_autodiff, **tols)
-    assert np.allclose(dp_adjoint, dp_autodiff, **tols)
+    print(dv_adjoint - dv_autodiff)
+    test_util.assert_allclose(dv_adjoint, dv_autodiff)
+    test_util.assert_allclose(dp_adjoint, dp_autodiff)
 
     # Assert that the values are only similar, not identical
     assert not np.all(dv_adjoint == dv_autodiff)

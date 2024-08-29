@@ -40,7 +40,7 @@ def test_bidiag_decomposition_is_satisfied(
     em = np.eye(order + 1)[:, -1]
     test_util.assert_allclose(A @ V, U @ B)
     test_util.assert_allclose(A.T @ U, V @ B.T + linalg.outer(res, em))
-    test_util.assert_allclose(linalg.vector_norm(v0), ln)
+    test_util.assert_allclose(1.0 / linalg.vector_norm(v0), ln)
 
 
 @testing.parametrize("nrows", [5])

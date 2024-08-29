@@ -16,7 +16,7 @@ class _DecompResult(containers.NamedTuple):
     Q_tall: Array | tuple[Array, ...]
     J_small: Array | tuple[Array, ...]
     residual: Array
-    init_length: Array
+    init_length_inv: Array
 
 
 def tridiag_sym(
@@ -373,7 +373,9 @@ def _hessenberg_forward(matvec, krylov_depth, v, *params, reortho: str):
 
     # Loop and return
     Q, H, v, _length = control_flow.fori_loop(0, k, forward_step, init)
-    return Q, H, v, 1 / initlength
+    return _DecompResult(
+        Q_tall=Q, J_small=H, residual=v, init_length_inv=1 / initlength
+    )
 
 
 def _hessenberg_forward_step(Q, H, v, length, matvec, *params, idx, reortho: str):
@@ -565,7 +567,7 @@ def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
             Q_tall=(uk_all_T, vk_all.T),
             J_small=J,
             residual=beta * vk,
-            init_length=length,
+            init_length_inv=1 / length,
         )
 
     class State(containers.NamedTuple):
