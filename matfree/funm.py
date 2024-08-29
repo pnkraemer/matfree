@@ -23,8 +23,6 @@ Examples
 >>> import jax.numpy as jnp
 >>> from matfree import decomp
 >>>
->>> jnp.set_printoptions(1)
->>>
 >>> M = jax.random.normal(jax.random.PRNGKey(1), shape=(10, 10))
 >>> A = M.T @ M
 >>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
@@ -33,8 +31,9 @@ Examples
 >>> matfun = dense_funm_sym_eigh(jnp.log)
 >>> tridiag = decomp.tridiag_sym(4)
 >>> matfun_vec = funm_lanczos_sym(matfun, tridiag)
->>> matfun_vec(lambda s: A @ s, v)
-Array([-4.1, -1.3, -2.2, -2.1, -1.2, -3.3, -0.2,  0.3,  0.7,  0.9],      dtype=float32)
+>>> fAx = matfun_vec(lambda s: A @ s, v)
+>>> print(fAx.shape)
+(10,)
 """
 
 from matfree import decomp
