@@ -43,7 +43,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install --upgrade pip pip install .[cpu,test]
+        run: |
+          pip install --upgrade pip
+          pip install .[cpu,test]
       - name: Run tests
         run: make test
   doc:
