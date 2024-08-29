@@ -224,19 +224,18 @@ the documentation pipeline will take care of the rest.
 
 ## Understand Matfree's API policy
 
-With the upcoming `v0.1.0` release, Matfree will not be experimental anymore.
-This means it will start following [semantic versioning](https://semver.org/).
-(It already does to some extent, but not very strictly.)
 
-However, _Matfree remains a work in progress_, and parts of its API may change frequently and without warning.
+_Matfree is a research project, and parts of its API may change frequently and without warning._
+
+This stage of development aligns with its current (0.y.z) version.
 To quote from [semantic versioning](https://semver.org/):
 
 > Major version zero (0.y.z) is for initial development. Anything MAY change at any time. The public API SHOULD NOT be considered stable.
 
 
-We do not implement an official deprecation policy just yet, but handle all API change communication via version increments:
+Matfree does not implement an official deprecation policy (just yet), but handles all API change communication via version increments:
 
 - If a change is backwards-compatible (e.g. a backwards-compatible new feature, or a bugfix), the patch version is incremented: e.g., from `v0.1.5` to `v0.1.6`.
 - If a change is not backwards-compatible, the minor version is incremented: e.g., from `v0.1.6` to `v0.2.0`.
 
-To depend on Matfree's API, pin the minor version (e.g. `matfree <= 0.2.0`) to avoid breaking your code, but please feel encouraged to upgrade regularly to enjoy the new stuff!
+To depend on Matfree's API, pin the minor version (e.g. `matfree <= 0.2.0`) to avoid breaking your code, but please feel encouraged to upgrade regularly to enjoy all the new features!
