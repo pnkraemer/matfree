@@ -81,3 +81,7 @@ def cg(Av, b, /):
 
 def funm_schur(A, f, /):
     return jax.scipy.linalg.funm(A, f)
+
+
+def funm_pade_exp(A, /):
+    return jax.scipy.linalg.expm(A)
