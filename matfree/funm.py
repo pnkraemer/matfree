@@ -146,6 +146,37 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     return estimate
 
 
+def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
+    """Implement a matrix-function-vector product via the Arnoldi iteration.
+
+    This algorithm uses the Arnoldi iteration
+    and therefore applies only to all square matrices.
+
+    Parameters
+    ----------
+    dense_funm
+        An implementation of a function of a dense matrix.
+        For example, the output of
+        [funm.dense_funm_sym_eigh][matfree.funm.dense_funm_sym_eigh]
+        [funm.dense_funm_schur][matfree.funm.dense_funm_schur]
+    hessenberg
+        An implementation of Hessenberg-factorisation.
+        E.g., the output of
+        [decomp.hessenberg][matfree.decomp.hessenberg].
+    """
+
+    def estimate(matvec: Callable, vec, *parameters):
+        length = linalg.vector_norm(vec)
+        vec /= length
+        basis, matrix, *_ = hessenberg(matvec, vec, *parameters)
+
+        funm = dense_funm(matrix)
+        e1 = np.eye(len(matrix))[0, :]
+        return length * (basis @ funm @ e1)
+
+    return estimate
+
+
 def integrand_funm_sym_logdet(order, /):
     """Construct the integrand for the log-determinant.
 
@@ -272,5 +303,18 @@ def dense_funm_schur(matfun):
 
     def fun(dense_matrix):
         return linalg.funm_schur(dense_matrix, matfun)
+
+    return fun
+
+
+def dense_funm_exp_pade():
+    """Implement dense matrix-exponentials using a Pade approximation.
+
+    Use it to construct one of the matrix-free matrix-function implementations,
+    e.g. [matfree.funm.funm_arnoldi][matfree.funm.funm_arnoldi].
+    """
+
+    def fun(dense_matrix):
+        return linalg.funm_exp_pade(dense_matrix)
 
     return fun
