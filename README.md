@@ -50,7 +50,7 @@ Import matfree and JAX, and set up a test problem.
 >>> from matfree import stochtrace
 >>>
 >>> jnp.set_printoptions(1)
-
+>>>
 >>> A = jnp.reshape(jnp.arange(12.0), (6, 2))
 >>>
 >>> def matvec(x):
@@ -72,7 +72,7 @@ Estimate the trace of the matrix:
 >>>
 >>> # Compute an estimator
 >>> estimate = stochtrace.estimator(integrand, sampler)
-
+>>>
 >>> # Estimate
 >>> key = jax.random.PRNGKey(1)
 >>> trace = estimate(matvec, key)
