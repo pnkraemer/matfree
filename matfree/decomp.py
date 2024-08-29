@@ -12,6 +12,13 @@ from matfree.backend import containers, control_flow, func, linalg, np, tree_uti
 from matfree.backend.typing import Array, Callable
 
 
+class _DecompResult(containers.NamedTuple):
+    Q_tall: Array | tuple[Array, ...]
+    J_small: Array | tuple[Array, ...]
+    residual: Array
+    init_length: Array
+
+
 def tridiag_sym(
     krylov_depth,
     /,
@@ -553,7 +560,13 @@ def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
         result = control_flow.fori_loop(
             0, depth + 1, body_fun=body_fun, init_val=init_val
         )
-        return *extract(result), 1 / length
+        uk_all_T, J, vk_all, (beta, vk) = extract(result)
+        return _DecompResult(
+            Q_tall=(uk_all_T, vk_all.T),
+            J_small=J,
+            residual=beta * vk,
+            init_length=length,
+        )
 
     class State(containers.NamedTuple):
         i: int

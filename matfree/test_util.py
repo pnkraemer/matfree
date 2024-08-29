@@ -47,3 +47,14 @@ def tree_random_like(key, tree, *, generate_func=prng.normal):
     flat, unflatten = tree_util.ravel_pytree(tree)
     flat_like = generate_func(key, shape=flat.shape, dtype=flat.dtype)
     return unflatten(flat_like)
+
+
+def assert_columns_orthonormal(Q, /):
+    eye_like = Q.T @ Q
+    ref = np.eye(len(eye_like))
+    assert_allclose(eye_like, ref)
+
+
+def assert_allclose(a, b, /):
+    tol = np.sqrt(np.finfo_eps(np.dtype(b)))
+    assert np.allclose(a, b, atol=tol, rtol=tol)
