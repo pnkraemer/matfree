@@ -31,7 +31,7 @@ def test_bidiag_decomposition_is_satisfied(
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(order, matrix_shape=np.shape(A), materialize=True)
+    algorithm = decomp.bidiag(order, materialize=True)
     (U, V), B, res, ln = algorithm(Av, vA, v0)
 
     test_util.assert_columns_orthonormal(U)
@@ -52,7 +52,8 @@ def test_error_too_high_depth(nrows, ncols, num_significant_singular_vals):
     max_depth = min(nrows, ncols) - 1
 
     with testing.raises(ValueError, match=""):
-        _ = decomp.bidiag(max_depth + 1, matrix_shape=np.shape(A), materialize=False)
+        alg = decomp.bidiag(max_depth + 1, materialize=False)
+        _ = alg(lambda v: A @ v, lambda v: A.T @ v, A[0])
 
 
 @testing.parametrize("nrows", [5])
@@ -63,7 +64,8 @@ def test_error_too_low_depth(nrows, ncols, num_significant_singular_vals):
     A = make_A(nrows, ncols, num_significant_singular_vals)
     min_depth = 0
     with testing.raises(ValueError, match=""):
-        _ = decomp.bidiag(min_depth - 1, matrix_shape=np.shape(A), materialize=False)
+        alg = decomp.bidiag(min_depth - 1, materialize=False)
+        _ = alg(lambda v: A @ v, lambda v: A.T @ v, A[0])
 
 
 @testing.parametrize("nrows", [15])
@@ -81,7 +83,7 @@ def test_no_error_zero_depth(nrows, ncols, num_significant_singular_vals):
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(0, matrix_shape=np.shape(A), materialize=False)
+    algorithm = decomp.bidiag(0, materialize=False)
     (U, V), (d_m, e_m), res, ln = algorithm(Av, vA, v0)
 
     assert np.shape(U) == (nrows, 1)

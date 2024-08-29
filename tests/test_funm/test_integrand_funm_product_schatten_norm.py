@@ -1,11 +1,10 @@
 """Test stochastic Lanczos quadrature for Schatten-p-norms."""
 
-from matfree import funm, stochtrace, test_util
+from matfree import decomp, funm, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
-@testing.fixture()
-def A(nrows, ncols, num_significant_singular_vals):
+def make_A(nrows, ncols, num_significant_singular_vals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
     n = min(nrows, ncols)
@@ -19,15 +18,17 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("num_significant_singular_vals", [30])
 @testing.parametrize("order", [20])
 @testing.parametrize("power", [1, 2, 5])
-def test_schatten_norm(A, order, power):
+def test_schatten_norm(nrows, ncols, num_significant_singular_vals, order, power):
     """Assert that the Schatten norm is accurate."""
+    A = make_A(nrows, ncols, num_significant_singular_vals)
     _, s, _ = linalg.svd(A, full_matrices=False)
     expected = np.sum(s**power)
 
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
     sampler = stochtrace.sampler_normal(args_like, num=500)
-    integrand = funm.integrand_funm_product_schatten_norm(power, order)
+    bidiag = decomp.bidiag(order)
+    integrand = funm.integrand_funm_product_schatten_norm(power, bidiag)
     estimate = stochtrace.estimator(integrand, sampler)
 
     key = prng.prng_key(1)

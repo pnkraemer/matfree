@@ -535,7 +535,7 @@ def _extract_diag(x, offset=0):
     return linalg.diagonal_matrix(diag, offset=offset)
 
 
-def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
+def bidiag(depth: int, /, materialize: bool = True):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -553,17 +553,23 @@ def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
         consider using [tridiag_sym][matfree.decomp.tridiag_sym] for the time being.
 
     """
-    nrows, ncols = matrix_shape
-    max_depth = min(nrows, ncols) - 1
-    if depth > max_depth or depth < 0:
-        msg1 = f"Depth {depth} exceeds the matrix' dimensions. "
-        msg2 = f"Expected: 0 <= depth <= min(nrows, ncols) - 1 = {max_depth} "
-        msg3 = f"for a matrix with shape {matrix_shape}."
-        raise ValueError(msg1 + msg2 + msg3)
 
     def estimate(Av: Callable, vA: Callable, v0, *parameters):
+        # Infer the size of A from v0
+        (ncols,) = np.shape(v0)
+        w0_like = func.eval_shape(Av, v0)
+        (nrows,) = np.shape(w0_like)
+
+        # Complain if the shapes don't match
+        max_depth = min(nrows, ncols) - 1
+        if depth > max_depth or depth < 0:
+            msg1 = f"Depth {depth} exceeds the matrix' dimensions. "
+            msg2 = f"Expected: 0 <= depth <= min(nrows, ncols) - 1 = {max_depth} "
+            msg3 = f"for a matrix with shape {(nrows, ncols)}."
+            raise ValueError(msg1 + msg2 + msg3)
+
         v0_norm, length = _normalise(v0)
-        init_val = init(v0_norm)
+        init_val = init(v0_norm, nrows=nrows, ncols=ncols)
 
         def body_fun(_, s):
             return step(Av, vA, s, *parameters)
@@ -588,7 +594,7 @@ def bidiag(depth: int, /, matrix_shape, materialize: bool = True):
         beta: Array
         vk: Array
 
-    def init(init_vec: Array) -> State:
+    def init(init_vec: Array, *, nrows, ncols) -> State:
         alphas = np.zeros((depth + 1,))
         betas = np.zeros((depth + 1,))
         Us = np.zeros((depth + 1, nrows))

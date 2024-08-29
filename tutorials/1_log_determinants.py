@@ -59,7 +59,8 @@ def vecmat_l(x):
 
 
 order = 3
-problem = funm.integrand_funm_product_logdet(order)
+bidiag = decomp.bidiag(order)
+problem = funm.integrand_funm_product_logdet(bidiag)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
 logdet = estimator((matvec_r, vecmat_l), jax.random.PRNGKey(1))

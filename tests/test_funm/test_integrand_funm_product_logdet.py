@@ -1,11 +1,10 @@
 """Test stochastic Lanczos quadrature for log-determinants of matrix-products."""
 
-from matfree import funm, stochtrace, test_util
+from matfree import decomp, funm, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
-@testing.fixture()
-def A(nrows, ncols, num_significant_singular_vals):
+def make_A(nrows, ncols, num_significant_singular_vals):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
     n = min(nrows, ncols)
@@ -18,9 +17,9 @@ def A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("ncols", [30])
 @testing.parametrize("num_significant_singular_vals", [30])
 @testing.parametrize("order", [20])
-def test_logdet_product(A, order):
+def test_logdet_product(nrows, ncols, num_significant_singular_vals, order):
     """Assert that logdet_product yields an accurate estimate."""
-    _, ncols = np.shape(A)
+    A = make_A(nrows, ncols, num_significant_singular_vals)
     key = prng.prng_key(3)
 
     def matvec(x):
@@ -31,7 +30,9 @@ def test_logdet_product(A, order):
 
     x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = stochtrace.sampler_normal(x_like, num=400)
-    problem = funm.integrand_funm_product_logdet(order)
+
+    bidiag = decomp.bidiag(order)
+    problem = funm.integrand_funm_product_logdet(bidiag)
     estimate = stochtrace.estimator(problem, fun)
     received = estimate((matvec, vecmat), key)
 
@@ -53,7 +54,8 @@ def test_logdet_product_exact_for_full_order_lanczos(n):
 
     # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
     order = n - 1
-    integrand = funm.integrand_funm_product_logdet(order)
+    bidiag = decomp.bidiag(order)
+    integrand = funm.integrand_funm_product_logdet(bidiag)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 1
