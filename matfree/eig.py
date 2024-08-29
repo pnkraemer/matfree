@@ -31,13 +31,13 @@ def svd_partial(
     """
     # Factorise the matrix
     algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape, materialize=True)
-    u, B, vt, *_ = algorithm(Av, vA, v0)
+    (u, v), B, *_ = algorithm(Av, vA, v0)
 
     # Compute SVD of factorisation
     U, S, Vt = linalg.svd(B, full_matrices=False)
 
     # Combine orthogonal transformations
-    return u @ U, S, Vt @ vt
+    return u @ U, S, Vt @ v.T
 
 
 def _bidiagonal_dense(d, e):

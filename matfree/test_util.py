@@ -56,6 +56,8 @@ def assert_columns_orthonormal(Q, /):
 
 
 def assert_allclose(a, b, /):
+    a = np.asarray(a)
+    b = np.asarray(b)
     tol = np.sqrt(np.finfo_eps(np.dtype(b)))
 
     # For double precision sqrt(eps) is very tight...
