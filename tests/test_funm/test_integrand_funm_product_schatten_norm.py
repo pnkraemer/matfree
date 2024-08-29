@@ -1,6 +1,6 @@
 """Test stochastic Lanczos quadrature for Schatten-p-norms."""
 
-from matfree import funm, stochtrace, test_util
+from matfree import decomp, funm, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
@@ -27,7 +27,8 @@ def test_schatten_norm(A, order, power):
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
     sampler = stochtrace.sampler_normal(args_like, num=500)
-    integrand = funm.integrand_funm_product_schatten_norm(power, order)
+    bidiag = decomp.bidiag(order)
+    integrand = funm.integrand_funm_product_schatten_norm(power, bidiag)
     estimate = stochtrace.estimator(integrand, sampler)
 
     key = prng.prng_key(1)

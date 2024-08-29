@@ -37,7 +37,6 @@ Examples
 
 """
 
-from matfree import decomp
 from matfree.backend import containers, control_flow, func, linalg, np, tree_util
 from matfree.backend.typing import Array, Callable
 
@@ -232,29 +231,28 @@ def integrand_funm_sym(dense_funm, tridiag_sym, /):
     return quadform
 
 
-# todo: expect bidiag() to be passed here
-def integrand_funm_product_logdet(depth, /):
+def integrand_funm_product_logdet(bidiag: Callable, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
     """
-    return integrand_funm_product(np.log, depth)
+    return integrand_funm_product(np.log, bidiag)
 
 
 # todo: expect bidiag() to be passed here
-def integrand_funm_product_schatten_norm(power, depth, /):
+def integrand_funm_product_schatten_norm(power, bidiag: Callable, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
-    return integrand_funm_product(matfun, depth)
+    return integrand_funm_product(matfun, bidiag)
 
 
 # todo: expect bidiag() to be passed here
 # todo: expect dense_funm_svd() to be passed here
-def integrand_funm_product(matfun, depth, /):
+def integrand_funm_product(matfun, algorithm, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
@@ -277,8 +275,6 @@ def integrand_funm_product(matfun, depth, /):
             return flat, tree_util.partial_pytree(unflatten)
 
         w0_flat, w_unflatten = func.eval_shape(matvec_flat, v0_flat)
-        matrix_shape = (*np.shape(w0_flat), *np.shape(v0_flat))
-        algorithm = decomp.bidiag(depth, matrix_shape=matrix_shape, materialize=True)
 
         def vecmat_flat(w_flat):
             w = w_unflatten(w_flat)
