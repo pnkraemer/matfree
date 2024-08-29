@@ -9,12 +9,20 @@ matrix-function-vector products, see
 """
 
 from matfree.backend import containers, control_flow, func, linalg, np, tree_util
-from matfree.backend.typing import Array, Callable
+from matfree.backend.typing import Array, Callable, Union
 
 
 class _DecompResult(containers.NamedTuple):
-    Q_tall: Array | tuple[Array, ...]
-    J_small: Array | tuple[Array, ...]
+    # If an algorithm returns a single Q, place it here.
+    # If it returns multiple Qs, stack them
+    # into a tuple and place them here.
+    Q_tall: Union[Array, tuple[Array, ...]]
+
+    # If an algorithm returns a materialized matrix,
+    # place it here. If it returns a sparse representation
+    # (e.g. two vectors representing diagonals), place it here
+    J_small: Union[Array, tuple[Array, ...]]
+
     residual: Array
     init_length_inv: Array
 
