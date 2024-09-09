@@ -13,7 +13,7 @@ def svd_partial(v0: Array, depth: int, Av: Callable, vA: Callable):
     and computes the full SVD of the (small) bidiagonal matrix.
 
     Parameters
-    ----------
+    ---------
     v0:
         Initial vector for Golub-Kahan-Lanczos bidiagonalisation.
     depth:
@@ -24,8 +24,6 @@ def svd_partial(v0: Array, depth: int, Av: Callable, vA: Callable):
         Matrix-vector product function.
     vA:
         Vector-matrix product function.
-    matrix_shape:
-        Shape of the matrix involved in matrix-vector and vector-matrix products.
     """
     # Factorise the matrix
     algorithm = decomp.bidiag(depth, materialize=True)
