@@ -13,8 +13,6 @@ from matfree.backend.typing import Array, Callable, Union
 
 
 class _DecompResult(containers.NamedTuple):
-    """ABC."""
-
     # If an algorithm returns a single Q, place it here.
     # If it returns multiple Qs, stack them
     # into a tuple and place them here.
@@ -106,7 +104,6 @@ def tridiag_sym(
         the residual, and the fourth element is
         the (inverse of the) length of the initial vector.
     """
-
     if reortho == "full":
         return _tridiag_reortho_full(
             krylov_depth, custom_vjp=custom_vjp, materialize=materialize
