@@ -37,13 +37,13 @@ plugins:
             show_object_full_path: true
             show_category_heading: false
             docstring_style: numpy
+            docstring_section_style: table
             show_if_no_docstring: true
             members_order: alphabetical
             annotations_path: brief
             show_signature: true
             show_signature_annotations: true
             separate_signature: false
-            docstring_section_style: list
             show_source: true
 watch: [matfree]
 extra:

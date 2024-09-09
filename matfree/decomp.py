@@ -28,7 +28,7 @@ class _DecompResult(containers.NamedTuple):
 
 
 def tridiag_sym(
-    krylov_depth,
+    krylov_depth: int,
     /,
     *,
     materialize: bool = True,
@@ -63,8 +63,47 @@ def tridiag_sym(
         }
         ```
 
-    """
+    Parameters
+    ----------
+    krylov_depth
+        The depth of the Krylov space.
+        Read this as ``number of matrix-vector products''.
+        The deeper the Krylov space, the more accurate the factorisation tends to be.
+        However, the computational complexity increases linearly
+        with the depth of the Krylov space.
+    materialize
+        The value of this flag indicates whether the tridiagonal matrix
+        should be returned in a sparse format (which means, as a tuple of diagonas)
+        or as a dense matrix.
+        The dense matrix is helpful if different decompositions should be used
+        interchangeably. The sparse representation requires less memory.
+    reortho
+        The value of this parameter indicates whether to reorthogonalise the
+        basis vectors during the forward pass.
+        Reorthogonalisation makes the forward pass more expensive, but helps
+        (significantly) with numerical stability.
+    custom_vjp
+        The value of this flag indicates whether to use a custom vector-Jacobian
+        product as proposed by Krämer et al. (2024; bibtex above).
+        Generally, using a custom VJP tends to be a good idea.
+        However, due to JAX's mechanics, a custom VJP precludes the use of forward-mode
+        differentiation
+        ([see here](https://jax.readthedocs.io/en/latest/_autosummary/jax.custom_vjp.html)),
+        so don't use a custom VJP if you need forward-mode differentiation.
 
+    Returns
+    -------
+    decompose
+        A decomposition function that maps
+        ``(matvec, vector, *params)`` to the decomposition.
+        The decomposition is a tuple of (nested) arrays.
+        The first element is the Krylov basis,
+        the second element represents the tridiagonal matrix
+        (how it is represented depends on the value of ``materialize''),
+        the third element is
+        the residual, and the fourth element is
+        the (inverse of the) length of the initial vector.
+    """
     if reortho == "full":
         return _tridiag_reortho_full(
             krylov_depth, custom_vjp=custom_vjp, materialize=materialize
