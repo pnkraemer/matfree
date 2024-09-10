@@ -189,7 +189,7 @@ When making a pull request, keep in mind the following (rough) guidelines:
 * Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
 * Most enhancements (e.g. new features) are covered by tests.
 
-[Here are what GitHub considers good practices for pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/best-practices-for-pull-requests).
+[Here is what GitHub considers important for informative pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/best-practices-for-pull-requests).
 
 ## Extend Matfree's documentation
 
