@@ -29,6 +29,7 @@ nsamples = 1_000
 
 
 def large_matvec(v):
+    """Evaluate a (dummy for a) large matrix-vector product."""
     return 1.2345 * v
 
 

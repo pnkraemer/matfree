@@ -108,6 +108,8 @@ select = [
     "EM",
     # tryceratops:
     "TRY",
+    # Docstrings:
+    "D",
 ]
 ignore = [
     # warning: `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible.
@@ -124,6 +126,11 @@ line-ending = "lf"
 # Prefer single quotes over double quotes.
 quote-style = "double"
 skip-magic-trailing-comma = true
+
+[tool.ruff.per-file-ignores]
+# Ignore all directories named `tests`.
+"tests/**" = ["D"]
+"matfree/backend/**" = ["D"]
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false

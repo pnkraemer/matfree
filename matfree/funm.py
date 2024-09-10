@@ -1,16 +1,16 @@
-"""Matrix-free implementations of functions of matrices.
+r"""Matrix-free implementations of functions of matrices.
 
 This includes matrix-function-vector products
 
 $$
-(f, A, v, p) \\mapsto f(A(p))v
+(f, A, v, p) \mapsto f(A(p))v
 $$
 
 as well as matrix-function extensions for stochastic trace estimation,
 which provide
 
 $$
-(f, A, v, p) \\mapsto v^\\top f(A(p))v.
+(f, A, v, p) \mapsto v^\top f(A(p))v.
 $$
 
 Plug these integrands into

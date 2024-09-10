@@ -31,12 +31,14 @@ def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
 
 
 def to_dense_bidiag(d, e, /, offset=1):
+    """Materialize a bidiagonal matrix."""
     diag = linalg.diagonal_matrix(d)
     offdiag = linalg.diagonal_matrix(e, offset=offset)
     return diag + offdiag
 
 
 def to_dense_tridiag_sym(d, e, /):
+    """Materialize a symmetric tridiagonal matrix."""
     diag = linalg.diagonal_matrix(d)
     offdiag1 = linalg.diagonal_matrix(e, offset=1)
     offdiag2 = linalg.diagonal_matrix(e, offset=-1)
@@ -44,18 +46,26 @@ def to_dense_tridiag_sym(d, e, /):
 
 
 def tree_random_like(key, tree, *, generate_func=prng.normal):
+    """Fill a tree with random values."""
     flat, unflatten = tree_util.ravel_pytree(tree)
     flat_like = generate_func(key, shape=flat.shape, dtype=flat.dtype)
     return unflatten(flat_like)
 
 
 def assert_columns_orthonormal(Q, /):
+    """Assert that the columns in a matrix are orthonormal."""
     eye_like = Q.T @ Q
     ref = np.eye(len(eye_like))
     assert_allclose(eye_like, ref)
 
 
 def assert_allclose(a, b, /):
+    """Assert that two arrays are close.
+
+    This function uses a different default tolerance to
+    jax.numpy.allclose. Instead of fixing values, the tolerance
+    depends on the floating-point precision of the input variables.
+    """
     a = np.asarray(a)
     b = np.asarray(b)
     tol = np.sqrt(np.finfo_eps(np.dtype(b)))
