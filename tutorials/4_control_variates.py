@@ -34,6 +34,7 @@ diagonal_ctrl = estimate(lambda v: A @ v, jax.random.PRNGKey(1))
 
 
 def matvec_ctrl(v):
+    """Evaluate a matrix-vector product with a control variate."""
     return A @ v - diagonal_ctrl * v
 
 
