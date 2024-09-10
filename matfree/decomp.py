@@ -358,7 +358,6 @@ def hessenberg(
             year={2024}
         }
         ```
-
     """
     reortho_expected = ["none", "full"]
     if reortho not in reortho_expected:

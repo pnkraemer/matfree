@@ -111,6 +111,7 @@ select = [
     # Docstrings:
     "D",
 ]
+
 ignore = [
     # warning: `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible.
     "D203",
@@ -126,8 +127,10 @@ line-ending = "lf"
 # Prefer single quotes over double quotes.
 quote-style = "double"
 skip-magic-trailing-comma = true
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Ignore all directories named `tests`.
 "tests/**" = ["D"]
 "matfree/backend/**" = ["D"]
