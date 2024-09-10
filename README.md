@@ -181,7 +181,7 @@ To make a pull request, proceed as follows:
 - Install all dependencies with `pip install .[full]` or `pip install -e .[full]`.
 - Make your changes.
 - From the project's root, run the tests via `make test`. Check out `make format-and-lint` as well. Use the pre-commit hook if you like.
-
+- Then, make the pull request. Choose an informative title (have a look at previous PRs if you need inspiration), link all related issues, describe the change, and pick a label (e.g. "documentation", or "enhancement"). The label is important because the release notes group the pull requests by label.
 
 When making a pull request, keep in mind the following (rough) guidelines:
 
@@ -189,6 +189,7 @@ When making a pull request, keep in mind the following (rough) guidelines:
 * Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
 * Most enhancements (e.g. new features) are covered by tests.
 
+[Here are what GitHub considers good practices for pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/best-practices-for-pull-requests).
 
 ## Extend Matfree's documentation
 
