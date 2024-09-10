@@ -30,7 +30,6 @@ def baigolub96_logdet_spd(bound_spectrum, /, nrows, trace, norm_frobenius_square
             publisher={Citeseer}
         }
         ```
-
     """
     mu1, mu2 = trace, norm_frobenius_squared
     beta = bound_spectrum
