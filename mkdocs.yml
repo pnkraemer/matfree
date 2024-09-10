@@ -24,7 +24,7 @@ plugins:
   - search
   - mkdocs-jupyter:
       include: ['*.py']
-      execute: true
+      execute: false
       allow_errors: false
   - mkdocstrings:
       handlers:
