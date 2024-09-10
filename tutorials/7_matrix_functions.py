@@ -1,6 +1,6 @@
-"""Compute matrix-functions without materializing large matrices.
+"""Compute matrix functions without materializing large matrices.
 
-Sometimes, we need to compute matrix-exponentials, log-determinants,
+Sometimes, we need to compute matrix exponentials, log-determinants,
 or similar functions of matrices, but our matrices are too big to
 use functions from
 [scipy.linalg](https://docs.scipy.org/doc/scipy/reference/linalg.html)
@@ -23,7 +23,7 @@ key, subkey = jax.random.split(key, num=2)
 large_matrix = jax.random.normal(subkey, shape=(n, n))
 
 
-# Here is the expected value, computed with jax.scipy.linalg.
+# The expected value is computed with jax.scipy.linalg.
 
 key, subkey = jax.random.split(key, num=2)
 vector = jax.random.normal(subkey, shape=(n,))
