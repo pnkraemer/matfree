@@ -41,8 +41,8 @@ def large_matvec(v):
     return large_matrix @ v
 
 
-krylov_depth = 5
-arnoldi = decomp.hessenberg(krylov_depth, reortho="full")
+num_matvecs = 5
+arnoldi = decomp.hessenberg(num_matvecs, reortho="full")
 dense_funm = funm.dense_funm_pade_exp()
 matfun_vec = funm.funm_arnoldi(dense_funm, arnoldi)
 received = matfun_vec(large_matvec, vector)

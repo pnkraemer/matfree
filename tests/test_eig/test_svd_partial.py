@@ -24,14 +24,14 @@ def test_equal_to_linalg_svd(A):
     and the orthogonal matrices should be orthogonal. They are not unique.
     """
     nrows, ncols = np.shape(A)
-    depth = min(nrows, ncols) - 1
+    num_matvecs = min(nrows, ncols) - 1
 
     def Av(v):
         return A @ v
 
     v0 = np.ones((ncols,))
     v0 /= linalg.vector_norm(v0)
-    U, S, Vt = eig.svd_partial(v0, depth, Av)
+    U, S, Vt = eig.svd_partial(v0, num_matvecs, Av)
     U_, S_, Vt_ = linalg.svd(A, full_matrices=False)
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}

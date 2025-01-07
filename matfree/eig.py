@@ -6,7 +6,7 @@ from matfree.backend.typing import Array, Callable
 
 
 # todo: why does this function not return a callable?
-def svd_partial(v0: Array, depth: int, Av: Callable):
+def svd_partial(v0: Array, num_matvecs: int, Av: Callable):
     """Partial singular value decomposition.
 
     Combines bidiagonalisation with full reorthogonalisation
@@ -16,17 +16,16 @@ def svd_partial(v0: Array, depth: int, Av: Callable):
     ----------
     v0:
         Initial vector for Golub-Kahan-Lanczos bidiagonalisation.
-    depth:
-        Depth of the Krylov space constructed by Golub-Kahan-Lanczos bidiagonalisation.
-        Choosing `depth = min(nrows, ncols) - 1` would yield behaviour similar to
+    num_matvecs:
+        Number of matrix-vector products aka the depth of the Krylov space
+        constructed by Golub-Kahan-Lanczos bidiagonalisation.
+        Choosing `num_matvecs = min(nrows, ncols) - 1` would yield behaviour similar to
         e.g. `np.linalg.svd`.
     Av:
         Matrix-vector product function.
-    vA:
-        Vector-matrix product function.
     """
     # Factorise the matrix
-    algorithm = decomp.bidiag(depth, materialize=True)
+    algorithm = decomp.bidiag(num_matvecs, materialize=True)
     (u, v), B, *_ = algorithm(Av, v0)
 
     # Compute SVD of factorisation

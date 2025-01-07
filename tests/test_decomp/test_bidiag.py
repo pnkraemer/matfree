@@ -46,33 +46,33 @@ def test_bidiag_decomposition_is_satisfied(
 @testing.parametrize("nrows", [5])
 @testing.parametrize("ncols", [3])
 @testing.parametrize("num_significant_singular_vals", [3])
-def test_error_too_high_depth(nrows, ncols, num_significant_singular_vals):
-    """Assert that a ValueError is raised when the depth exceeds the matrix size."""
+def test_error_too_high_num_matvecs(nrows, ncols, num_significant_singular_vals):
+    """Assert a ValueError is raised when the num_matvecs exceeds the matrix size."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
-    max_depth = min(nrows, ncols) - 1
+    max_num_matvecs = min(nrows, ncols) - 1
 
     with testing.raises(ValueError, match="exceeds"):
-        alg = decomp.bidiag(max_depth + 1, materialize=False)
+        alg = decomp.bidiag(max_num_matvecs + 1, materialize=False)
         _ = alg(lambda v: A @ v, A[0])
 
 
 @testing.parametrize("nrows", [5])
 @testing.parametrize("ncols", [3])
 @testing.parametrize("num_significant_singular_vals", [3])
-def test_error_too_low_depth(nrows, ncols, num_significant_singular_vals):
-    """Assert that a ValueError is raised when the depth is negative."""
+def test_error_too_low_num_matvecs(nrows, ncols, num_significant_singular_vals):
+    """Assert that a ValueError is raised when the num_matvecs is negative."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
-    min_depth = 0
+    min_num_matvecs = 0
     with testing.raises(ValueError, match="exceeds"):
-        alg = decomp.bidiag(min_depth - 1, materialize=False)
+        alg = decomp.bidiag(min_num_matvecs - 1, materialize=False)
         _ = alg(lambda v: A @ v, A[0])
 
 
 @testing.parametrize("nrows", [15])
 @testing.parametrize("ncols", [3])
 @testing.parametrize("num_significant_singular_vals", [3])
-def test_no_error_zero_depth(nrows, ncols, num_significant_singular_vals):
-    """Assert the corner case of zero-depth does not raise an error."""
+def test_no_error_zero_num_matvecs(nrows, ncols, num_significant_singular_vals):
+    """Assert the corner case of zero-num_matvecs does not raise an error."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
