@@ -53,9 +53,8 @@ def eig_partial(hessenberg: Callable):
         Q, H, *_ = hessenberg(Av, v0)
 
         # Compute SVD of factorisation
-        U, S, Vt = linalg.eig(H)
+        vals, vecs = linalg.eig(H)
 
-        # Combine orthogonal transformations
-        return u @ U, S, Vt @ v.T
+        return vals, Q @ vecs
 
-    return svd
+    return eig
