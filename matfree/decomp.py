@@ -8,7 +8,7 @@ matrix-function-vector products, see
 [matfree.funm][matfree.funm].
 """
 
-from matfree.backend import containers, control_flow, func, linalg, np, tree_util
+from matfree.backend import containers, control_flow, func, linalg, np, tree
 from matfree.backend.typing import Array, Callable, Union
 
 
@@ -304,7 +304,7 @@ def _tridiag_adjoint(
     )
 
     # Compute the gradients
-    grad_matvec = tree_util.tree_map(lambda s: np.sum(s, axis=0), grad_summands)
+    grad_matvec = tree.tree_map(lambda s: np.sum(s, axis=0), grad_summands)
     grad_initvec = ((lambda_1.T @ xs[0]) * xs[0] - lambda_1) / initvec_norm
 
     # Return values
@@ -477,7 +477,7 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
     lambda_k = dr + Q @ eta
     Lambda = np.zeros_like(Q)
     Gamma = np.zeros_like(dQ.T @ Q)
-    dp = tree_util.tree_map(np.zeros_like, params)
+    dp = tree.tree_map(np.zeros_like, params)
 
     # Prepare more  auxiliary matrices
     Pi_xi = dQ.T + linalg.outer(eta, r)
@@ -562,7 +562,7 @@ def _hessenberg_adjoint_step(
     # Transposed matvec and parameter-gradient in a single matvec
     _, vjp = func.vjp(lambda u, v: matvec(u, *v), q, params)
     vecmat_lambda, dp_increment = vjp(lambda_k)
-    dp = tree_util.tree_map(lambda g, h: g + h, dp, dp_increment)
+    dp = tree.tree_map(lambda g, h: g + h, dp, dp_increment)
 
     # Solve for (Gamma + Gamma.T) e_K
     tmp = lower_mask * (Pi_gamma - vecmat_lambda @ Q)

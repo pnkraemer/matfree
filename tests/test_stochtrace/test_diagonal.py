@@ -1,7 +1,7 @@
 """Test the diagonal estimation."""
 
 from matfree import stochtrace
-from matfree.backend import func, linalg, np, prng, tree_util
+from matfree.backend import func, linalg, np, prng, tree
 
 
 def test_diagonal():
@@ -20,7 +20,7 @@ def test_diagonal():
     _, jvp = func.linearize(fun, args_like)
     J = func.jacfwd(fun)(args_like)["params"]
 
-    expected = tree_util.tree_map(linalg.diagonal, J)
+    expected = tree.tree_map(linalg.diagonal, J)
 
     # Estimate the matrix function
     problem = stochtrace.integrand_diagonal()
@@ -31,4 +31,4 @@ def test_diagonal():
     def compare(a, b):
         return np.allclose(a, b, rtol=1e-2)
 
-    assert tree_util.tree_all(tree_util.tree_map(compare, received, expected))
+    assert tree.tree_all(tree.tree_map(compare, received, expected))

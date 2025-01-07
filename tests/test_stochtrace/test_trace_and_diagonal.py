@@ -1,7 +1,7 @@
 """Test joint trace and diagonal estimation."""
 
 from matfree import stochtrace
-from matfree.backend import func, np, prng, tree_util
+from matfree.backend import func, np, prng, tree
 
 
 def test_trace_and_diagonal():
@@ -39,4 +39,4 @@ def test_trace_and_diagonal():
 
     expected = {"trace": expected_trace, "diagonal": expected_diagonal}
 
-    assert tree_util.tree_all(tree_util.tree_map(np.allclose, received, expected))
+    assert tree.tree_all(tree.tree_map(np.allclose, received, expected))

@@ -37,7 +37,7 @@ Examples
 
 """
 
-from matfree.backend import containers, control_flow, func, linalg, np, tree_util
+from matfree.backend import containers, control_flow, func, linalg, np, tree
 from matfree.backend.typing import Array, Callable
 
 
@@ -212,14 +212,14 @@ def integrand_funm_sym(dense_funm, tridiag_sym, /):
     """
 
     def quadform(matvec, v0, *parameters):
-        v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
+        v0_flat, v_unflatten = tree.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
 
         def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
             Av = matvec(v, *p)
-            flat, unflatten = tree_util.ravel_pytree(Av)
+            flat, unflatten = tree.ravel_pytree(Av)
             return flat
 
         _, dense, *_ = tridiag_sym(matvec_flat, v0_flat, *parameters)
@@ -260,14 +260,14 @@ def integrand_funm_product(dense_funm, algorithm, /):
     """
 
     def quadform(matvec, v0, *parameters):
-        v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
+        v0_flat, v_unflatten = tree.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
 
         def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
             Av = matvec(v, *p)
-            flat, _unflatten = tree_util.ravel_pytree(Av)
+            flat, _unflatten = tree.ravel_pytree(Av)
             return flat
 
         # Decompose into orthogonal-bidiag-orthogonal

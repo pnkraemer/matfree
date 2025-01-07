@@ -1,7 +1,7 @@
 """Test the estimation with multiple statistics."""
 
 from matfree import stochtrace
-from matfree.backend import func, linalg, np, prng, testing, tree_util
+from matfree.backend import func, linalg, np, prng, testing, tree
 
 
 def test_yields_correct_tree_structure():
@@ -32,7 +32,7 @@ def test_yields_correct_tree_structure():
     expected = {
         "params": {"moment_1st": irrelevant_value, "moment_2nd": irrelevant_value}
     }
-    assert tree_util.tree_structure(received) == tree_util.tree_structure(expected)
+    assert tree.tree_structure(received) == tree.tree_structure(expected)
 
 
 @testing.fixture(name="key")
