@@ -148,6 +148,10 @@ def _todense_tridiag_sym(diag, off_diag):
 
 def _tridiag_reortho_none(num_matvecs: int, /, *, custom_vjp: bool, materialize: bool):
     def estimate(matvec, vec, *params):
+        if num_matvecs < 0 or num_matvecs > len(vec):
+            msg = _error_num_matvecs(num_matvecs, maxval=len(vec), minval=0)
+            raise ValueError(msg)
+
         (Q, H), (q, b) = _estimate(matvec, vec, *params)
         v = b * q
 
@@ -212,6 +216,11 @@ def _tridiag_forward(matvec, num_matvecs, vec, *params):
     # Lanczos initialisation
     ((v1, offdiag), diag) = _tridiag_fwd_init(matvec, v0, *params)
 
+    if num_matvecs == 0:
+        decomposition = vectors[:-1], (diags, offdiags[:-1])
+        remainder = v1, offdiag
+        return decomposition, remainder, 1 / linalg.vector_norm(vec)
+
     # Store results
     k = 0
     vectors = vectors.at[k + 1].set(v1)
@@ -221,13 +230,13 @@ def _tridiag_forward(matvec, num_matvecs, vec, *params):
     # Run Lanczos-loop
     init = (v1, offdiag, v0), (vectors, diags, offdiags)
     step_fun = func.partial(_tridiag_fwd_step, matvec, params)
-    _, (vectors, diags, offdiags) = control_flow.fori_loop(
+    (v1, offdiag, _), (vectors, diags, offdiags) = control_flow.fori_loop(
         lower=1, upper=num_matvecs, body_fun=step_fun, init_val=init
     )
 
     # Reorganise the outputs
     decomposition = vectors[:-1], (diags, offdiags[:-1])
-    remainder = vectors[-1], offdiags[-1]
+    remainder = v1, offdiag
     return decomposition, remainder, 1 / linalg.vector_norm(vec)
 
 
@@ -397,8 +406,8 @@ def hessenberg(
 
 
 def _hessenberg_forward(matvec, num_matvecs, v, *params, reortho: str):
-    if num_matvecs < 1 or num_matvecs > len(v):
-        msg = f"Parameter num_matvecs {num_matvecs} is outside the expected range"
+    if num_matvecs < 0 or num_matvecs > len(v):
+        msg = _error_num_matvecs(num_matvecs, maxval=len(v), minval=0)
         raise ValueError(msg)
 
     # Initialise the variables
@@ -407,6 +416,11 @@ def _hessenberg_forward(matvec, num_matvecs, v, *params, reortho: str):
     H = np.zeros((k, k), dtype=v.dtype)
     initlength = np.sqrt(linalg.inner(v, v))
     init = (Q, H, v, initlength)
+
+    if num_matvecs == 0:
+        return _DecompResult(
+            Q_tall=Q, J_small=H, residual=v, init_length_inv=1 / initlength
+        )
 
     # Fix the step function
     def forward_step(i, val):
@@ -591,25 +605,32 @@ def bidiag(num_matvecs: int, /, materialize: bool = True):
     def estimate(Av: Callable, v0, *parameters):
         # Infer the size of A from v0
         (ncols,) = np.shape(v0)
-        w0_like = func.eval_shape(Av, v0)
+        w0_like = func.eval_shape(Av, v0, *parameters)
         (nrows,) = np.shape(w0_like)
 
         # Complain if the shapes don't match
-        max_num_matvecs = min(nrows, ncols) - 1
+        max_num_matvecs = min(nrows, ncols)
         if num_matvecs > max_num_matvecs or num_matvecs < 0:
-            msg1 = f"Parameter num_matvecs={num_matvecs} exceeds the matrix' size. "
-            msg2 = "Expected: 0 <= num_matvecs <= min(nrows, ncols) - 1"
-            msg3 = f"for a matrix with shape {(nrows, ncols)}."
-            raise ValueError(msg1 + msg2 + msg3)
+            msg = _error_num_matvecs(num_matvecs, maxval=min(nrows, ncols), minval=0)
+            raise ValueError(msg)
 
         v0_norm, length = _normalise(v0)
         init_val = init(v0_norm, nrows=nrows, ncols=ncols)
+
+        if num_matvecs == 0:
+            uk_all_T, J, vk_all, (beta, vk) = extract(init_val)
+            return _DecompResult(
+                Q_tall=(uk_all_T, vk_all.T),
+                J_small=J,
+                residual=beta * vk,
+                init_length_inv=1 / length,
+            )
 
         def body_fun(_, s):
             return step(Av, s, *parameters)
 
         result = control_flow.fori_loop(
-            0, num_matvecs + 1, body_fun=body_fun, init_val=init_val
+            0, num_matvecs, body_fun=body_fun, init_val=init_val
         )
         uk_all_T, J, vk_all, (beta, vk) = extract(result)
         return _DecompResult(
@@ -629,10 +650,10 @@ def bidiag(num_matvecs: int, /, materialize: bool = True):
         vk: Array
 
     def init(init_vec: Array, *, nrows, ncols) -> State:
-        alphas = np.zeros((num_matvecs + 1,))
-        betas = np.zeros((num_matvecs + 1,))
-        Us = np.zeros((num_matvecs + 1, nrows))
-        Vs = np.zeros((num_matvecs + 1, ncols))
+        alphas = np.zeros((num_matvecs,))
+        betas = np.zeros((num_matvecs,))
+        Us = np.zeros((num_matvecs, nrows))
+        Vs = np.zeros((num_matvecs, ncols))
         v0, _ = _normalise(init_vec)
         return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
@@ -685,3 +706,9 @@ def bidiag(num_matvecs: int, /, materialize: bool = True):
         return diag + offdiag
 
     return estimate
+
+
+def _error_num_matvecs(num, maxval, minval):
+    msg1 = f"Parameter 'num_matvecs'={num} exceeds the acceptable range. "
+    msg2 = f"Expected: {minval} <= num_matvecs <= {maxval}."
+    return msg1 + msg2

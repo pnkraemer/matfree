@@ -5,7 +5,7 @@ from matfree.backend import linalg, np, prng, testing
 
 
 @testing.parametrize("nrows", [10])
-@testing.parametrize("num_matvecs", [1, 5, 10])
+@testing.parametrize("num_matvecs", [0, 5, 9])
 @testing.parametrize("reortho", ["none", "full"])
 @testing.parametrize("dtype", [float])
 def test_decomposition_is_satisfied(nrows, num_matvecs, reortho, dtype):
@@ -27,11 +27,13 @@ def test_decomposition_is_satisfied(nrows, num_matvecs, reortho, dtype):
     e0, ek = np.eye(num_matvecs)[[0, -1], :]
     test_util.assert_allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0)
     test_util.assert_allclose(Q.T.conj() @ Q - np.eye(num_matvecs), 0.0)
-    test_util.assert_allclose(Q @ e0, c * v)
+
+    if num_matvecs > 0:
+        test_util.assert_allclose(Q @ e0, c * v)
 
 
 @testing.parametrize("nrows", [10])
-@testing.parametrize("num_matvecs", [1, 5, 10])
+@testing.parametrize("num_matvecs", [5, 9])
 @testing.parametrize("reortho", ["full"])
 def test_reorthogonalisation_improves_the_estimate(nrows, num_matvecs, reortho):
     # Create an ill-conditioned test-matrix (that requires reortho=True)
@@ -53,18 +55,6 @@ def test_reorthogonalisation_improves_the_estimate(nrows, num_matvecs, reortho):
     test_util.assert_allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0)
     test_util.assert_allclose(Q.T @ Q - np.eye(num_matvecs), 0.0)
     test_util.assert_allclose(Q @ e0, c * v)
-
-
-def test_raises_error_for_wrong_num_matvecs_too_small():
-    algorithm = decomp.hessenberg(0, reortho="none")
-    with testing.raises(ValueError, match="num_matvecs"):
-        _ = algorithm(lambda s: s, np.ones((2,)))
-
-
-def test_raises_error_for_wrong_num_matvecs_too_high():
-    algorithm = decomp.hessenberg(3, reortho="none")
-    with testing.raises(ValueError, match="num_matvecs"):
-        _ = algorithm(lambda s: s, np.ones((2,)))
 
 
 @testing.parametrize("reortho_wrong", [True, "full_with_sparsity", "None"])
