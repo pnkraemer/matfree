@@ -31,3 +31,29 @@ def svd_partial(bidiag: Callable):
         return u @ U, S, Vt @ v.T
 
     return svd
+def eig_partial(hessenberg: Callable):
+    """Partial eigenvalue decomposition.
+
+    Combines Hessenberg-factorisation with a decomposition
+    of the (small) Hessenberg matrix.
+
+    Parameters
+    ----------
+    hessenberg:
+        An implementation of Hessenberg factorisation.
+        For example, the output of
+        [decomp.hessenberg][matfree.decomp.hessenberg].
+
+    """
+
+    def eig(Av: Callable, v0: Array):
+        # Factorise the matrix
+        Q, H, *_ = hessenberg(Av, v0)
+
+        # Compute SVD of factorisation
+        U, S, Vt = linalg.eig(H)
+
+        # Combine orthogonal transformations
+        return u @ U, S, Vt @ v.T
+
+    return svd
