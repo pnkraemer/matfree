@@ -26,8 +26,8 @@ x_like = jnp.ones((nrows,), dtype=float)  # use to determine shapes of vectors
 
 # Estimate log-determinants with stochastic Lanczos quadrature.
 
-order = 3
-tridiag_sym = decomp.tridiag_sym(order)
+num_matvecs = 3
+tridiag_sym = decomp.tridiag_sym(num_matvecs)
 problem = funm.integrand_funm_sym_logdet(tridiag_sym)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
@@ -53,8 +53,8 @@ def matvec_half(x):
     return A @ x
 
 
-order = 3
-bidiag = decomp.bidiag(order)
+num_matvecs = 3
+bidiag = decomp.bidiag(num_matvecs)
 problem = funm.integrand_funm_product_logdet(bidiag)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)

@@ -17,8 +17,10 @@ def parametrize_with_cases(argnames, /, cases, prefix):
     return pytest_cases.parametrize_with_cases(argnames, cases=cases, prefix=prefix)
 
 
-def check_grads(fun, /, args, *, order, atol, rtol):
-    return jax.test_util.check_grads(fun, args, order=order, atol=atol, rtol=rtol)
+def check_grads(fun, /, args, *, num_matvecs, atol, rtol):
+    return jax.test_util.check_grads(
+        fun, args, num_matvecs=num_matvecs, atol=atol, rtol=rtol
+    )
 
 
 def raises(err, /, match):

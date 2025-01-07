@@ -15,10 +15,10 @@ def make_A(n, num_significant_eigvals):
 
 @testing.parametrize("n", [200])
 @testing.parametrize("num_significant_eigvals", [30])
-@testing.parametrize("order", [10])
+@testing.parametrize("num_matvecs", [10])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_spd(n, num_significant_eigvals, order):
+def test_logdet_spd(n, num_significant_eigvals, num_matvecs):
     """Assert that the log-determinant estimation matches the true log-determinant."""
     A = make_A(n, num_significant_eigvals)
 
@@ -28,7 +28,7 @@ def test_logdet_spd(n, num_significant_eigvals, order):
     key = prng.prng_key(1)
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = stochtrace.sampler_normal(args_like, num=10)
-    tridiag_sym = decomp.tridiag_sym(order, materialize=True)
+    tridiag_sym = decomp.tridiag_sym(num_matvecs, materialize=True)
     integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
     estimate = stochtrace.estimator(integrand, sampler)
     received = estimate(matvec, key)
@@ -41,15 +41,15 @@ def test_logdet_spd(n, num_significant_eigvals, order):
 @testing.parametrize("n", [50])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_spd_exact_for_full_order_lanczos(n):
+def test_logdet_spd_exact_for_full_num_matvecs_lanczos(n):
     r"""Computing v^\top f(A) v with max-order Lanczos should be exact for _any_ v."""
     # Construct a (numerically nice) matrix
     eigvals = np.arange(1.0, 1.0 + n, step=1.0)
     A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
 
-    # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
-    order = n - 1
-    tridiag_sym = decomp.tridiag_sym(order, materialize=True)
+    # Set up max-num_matvecs Lanczos approximation inside SLQ for the matrix-logarithm
+    num_matvecs = n - 1
+    tridiag_sym = decomp.tridiag_sym(num_matvecs, materialize=True)
     integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"

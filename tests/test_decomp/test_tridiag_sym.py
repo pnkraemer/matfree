@@ -16,7 +16,7 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     algorithm = decomp.tridiag_sym(ndim, reortho=reortho, materialize=True)
     Q, T, *_ = algorithm(lambda s, p: p @ s, vector, matrix)
 
-    # Reconstruct the original matrix from the full-order approximation
+    # Reconstruct the original matrix from the full-num_matvecs approximation
     matrix_reconstructed = Q @ T @ Q.T
 
     if reortho == "full":

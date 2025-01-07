@@ -5,7 +5,7 @@ from matfree.backend import func, linalg, np, prng, testing, tree_util
 
 
 @testing.parametrize("reortho", ["full", "none"])
-def test_adjoint_vjp_matches_jax_vjp(reortho, n=10, krylov_order=4):
+def test_adjoint_vjp_matches_jax_vjp(reortho, n=10, krylov_num_matvecs=4):
     """Test that the custom VJP yields the same output as autodiff."""
     # Set up a test-matrix
     eigvals = prng.uniform(prng.prng_key(2), shape=(n,)) + 1.0
@@ -24,7 +24,7 @@ def test_adjoint_vjp_matches_jax_vjp(reortho, n=10, krylov_order=4):
     # Construct a vector-to-vector decomposition function
     def decompose(f, *, custom_vjp):
         kwargs = {"reortho": reortho, "custom_vjp": custom_vjp, "materialize": False}
-        algorithm = decomp.tridiag_sym(krylov_order, **kwargs)
+        algorithm = decomp.tridiag_sym(krylov_num_matvecs, **kwargs)
         output = algorithm(matvec, *unflatten(f))
         return tree_util.ravel_pytree(output)[0]
 

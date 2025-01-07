@@ -16,9 +16,9 @@ def make_A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("nrows", [50])
 @testing.parametrize("ncols", [49])
 @testing.parametrize("num_significant_singular_vals", [4])
-@testing.parametrize("order", [6])  # ~1.5 * num_significant_eigvals
+@testing.parametrize("num_matvecs", [6])  # ~1.5 * num_significant_eigvals
 def test_bidiag_decomposition_is_satisfied(
-    nrows, ncols, num_significant_singular_vals, order
+    nrows, ncols, num_significant_singular_vals, num_matvecs
 ):
     """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
@@ -31,13 +31,13 @@ def test_bidiag_decomposition_is_satisfied(
     def vA(v):
         return v @ A
 
-    algorithm = decomp.bidiag(order, materialize=True)
+    algorithm = decomp.bidiag(num_matvecs, materialize=True)
     (U, V), B, res, ln = algorithm(Av, v0)
 
     test_util.assert_columns_orthonormal(U)
     test_util.assert_columns_orthonormal(V)
 
-    em = np.eye(order + 1)[:, -1]
+    em = np.eye(num_matvecs + 1)[:, -1]
     test_util.assert_allclose(A @ V, U @ B)
     test_util.assert_allclose(A.T @ U, V @ B.T + linalg.outer(res, em))
     test_util.assert_allclose(1.0 / linalg.vector_norm(v0), ln)

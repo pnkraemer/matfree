@@ -16,9 +16,9 @@ def make_A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("nrows", [30])
 @testing.parametrize("ncols", [30])
 @testing.parametrize("num_significant_singular_vals", [30])
-@testing.parametrize("order", [20])
+@testing.parametrize("num_matvecs", [20])
 @testing.parametrize("power", [1, 2, 5])
-def test_schatten_norm(nrows, ncols, num_significant_singular_vals, order, power):
+def test_schatten_norm(nrows, ncols, num_significant_singular_vals, num_matvecs, power):
     """Assert that the Schatten norm is accurate."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
     _, s, _ = linalg.svd(A, full_matrices=False)
@@ -27,7 +27,7 @@ def test_schatten_norm(nrows, ncols, num_significant_singular_vals, order, power
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
     sampler = stochtrace.sampler_normal(args_like, num=500)
-    bidiag = decomp.bidiag(order)
+    bidiag = decomp.bidiag(num_matvecs)
     integrand = funm.integrand_funm_product_schatten_norm(power, bidiag)
     estimate = stochtrace.estimator(integrand, sampler)
 

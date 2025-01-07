@@ -26,8 +26,8 @@ def test_funm_chebyshev(n=12):
     expected = log_matrix @ v
 
     # Create an implementation of the Chebyshev-algorithm
-    order = 6
-    matfun_vec = funm.funm_chebyshev(fun, order, matvec)
+    num_matvecs = 6
+    matfun_vec = funm.funm_chebyshev(fun, num_matvecs, matvec)
 
     # Compute the matrix-function vector product
     received = matfun_vec(v, matrix)
