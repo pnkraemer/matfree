@@ -31,6 +31,8 @@ def svd_partial(bidiag: Callable):
         return u @ U, S, Vt @ v.T
 
     return svd
+
+
 def eig_partial(hessenberg: Callable):
     """Partial eigenvalue decomposition.
 
