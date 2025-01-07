@@ -1,7 +1,7 @@
 """Tests for eigenvalue functionality."""
 
 from matfree import decomp, eig
-from matfree.backend import linalg, np
+from matfree.backend import linalg, np, testing
 
 
 def test_equal_to_linalg_eig(nrows=7):
@@ -33,3 +33,18 @@ def test_equal_to_linalg_eig(nrows=7):
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
     assert np.allclose(U @ U.T, U_ @ U_.T, **tols_decomp)
+
+
+@testing.parametrize("nrows", [8])
+@testing.parametrize("num_matvecs", [8, 4, 0])
+def test_shapes_as_expected(nrows, num_matvecs):
+    A = np.triu(np.arange(1.0, 1.0 + nrows**2).reshape((nrows, nrows)))
+
+    v0 = np.ones((nrows,))
+    v0 /= linalg.vector_norm(v0)
+
+    hessenberg = decomp.hessenberg(num_matvecs, reortho="full")
+    alg = eig.eig_partial(hessenberg)
+    S, U = alg(lambda v, p: p @ v, v0, A)
+    assert S.shape == (num_matvecs,)
+    assert U.shape == (nrows, num_matvecs)

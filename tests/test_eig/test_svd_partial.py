@@ -42,3 +42,24 @@ def test_equal_to_linalg_svd(A):
     assert np.shape(Vt) == np.shape(Vt_)
     assert np.allclose(U @ U.T, U_ @ U_.T, **tols_decomp)
     assert np.allclose(Vt @ Vt.T, Vt_ @ Vt_.T, **tols_decomp)
+
+
+def test_shapes_as_expected(A):
+    """The output of full-depth SVD should be equal (*) to linalg.svd().
+
+    (*) Note: The singular values should be identical,
+    and the orthogonal matrices should be orthogonal. They are not unique.
+    """
+    nrows, ncols = np.shape(A)
+    num_matvecs = min(nrows, ncols) // 2
+
+    v0 = np.ones((ncols,))
+    v0 /= linalg.vector_norm(v0)
+
+    bidiag = decomp.bidiag(num_matvecs)
+    svd = eig.svd_partial(bidiag)
+    U, S, Vt = svd(lambda v, p: p @ v, v0, A)
+
+    assert U.shape == (nrows, num_matvecs)
+    assert S.shape == (num_matvecs,)
+    assert Vt.shape == (num_matvecs, ncols)

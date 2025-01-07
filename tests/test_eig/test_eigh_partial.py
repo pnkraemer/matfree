@@ -36,3 +36,19 @@ def test_equal_to_linalg_eigh(A):
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
     assert np.allclose(U @ U.T, U_ @ U_.T, **tols_decomp)
+
+
+@testing.parametrize("nrows", [8])
+@testing.parametrize("num_matvecs", [8, 4, 0])
+def test_shapes_as_expected(nrows, num_matvecs):
+    A = np.arange(1.0, 1.0 + nrows**2).reshape((nrows, nrows))
+    A = A + A.T
+
+    v0 = np.ones((nrows,))
+    v0 /= linalg.vector_norm(v0)
+
+    tridiag_sym = decomp.tridiag_sym(num_matvecs, reortho="full")
+    alg = eig.eigh_partial(tridiag_sym)
+    S, U = alg(lambda v, p: p @ v, v0, A)
+    assert S.shape == (num_matvecs,)
+    assert U.shape == (nrows, num_matvecs)
