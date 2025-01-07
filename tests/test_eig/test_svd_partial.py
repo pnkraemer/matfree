@@ -24,7 +24,7 @@ def test_equal_to_linalg_svd(A):
     and the orthogonal matrices should be orthogonal. They are not unique.
     """
     nrows, ncols = np.shape(A)
-    num_matvecs = min(nrows, ncols) - 1
+    num_matvecs = min(nrows, ncols)
 
     def Av(v):
         return A @ v
