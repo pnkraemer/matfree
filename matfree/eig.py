@@ -33,28 +33,28 @@ def svd_partial(bidiag: Callable):
     return svd
 
 
-def eig_partial(hessenberg: Callable):
-    """Partial eigenvalue decomposition.
+def eigh_partial(tridiag_sym: Callable):
+    """Partial symmetric eigenvalue decomposition.
 
-    Combines Hessenberg-factorisation with a decomposition
-    of the (small) Hessenberg matrix.
+    Combines tridiagonalization with a decomposition
+    of the (small) tridiagonal matrix.
 
     Parameters
     ----------
-    hessenberg:
-        An implementation of Hessenberg factorisation.
+    tridiag_sym:
+        An implementation of tridiagonalization.
         For example, the output of
-        [decomp.hessenberg][matfree.decomp.hessenberg].
+        [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
 
     """
 
-    def eig(Av: Callable, v0: Array):
+    def eigh(Av: Callable, v0: Array):
         # Factorise the matrix
-        Q, H, *_ = hessenberg(Av, v0)
+        Q, H, *_ = tridiag_sym(Av, v0)
 
         # Compute SVD of factorisation
-        vals, vecs = linalg.eig(H)
+        vals, vecs = linalg.eigh(H)
+        vecs = Q @ vecs
+        return vals, vecs
 
-        return vals, Q @ vecs
-
-    return eig
+    return eigh
