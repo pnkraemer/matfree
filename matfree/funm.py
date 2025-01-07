@@ -259,8 +259,7 @@ def integrand_funm_product(dense_funm, algorithm, /):
     Here, "product" refers to $X = A^\top A$.
     """
 
-    def quadform(matvecs, v0, *parameters):
-        matvec, vecmat = matvecs
+    def quadform(matvec, v0, *parameters):
         v0_flat, v_unflatten = tree_util.ravel_pytree(v0)
         length = linalg.vector_norm(v0_flat)
         v0_flat /= length
@@ -268,21 +267,13 @@ def integrand_funm_product(dense_funm, algorithm, /):
         def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
             Av = matvec(v, *p)
-            flat, unflatten = tree_util.ravel_pytree(Av)
-            return flat, tree_util.partial_pytree(unflatten)
-
-        w0_flat, w_unflatten = func.eval_shape(matvec_flat, v0_flat)
-
-        def vecmat_flat(w_flat):
-            w = w_unflatten(w_flat)
-            wA = vecmat(w, *parameters)
-            return tree_util.ravel_pytree(wA)[0]
+            flat, _unflatten = tree_util.ravel_pytree(Av)
+            return flat
 
         # Decompose into orthogonal-bidiag-orthogonal
-        matvec_flat_p = lambda v: matvec_flat(v)[0]  # noqa: E731
-        output = algorithm(matvec_flat_p, vecmat_flat, v0_flat, *parameters)
-        _, B, *_ = output
+        _, B, *_ = algorithm(matvec_flat, v0_flat, *parameters)
 
+        # Evaluate matfun
         fA = dense_funm(B)
         e1 = np.eye(len(fA))[0, :]
         return length**2 * linalg.inner(e1, fA @ e1)

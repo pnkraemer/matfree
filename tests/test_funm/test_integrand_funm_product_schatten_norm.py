@@ -32,7 +32,7 @@ def test_schatten_norm(nrows, ncols, num_significant_singular_vals, order, power
     estimate = stochtrace.estimator(integrand, sampler)
 
     key = prng.prng_key(1)
-    received = estimate((lambda v: A @ v, lambda v: A.T @ v), key)
+    received = estimate(lambda v: A @ v, key)
 
     print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
     assert np.allclose(received, expected, atol=1e-2, rtol=1e-2), print_if_assert_fails

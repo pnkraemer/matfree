@@ -583,6 +583,8 @@ def bidiag(depth: int, /, materialize: bool = True):
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
 
+    Internally, Matfree uses JAX to turn matrix-vector- into vector-matrix-products.
+
     ??? note "A note about differentiability"
         Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or
         [hessenberg][matfree.decomp.hessenberg], this function's reverse-mode
@@ -592,7 +594,7 @@ def bidiag(depth: int, /, materialize: bool = True):
 
     """
 
-    def estimate(Av: Callable, vA: Callable, v0, *parameters):
+    def estimate(Av: Callable, v0, *parameters):
         # Infer the size of A from v0
         (ncols,) = np.shape(v0)
         w0_like = func.eval_shape(Av, v0)
@@ -610,7 +612,7 @@ def bidiag(depth: int, /, materialize: bool = True):
         init_val = init(v0_norm, nrows=nrows, ncols=ncols)
 
         def body_fun(_, s):
-            return step(Av, vA, s, *parameters)
+            return step(Av, s, *parameters)
 
         result = control_flow.fori_loop(
             0, depth + 1, body_fun=body_fun, init_val=init_val
@@ -640,18 +642,21 @@ def bidiag(depth: int, /, materialize: bool = True):
         v0, _ = _normalise(init_vec)
         return State(0, Us, Vs, alphas, betas, np.zeros(()), v0)
 
-    def step(Av, vA, state: State, *parameters) -> State:
+    def step(Av, state: State, *parameters) -> State:
         i, Us, Vs, alphas, betas, beta, vk = state
         Vs = Vs.at[i].set(vk)
         betas = betas.at[i].set(beta)
 
-        uk = Av(vk, *parameters) - beta * Us[i - 1]
+        # Use jax.vjp to evaluate the vector-matrix product
+        Av_eval, vA = func.vjp(lambda v: Av(v, *parameters), vk)
+        uk = Av_eval - beta * Us[i - 1]
         uk, alpha = _normalise(uk)
         uk, *_ = _gram_schmidt_classical(uk, Us)  # full reorthogonalisation
         Us = Us.at[i].set(uk)
         alphas = alphas.at[i].set(alpha)
 
-        vk = vA(uk, *parameters) - alpha * vk
+        (vA_eval,) = vA(uk)
+        vk = vA_eval - alpha * vk
         vk, beta = _normalise(vk)
         vk, *_ = _gram_schmidt_classical(vk, Vs)  # full reorthogonalisation
 

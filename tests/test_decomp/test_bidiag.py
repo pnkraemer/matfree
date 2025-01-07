@@ -32,7 +32,7 @@ def test_bidiag_decomposition_is_satisfied(
         return v @ A
 
     algorithm = decomp.bidiag(order, materialize=True)
-    (U, V), B, res, ln = algorithm(Av, vA, v0)
+    (U, V), B, res, ln = algorithm(Av, v0)
 
     test_util.assert_columns_orthonormal(U)
     test_util.assert_columns_orthonormal(V)
@@ -51,9 +51,9 @@ def test_error_too_high_depth(nrows, ncols, num_significant_singular_vals):
     A = make_A(nrows, ncols, num_significant_singular_vals)
     max_depth = min(nrows, ncols) - 1
 
-    with testing.raises(ValueError, match=""):
+    with testing.raises(ValueError, match="exceeds"):
         alg = decomp.bidiag(max_depth + 1, materialize=False)
-        _ = alg(lambda v: A @ v, lambda v: A.T @ v, A[0])
+        _ = alg(lambda v: A @ v, A[0])
 
 
 @testing.parametrize("nrows", [5])
@@ -63,9 +63,9 @@ def test_error_too_low_depth(nrows, ncols, num_significant_singular_vals):
     """Assert that a ValueError is raised when the depth is negative."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
     min_depth = 0
-    with testing.raises(ValueError, match=""):
+    with testing.raises(ValueError, match="exceeds"):
         alg = decomp.bidiag(min_depth - 1, materialize=False)
-        _ = alg(lambda v: A @ v, lambda v: A.T @ v, A[0])
+        _ = alg(lambda v: A @ v, A[0])
 
 
 @testing.parametrize("nrows", [15])
@@ -84,7 +84,7 @@ def test_no_error_zero_depth(nrows, ncols, num_significant_singular_vals):
         return v @ A
 
     algorithm = decomp.bidiag(0, materialize=False)
-    (U, V), (d_m, e_m), res, ln = algorithm(Av, vA, v0)
+    (U, V), (d_m, e_m), res, ln = algorithm(Av, v0)
 
     assert np.shape(U) == (nrows, 1)
     assert np.shape(V) == (ncols, 1)

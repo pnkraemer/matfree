@@ -48,14 +48,9 @@ A += jnp.eye(nrows)
 A /= nrows**2
 
 
-def matvec_r(x):
+def matvec_half(x):
     """Compute a matrix-vector product."""
     return A @ x
-
-
-def vecmat_l(x):
-    """Compute a vector-matrix product."""
-    return x @ A
 
 
 order = 3
@@ -63,9 +58,12 @@ bidiag = decomp.bidiag(order)
 problem = funm.integrand_funm_product_logdet(bidiag)
 sampler = stochtrace.sampler_normal(x_like, num=1_000)
 estimator = stochtrace.estimator(problem, sampler=sampler)
-logdet = estimator((matvec_r, vecmat_l), jax.random.PRNGKey(1))
+logdet = estimator(matvec_half, jax.random.PRNGKey(1))
 print(logdet)
 
+# Internally, Matfree uses JAX's vector-Jacobian products to
+# turn the matrix-vector product into a vector-matrix product.
+#
 # For comparison:
 
 print(jnp.linalg.slogdet(A.T @ A))
