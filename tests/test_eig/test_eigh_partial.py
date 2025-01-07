@@ -27,7 +27,7 @@ def test_equal_to_linalg_eigh(A):
 
     hessenberg = decomp.hessenberg(num_matvecs, reortho="full")
     alg = eig.eigh_partial(hessenberg)
-    S, U = alg(lambda v: A @ v, v0)
+    S, U = alg(lambda v, p: p @ v, v0, A)
 
     S_, U_ = linalg.eigh(A)
 

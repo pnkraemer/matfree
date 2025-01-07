@@ -26,15 +26,12 @@ def test_equal_to_linalg_svd(A):
     nrows, ncols = np.shape(A)
     num_matvecs = min(nrows, ncols)
 
-    def Av(v):
-        return A @ v
-
     v0 = np.ones((ncols,))
     v0 /= linalg.vector_norm(v0)
 
     bidiag = decomp.bidiag(num_matvecs)
     svd = eig.svd_partial(bidiag)
-    U, S, Vt = svd(Av, v0)
+    U, S, Vt = svd(lambda v, p: p @ v, v0, A)
 
     U_, S_, Vt_ = linalg.svd(A, full_matrices=False)
 
