@@ -16,8 +16,8 @@ def make_A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("nrows", [50])
 @testing.parametrize("ncols", [30])
 @testing.parametrize("num_significant_singular_vals", [30])
-@testing.parametrize("order", [20])
-def test_logdet_product(nrows, ncols, num_significant_singular_vals, order):
+@testing.parametrize("num_matvecs", [20])
+def test_logdet_product(nrows, ncols, num_significant_singular_vals, num_matvecs):
     """Assert that logdet_product yields an accurate estimate."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
     key = prng.prng_key(3)
@@ -28,7 +28,7 @@ def test_logdet_product(nrows, ncols, num_significant_singular_vals, order):
     x_like = {"fx": np.ones((ncols,), dtype=float)}
     fun = stochtrace.sampler_normal(x_like, num=400)
 
-    bidiag = decomp.bidiag(order)
+    bidiag = decomp.bidiag(num_matvecs)
     problem = funm.integrand_funm_product_logdet(bidiag)
     estimate = stochtrace.estimator(problem, fun)
     received = estimate(matvec, key)
@@ -41,7 +41,7 @@ def test_logdet_product(nrows, ncols, num_significant_singular_vals, order):
 @testing.parametrize("n", [50])
 # usually: ~1.5 * num_significant_eigvals.
 # But logdet seems to converge sooo much faster.
-def test_logdet_product_exact_for_full_order_lanczos(n):
+def test_logdet_product_exact_for_full_num_matvecs_lanczos(n):
     r"""Computing v^\top f(A^\top @ A) v with max-order Lanczos is exact for _any_ v."""
     # Construct a (numerically nice) matrix
     singular_values = np.sqrt(np.arange(1.0, 1.0 + n, step=1.0))
@@ -49,9 +49,9 @@ def test_logdet_product_exact_for_full_order_lanczos(n):
         singular_values, nrows=n, ncols=n
     )
 
-    # Set up max-order Lanczos approximation inside SLQ for the matrix-logarithm
-    order = n - 1
-    bidiag = decomp.bidiag(order)
+    # Set up max-num_matvecs Lanczos approximation inside SLQ for the matrix-logarithm
+    num_matvecs = n - 1
+    bidiag = decomp.bidiag(num_matvecs)
     integrand = funm.integrand_funm_product_logdet(bidiag)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"

@@ -41,7 +41,7 @@ from matfree.backend import containers, control_flow, func, linalg, np, tree_uti
 from matfree.backend.typing import Array, Callable
 
 
-def funm_chebyshev(matfun: Callable, order: int, matvec: Callable, /) -> Callable:
+def funm_chebyshev(matfun: Callable, num_matvecs: int, matvec: Callable, /) -> Callable:
     """Compute a matrix-function-vector product via Chebyshev's algorithm.
 
     This function assumes that the **spectrum of the matrix-vector product
@@ -50,7 +50,7 @@ def funm_chebyshev(matfun: Callable, order: int, matvec: Callable, /) -> Callabl
     transform the matrix-vector product and the matrix-function accordingly.
     """
     # Construct nodes
-    nodes = _chebyshev_nodes(order)
+    nodes = _chebyshev_nodes(num_matvecs)
     fx_nodes = matfun(nodes)
 
     class _ChebyshevState(containers.NamedTuple):
@@ -88,7 +88,7 @@ def funm_chebyshev(matfun: Callable, order: int, matvec: Callable, /) -> Callabl
     def extract_func(val: _ChebyshevState):
         return val.interpolation
 
-    alg = (0, order - 1), init_func, recursion_func, extract_func
+    alg = (0, num_matvecs - 1), init_func, recursion_func, extract_func
     return _funm_polyexpand(alg)
 
 

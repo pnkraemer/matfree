@@ -3,21 +3,19 @@ from matfree.backend import config, func, linalg, np, prng, testing
 
 
 @testing.parametrize("nrows", [3])
-@testing.parametrize("krylov_depth", [2])
+@testing.parametrize("num_matvecs", [2])
 @testing.parametrize("reortho", ["none", "full"])
 @testing.parametrize("dtype", [float])
-def test_adjoint_matches_jax_dot_vjp(nrows, krylov_depth, reortho, dtype):
+def test_adjoint_matches_jax_dot_vjp(nrows, num_matvecs, reortho, dtype):
     # Create a matrix and a direction as a test-case
     A = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=dtype)
     v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=dtype)
 
     # Set up the algorithms
     algorithm_autodiff = decomp.hessenberg(
-        krylov_depth, reortho=reortho, custom_vjp=False
+        num_matvecs, reortho=reortho, custom_vjp=False
     )
-    algorithm_adjoint = decomp.hessenberg(
-        krylov_depth, reortho=reortho, custom_vjp=True
-    )
+    algorithm_adjoint = decomp.hessenberg(num_matvecs, reortho=reortho, custom_vjp=True)
 
     # Forward pass
     algorithm_autodiff = func.partial(algorithm_autodiff, lambda s, p: p @ s)
@@ -42,10 +40,10 @@ def test_adjoint_matches_jax_dot_vjp(nrows, krylov_depth, reortho, dtype):
 
 
 @testing.parametrize("nrows", [15])
-@testing.parametrize("krylov_depth", [10])
+@testing.parametrize("num_matvecs", [10])
 @testing.parametrize("reortho", ["full"])
 def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
-    nrows, krylov_depth, reortho
+    nrows, num_matvecs, reortho
 ):
     config.update("jax_enable_x64", True)
 
@@ -58,11 +56,9 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
 
     # Set up the algorithms
     algorithm_autodiff = decomp.hessenberg(
-        krylov_depth, reortho=reortho, custom_vjp=False
+        num_matvecs, reortho=reortho, custom_vjp=False
     )
-    algorithm_adjoint = decomp.hessenberg(
-        krylov_depth, reortho=reortho, custom_vjp=True
-    )
+    algorithm_adjoint = decomp.hessenberg(num_matvecs, reortho=reortho, custom_vjp=True)
 
     # Forward pass
     algorithm_autodiff = func.partial(algorithm_autodiff, matvec)
