@@ -20,9 +20,9 @@ def svd_partial(bidiag: Callable):
 
     """
 
-    def svd(Av: Callable, v0: Array):
+    def svd(Av: Callable, v0: Array, *parameters):
         # Factorise the matrix
-        (u, v), B, *_ = bidiag(Av, v0)
+        (u, v), B, *_ = bidiag(Av, v0, *parameters)
 
         # Compute SVD of factorisation
         U, S, Vt = linalg.svd(B, full_matrices=False)
@@ -31,3 +31,30 @@ def svd_partial(bidiag: Callable):
         return u @ U, S, Vt @ v.T
 
     return svd
+
+
+def eigh_partial(tridiag_sym: Callable):
+    """Partial symmetric/Hermitian eigenvalue decomposition.
+
+    Combines tridiagonalization with a decomposition
+    of the (small) tridiagonal matrix.
+
+    Parameters
+    ----------
+    tridiag_sym:
+        An implementation of tridiagonalization.
+        For example, the output of
+        [decomp.tridiag_sym][matfree.decomp.tridiag_sym].
+
+    """
+
+    def eigh(Av: Callable, v0: Array, *parameters):
+        # Factorise the matrix
+        Q, H, *_ = tridiag_sym(Av, v0, *parameters)
+
+        # Compute SVD of factorisation
+        vals, vecs = linalg.eigh(H)
+        vecs = Q @ vecs
+        return vals, vecs
+
+    return eigh

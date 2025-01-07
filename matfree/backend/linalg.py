@@ -20,6 +20,10 @@ def eigh(x, /):
     return jnp.linalg.eigh(x)
 
 
+def eig(x, /):
+    return jnp.linalg.eig(x)
+
+
 def cholesky(x, /):
     return jnp.linalg.cholesky(x)
 
