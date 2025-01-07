@@ -6,7 +6,7 @@ from matfree.backend.typing import Array, Callable
 
 
 # todo: why does this function not return a callable?
-def svd_partial(v0: Array, depth: int, Av: Callable, vA: Callable):
+def svd_partial(v0: Array, depth: int, Av: Callable):
     """Partial singular value decomposition.
 
     Combines bidiagonalisation with full reorthogonalisation
@@ -27,7 +27,7 @@ def svd_partial(v0: Array, depth: int, Av: Callable, vA: Callable):
     """
     # Factorise the matrix
     algorithm = decomp.bidiag(depth, materialize=True)
-    (u, v), B, *_ = algorithm(Av, vA, v0)
+    (u, v), B, *_ = algorithm(Av, v0)
 
     # Compute SVD of factorisation
     U, S, Vt = linalg.svd(B, full_matrices=False)
