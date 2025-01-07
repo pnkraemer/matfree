@@ -1,10 +1,10 @@
 """Matrix-free eigenvalue and singular-value analysis."""
 
-from matfree.backend import linalg
+from matfree.backend import linalg, np
 from matfree.backend.typing import Array, Callable
 
 
-def svd_partial(bidiag: Callable):
+def svd_partial(bidiag: Callable) -> Callable:
     """Partial singular value decomposition.
 
     Combines bidiagonalisation with a full SVD of the (small) bidiagonal matrix.
@@ -33,7 +33,7 @@ def svd_partial(bidiag: Callable):
     return svd
 
 
-def eigh_partial(tridiag_sym: Callable):
+def eigh_partial(tridiag_sym: Callable) -> Callable:
     """Partial symmetric/Hermitian eigenvalue decomposition.
 
     Combines tridiagonalization with a decomposition
@@ -58,3 +58,36 @@ def eigh_partial(tridiag_sym: Callable):
         return vals, vecs
 
     return eigh
+
+
+def eig_partial(hessenberg: Callable) -> Callable:
+    """Partial eigenvalue decomposition.
+
+    Combines Hessenberg factorisation with a decomposition
+    of the (small) Hessenberg matrix.
+
+    Parameters
+    ----------
+    hessenberg:
+        An implementation of Hessenberg factorisation.
+        For example, the output of
+        [decomp.hessenberg][matfree.decomp.hessenberg].
+
+    """
+
+    def eig(Av: Callable, v0: Array, *parameters):
+        # Factorise the matrix
+        Q, H, *_ = hessenberg(Av, v0, *parameters)
+
+        # Compute SVD of factorisation
+        vals, vecs = linalg.eig(H)
+        vecs = Q @ vecs
+
+        # Return in descending order
+        # (jnp.linalg.eig doesn't do this by default)
+        args = np.argsort(vals)[::-1]
+        vals = vals[args]
+        vecs = vecs[:, args]
+        return vals, vecs
+
+    return eig
