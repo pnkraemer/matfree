@@ -1,7 +1,7 @@
 """Test the adjoint of tri-diagonalisation."""
 
 from matfree import decomp, test_util
-from matfree.backend import func, linalg, np, prng, testing, tree_util
+from matfree.backend import func, linalg, np, prng, testing, tree
 
 
 @testing.parametrize("reortho", ["full", "none"])
@@ -19,14 +19,14 @@ def test_adjoint_vjp_matches_jax_vjp(reortho, n=10, krylov_num_matvecs=4):
     vector = prng.normal(prng.prng_key(1), shape=(n,))
 
     # Flatten the inputs
-    flat, unflatten = tree_util.ravel_pytree((vector, params))
+    flat, unflatten = tree.ravel_pytree((vector, params))
 
     # Construct a vector-to-vector decomposition function
     def decompose(f, *, custom_vjp):
         kwargs = {"reortho": reortho, "custom_vjp": custom_vjp, "materialize": False}
         algorithm = decomp.tridiag_sym(krylov_num_matvecs, **kwargs)
         output = algorithm(matvec, *unflatten(f))
-        return tree_util.ravel_pytree(output)[0]
+        return tree.ravel_pytree(output)[0]
 
     # Construct the two implementations
     reference = func.jit(func.partial(decompose, custom_vjp=False))

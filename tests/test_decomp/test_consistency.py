@@ -1,7 +1,7 @@
 """Ensure that bidiag, tridiag, etc. have consistent signatures."""
 
 from matfree import decomp
-from matfree.backend import np, prng, testing, tree_util
+from matfree.backend import np, prng, testing, tree
 
 
 def case_method_bidiag():
@@ -38,7 +38,7 @@ def test_output_shape_as_expected(nrows, num_matvecs, method):
     Us, B, res, ln = algorithm(lambda v: A @ v, v0)
 
     # Normalise the Us to always have a list
-    Us = tree_util.tree_leaves(Us)
+    Us = tree.tree_leaves(Us)
 
     for U in Us:
         assert np.shape(U) == (nrows, num_matvecs)

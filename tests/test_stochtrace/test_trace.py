@@ -1,7 +1,7 @@
 """Test trace estimation."""
 
 from matfree import stochtrace
-from matfree.backend import func, linalg, np, prng, tree_util
+from matfree.backend import func, linalg, np, prng, tree
 
 
 def test_trace():
@@ -30,4 +30,4 @@ def test_trace():
     def compare(a, b):
         return np.allclose(a, b, rtol=1e-2)
 
-    assert tree_util.tree_all(tree_util.tree_map(compare, received, expected))
+    assert tree.tree_all(tree.tree_map(compare, received, expected))

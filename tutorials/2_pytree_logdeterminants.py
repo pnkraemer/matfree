@@ -30,9 +30,9 @@ x0 = {"weights": W, "bias": b}
 
 f0, jvp = jax.linearize(testfunc, x0)
 _f0, vjp = jax.vjp(testfunc, x0)
-print(jax.tree_util.tree_map(jnp.shape, f0))
-print(jax.tree_util.tree_map(jnp.shape, jvp(x0)))
-print(jax.tree_util.tree_map(jnp.shape, vjp(f0)))
+print(jax.tree.map(jnp.shape, f0))
+print(jax.tree.map(jnp.shape, jvp(x0)))
+print(jax.tree.map(jnp.shape, vjp(f0)))
 
 
 # Use the same API as if the matrix-vector product were array-valued.
@@ -46,7 +46,7 @@ def make_matvec(alpha):
         r"""Matrix-vector product with $J J^\top + \alpha I$."""
         vjp_eval = vjp(fx)
         matvec_eval = jvp(*vjp_eval)
-        return jax.tree_util.tree_map(lambda x, y: x + alpha * y, matvec_eval, fx)
+        return jax.tree.map(lambda x, y: x + alpha * y, matvec_eval, fx)
 
     return fun
 

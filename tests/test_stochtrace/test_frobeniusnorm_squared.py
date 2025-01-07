@@ -1,7 +1,7 @@
 """Test the estimation of squared Frobenius-norms."""
 
 from matfree import stochtrace
-from matfree.backend import func, linalg, np, prng, tree_util
+from matfree.backend import func, linalg, np, prng, tree
 
 
 def test_frobeniusnorm_squared():
@@ -18,7 +18,7 @@ def test_frobeniusnorm_squared():
     x0 = prng.uniform(key, shape=(4,))  # random lin. point
     args_like = {"params": x0}
     _, jvp = func.linearize(fun, args_like)
-    [J] = tree_util.tree_leaves(func.jacfwd(fun)(args_like))
+    [J] = tree.tree_leaves(func.jacfwd(fun)(args_like))
     expected = linalg.trace(J.T @ J)
 
     # Estimate the matrix function

@@ -1,6 +1,6 @@
 """Stochastic estimation of traces, diagonals, and more."""
 
-from matfree.backend import func, linalg, np, prng, tree_util
+from matfree.backend import func, linalg, np, prng, tree
 from matfree.backend.typing import Callable
 
 
@@ -30,7 +30,7 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     def estimate(matvecs, key, *parameters):
         samples = sampler(key)
         Qs = func.vmap(lambda vec: integrand(matvecs, vec, *parameters))(samples)
-        return tree_util.tree_map(lambda s: np.mean(s, axis=0), Qs)
+        return tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
 
     return estimate
 
@@ -49,8 +49,8 @@ def integrand_diagonal():
 
     def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
-        v_flat, unflatten = tree_util.ravel_pytree(v)
-        Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
+        v_flat, unflatten = tree.ravel_pytree(v)
+        Qv_flat, _unflatten = tree.ravel_pytree(Qv)
         return unflatten(v_flat * Qv_flat)
 
     return integrand
@@ -61,8 +61,8 @@ def integrand_trace():
 
     def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
-        v_flat, unflatten = tree_util.ravel_pytree(v)
-        Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
+        v_flat, unflatten = tree.ravel_pytree(v)
+        Qv_flat, _unflatten = tree.ravel_pytree(Qv)
         return linalg.inner(v_flat, Qv_flat)
 
     return integrand
@@ -73,8 +73,8 @@ def integrand_trace_and_diagonal():
 
     def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
-        v_flat, unflatten = tree_util.ravel_pytree(v)
-        Qv_flat, _unflatten = tree_util.ravel_pytree(Qv)
+        v_flat, unflatten = tree.ravel_pytree(v)
+        Qv_flat, _unflatten = tree.ravel_pytree(Qv)
         trace_form = linalg.inner(v_flat, Qv_flat)
         diagonal_form = unflatten(v_flat * Qv_flat)
         return {"trace": trace_form, "diagonal": diagonal_form}
@@ -87,7 +87,7 @@ def integrand_frobeniusnorm_squared():
 
     def integrand(matvec, vec, *parameters):
         x = matvec(vec, *parameters)
-        v_flat, unflatten = tree_util.ravel_pytree(x)
+        v_flat, unflatten = tree.ravel_pytree(x)
         return linalg.inner(v_flat, v_flat)
 
     return integrand
@@ -119,10 +119,10 @@ def integrand_wrap_moments(integrand, /, moments):
 
     def integrand_wrapped(vec, *parameters):
         Qs = integrand(vec, *parameters)
-        return tree_util.tree_map(moment_fun, Qs)
+        return tree.tree_map(moment_fun, Qs)
 
     def moment_fun(x, /):
-        return tree_util.tree_map(lambda m: x**m, moments)
+        return tree.tree_map(lambda m: x**m, moments)
 
     return integrand_wrapped
 
@@ -138,7 +138,7 @@ def sampler_rademacher(*args_like, num):
 
 
 def _sampler_from_jax_random(sampler, *args_like, num):
-    x_flat, unflatten = tree_util.ravel_pytree(*args_like)
+    x_flat, unflatten = tree.ravel_pytree(*args_like)
 
     def sample(key):
         samples = sampler(key, shape=(num, *x_flat.shape), dtype=x_flat.dtype)
