@@ -1,6 +1,6 @@
 """Tests for SVD functionality."""
 
-from matfree import eig, test_util
+from matfree import decomp, eig, test_util
 from matfree.backend import linalg, np, testing
 
 
@@ -32,7 +32,8 @@ def test_equal_to_linalg_svd(A):
     v0 = np.ones((ncols,))
     v0 /= linalg.vector_norm(v0)
 
-    svd = eig.svd_partial(num_matvecs)
+    bidiag = decomp.bidiag(num_matvecs)
+    svd = eig.svd_partial(bidiag)
     U, S, Vt = svd(Av, v0)
 
     U_, S_, Vt_ = linalg.svd(A, full_matrices=False)
