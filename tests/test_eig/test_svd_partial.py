@@ -31,7 +31,10 @@ def test_equal_to_linalg_svd(A):
 
     v0 = np.ones((ncols,))
     v0 /= linalg.vector_norm(v0)
-    U, S, Vt = eig.svd_partial(v0, num_matvecs, Av)
+
+    svd = eig.svd_partial(num_matvecs)
+    U, S, Vt = svd(Av, v0)
+
     U_, S_, Vt_ = linalg.svd(A, full_matrices=False)
 
     tols_decomp = {"atol": 1e-5, "rtol": 1e-5}
