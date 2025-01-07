@@ -597,9 +597,7 @@ def bidiag(num_matvecs: int, /, materialize: bool = True):
         # Complain if the shapes don't match
         max_num_matvecs = min(nrows, ncols) - 1
         if num_matvecs > max_num_matvecs or num_matvecs < 0:
-            msg1 = (
-                f"Parameter num_matvecs={num_matvecs} exceeds the matrix' dimensions. "
-            )
+            msg1 = f"Parameter num_matvecs={num_matvecs} exceeds the matrix' size. "
             msg2 = "Expected: 0 <= num_matvecs <= min(nrows, ncols) - 1"
             msg3 = f"for a matrix with shape {(nrows, ncols)}."
             raise ValueError(msg1 + msg2 + msg3)
