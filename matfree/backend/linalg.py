@@ -21,7 +21,14 @@ def eigh(x, /):
 
 
 def eig(x, /):
-    return jnp.linalg.eig(x)
+    vals, vecs = jnp.linalg.eig(x)
+
+    # Order the values and vectors by magnitude
+    # (jax.numpy.linalg.eig does not do this)
+    ordered = jnp.argsort(vals)[::-1]
+    vals = vals[ordered]
+    vecs = vecs[:, ordered]
+    return vals, vecs
 
 
 def cholesky(x, /):

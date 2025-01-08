@@ -1,6 +1,6 @@
 """Matrix-free eigenvalue and singular-value analysis."""
 
-from matfree.backend import linalg, np
+from matfree.backend import linalg
 from matfree.backend.typing import Array, Callable
 
 
@@ -28,7 +28,7 @@ def svd_partial(bidiag: Callable) -> Callable:
         U, S, Vt = linalg.svd(B, full_matrices=False)
 
         # Combine orthogonal transformations
-        return u @ U, S, Vt @ v.T
+        return (u @ U).T, S, Vt @ v.T
 
     return svd
 
@@ -55,7 +55,7 @@ def eigh_partial(tridiag_sym: Callable) -> Callable:
         # Compute SVD of factorisation
         vals, vecs = linalg.eigh(H)
         vecs = Q @ vecs
-        return vals, vecs
+        return vals, vecs.T
 
     return eigh
 
@@ -82,12 +82,6 @@ def eig_partial(hessenberg: Callable) -> Callable:
         # Compute SVD of factorisation
         vals, vecs = linalg.eig(H)
         vecs = Q @ vecs
-
-        # Return in descending order
-        # (jnp.linalg.eig doesn't do this by default)
-        args = np.argsort(vals)[::-1]
-        vals = vals[args]
-        vecs = vecs[:, args]
-        return vals, vecs
+        return vals, vecs.T
 
     return eig
