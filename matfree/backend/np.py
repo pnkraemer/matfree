@@ -17,6 +17,7 @@ But deviate in a few points:
 """
 
 import jax.numpy as jnp
+import jax.scipy.signal
 
 # Creation functions:
 
@@ -187,6 +188,10 @@ def finfo_eps(x, /):
 
 def convolve(a, b, /, mode="full"):
     return jnp.convolve(a, b, mode=mode)
+
+
+def convolve2d(a, b, /):
+    return jax.scipy.signal.convolve2d(a, b)
 
 
 def tril(x, /, shift=0):
