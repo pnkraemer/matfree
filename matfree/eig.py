@@ -62,8 +62,20 @@ def eigh_partial(tridiag_sym: Callable) -> Callable:
     """
 
     def eigh(Av: Callable, v0: Array, *parameters):
+        # Flatten in- and outputs
+        Av_flat, flattened = _partial_and_flatten_matvec(Av, v0, *parameters)
+        _, (v0_flat, v_unravel) = flattened
+
+        # Call the flattened eigh
+        vals, vecs = eigh_flat(Av_flat, v0_flat)
+
+        # Unravel the eigenvectors
+        vecs = func.vmap(v_unravel)(vecs)
+        return vals, vecs
+
+    def eigh_flat(Av: Callable, v0: Array):
         # Factorise the matrix
-        Q, H, *_ = tridiag_sym(Av, v0, *parameters)
+        Q, H, *_ = tridiag_sym(Av, v0)
 
         # Compute eigh of factorisation
         vals, vecs = linalg.eigh(H)
@@ -96,7 +108,7 @@ def eig_partial(hessenberg: Callable) -> Callable:
         # Call the flattened eig
         vals, vecs = eig_flat(Av_flat, v0_flat)
 
-        # Unravel the singular vectors
+        # Unravel the eigenvectors
         vecs = func.vmap(v_unravel)(vecs)
         return vals, vecs
 
