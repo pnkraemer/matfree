@@ -1,7 +1,7 @@
 """Tests for SVD functionality."""
 
 from matfree import decomp, eig, test_util
-from matfree.backend import linalg, np, testing, tree
+from matfree.backend import linalg, np, testing
 
 
 @testing.parametrize("nrows", [10])
@@ -72,16 +72,18 @@ def test_shapes_as_expected_lists_tuples(nrows, num_matvecs):
     K = np.arange(1.0, 10.0).reshape((3, 3))
     v0 = np.ones((nrows, nrows))
 
+    # Map Pytrees to Pytrees
     def Av(v: tuple, stencil) -> list:
         (x,) = v
         return [np.convolve2d(stencil, x)]
 
-    [u0] = Av((v0,), K)
-
     bidiag = decomp.bidiag(num_matvecs)
     svd = eig.svd_partial(bidiag)
     [Ut], S, (Vt,) = svd(Av, (v0,), K)
-    print(tree.tree_map(np.shape, (Ut, S, Vt)))
+
+    # Ut inherits pytree-shape from the outputs (list),
+    # and Vt inherits pytree-shape from the inputs (tuple)
+    [u0] = Av((v0,), K)
     assert Ut.shape == (num_matvecs, *u0.shape)
     assert S.shape == (num_matvecs,)
     assert Vt.shape == (num_matvecs, *v0.shape)
