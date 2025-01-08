@@ -5,11 +5,6 @@ from matfree.backend import linalg, np, testing
 
 
 def test_equal_to_linalg_eigh(nrows=10):
-    """The output of full-depth decomposition should be equal (*) to linalg.svd().
-
-    (*) Note: The singular values should be identical,
-    and the orthogonal matrices should be orthogonal. They are not unique.
-    """
     eigvals = np.arange(1.0, 1.0 + nrows)
     A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
     v0 = np.ones((nrows,))
