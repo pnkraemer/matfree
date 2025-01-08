@@ -190,8 +190,8 @@ def convolve(a, b, /, mode="full"):
     return jnp.convolve(a, b, mode=mode)
 
 
-def convolve2d(a, b, /):
-    return jax.scipy.signal.convolve2d(a, b)
+def convolve2d(a, b, /, mode="full"):
+    return jax.scipy.signal.convolve2d(a, b, mode=mode)
 
 
 def tril(x, /, shift=0):
