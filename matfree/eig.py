@@ -55,7 +55,7 @@ def eigh_partial(tridiag_sym: Callable) -> Callable:
         # Compute SVD of factorisation
         vals, vecs = linalg.eigh(H)
         vecs = Q @ vecs
-        return vals, vecs
+        return vals, vecs.T
 
     return eigh
 
