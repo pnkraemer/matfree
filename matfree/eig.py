@@ -28,7 +28,7 @@ def svd_partial(bidiag: Callable) -> Callable:
         U, S, Vt = linalg.svd(B, full_matrices=False)
 
         # Combine orthogonal transformations
-        return u @ U, S, Vt @ v.T
+        return (u @ U).T, S, Vt @ v.T
 
     return svd
 
