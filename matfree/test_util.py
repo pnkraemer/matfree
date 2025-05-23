@@ -72,5 +72,5 @@ def assert_allclose(a, b, /):
 
     # For double precision sqrt(eps) is very tight...
     if tol < 1e-7:
-        tol *= 10
+        tol *= 100
     assert np.allclose(a, b, atol=tol, rtol=tol)

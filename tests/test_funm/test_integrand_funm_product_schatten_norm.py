@@ -26,7 +26,7 @@ def test_schatten_norm(nrows, ncols, num_significant_singular_vals, num_matvecs,
 
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
-    sampler = stochtrace.sampler_normal(args_like, num=500)
+    sampler = stochtrace.sampler_rademacher(args_like, num=500)
     bidiag = decomp.bidiag(num_matvecs)
     integrand = funm.integrand_funm_product_schatten_norm(power, bidiag)
     estimate = stochtrace.estimator(integrand, sampler)

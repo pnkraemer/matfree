@@ -39,7 +39,7 @@ def py_to_py_light(*, source, target):
                 # Save results
                 title = filename(header[0], remove=["(", ")", "[", "]"])
                 save_lines_as_file(
-                    [*markdown, "\n", *rest], target=f"{dir_trg}/{i+1}_{title}.py"
+                    [*markdown, "\n", *rest], target=f"{dir_trg}/{i + 1}_{title}.py"
                 )
 
 

@@ -80,7 +80,7 @@ if __name__ == "__main__":
         # Create a title
         block[0] = h2_to_h1(block[0])
         string = filename(block[0], remove=["# ", ":"])
-        title = f"{1+i}_{string}"
+        title = f"{1 + i}_{string}"
 
         # Save as file
         with open(f"{directory}{title}.md", "w") as file:

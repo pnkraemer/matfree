@@ -46,7 +46,6 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
     nrows, num_matvecs, reortho
 ):
     config.update("jax_enable_x64", True)
-
     # Create a matrix and a direction as a test-case
     A = _lower(linalg.hilbert(nrows))
     v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=A.dtype)
@@ -74,7 +73,6 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
     dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
 
     # Assert gradients match
-    print(dv_adjoint - dv_autodiff)
     test_util.assert_allclose(dv_adjoint, dv_autodiff)
     test_util.assert_allclose(dp_adjoint, dp_autodiff)
 

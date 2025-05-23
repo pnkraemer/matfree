@@ -26,7 +26,7 @@ def test_logdet_product(nrows, ncols, num_significant_singular_vals, num_matvecs
         return {"fx": A @ x["fx"]}
 
     x_like = {"fx": np.ones((ncols,), dtype=float)}
-    fun = stochtrace.sampler_normal(x_like, num=400)
+    fun = stochtrace.sampler_rademacher(x_like, num=400)
 
     bidiag = decomp.bidiag(num_matvecs)
     problem = funm.integrand_funm_product_logdet(bidiag)

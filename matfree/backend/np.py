@@ -161,7 +161,7 @@ def roll(x, /, shift):
 
 
 def shape(x, /):
-    return jnp.shape(x)
+    return x.shape
 
 
 def dtype(x, /):

@@ -372,9 +372,8 @@ def hessenberg(
         return _estimate(matvec_convert, v, *params, *aux_args)
 
     def _estimate(matvec_convert: Callable, v, *params):
-        reortho_ = reortho_vjp if reortho_vjp != "match" else reortho_vjp
         return _hessenberg_forward(
-            matvec_convert, num_matvecs, v, *params, reortho=reortho_
+            matvec_convert, num_matvecs, v, *params, reortho=reortho_vjp
         )
 
     def estimate_fwd(matvec_convert: Callable, v, *params):

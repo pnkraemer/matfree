@@ -76,7 +76,7 @@ Estimate the trace of the matrix:
 >>> trace = estimate(matvec, key)
 >>>
 >>> print(trace)
-508.9
+504.0
 >>>
 >>> # for comparison:
 >>> print((jnp.trace(A.T @ A)))
