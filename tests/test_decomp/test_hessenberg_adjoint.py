@@ -73,8 +73,8 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
     dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
 
     # Assert gradients match
-    test_util.assert_allclose(dp_adjoint, dp_autodiff)
     test_util.assert_allclose(dv_adjoint, dv_autodiff)
+    test_util.assert_allclose(dp_adjoint, dp_autodiff)
 
     # Assert that the values are only similar, not identical
     assert not np.all(dv_adjoint == dv_autodiff)
