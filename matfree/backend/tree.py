@@ -30,3 +30,7 @@ def tree_structure(pytree, /):
 
 def partial_pytree(func, /):
     return jax.tree_util.Partial(func)
+
+
+def register_dataclass(dcls, /):
+    return jax.tree_util.register_dataclass(dcls)

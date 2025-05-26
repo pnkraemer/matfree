@@ -1,17 +1,13 @@
 """Matrix-free algorithms for least-squares problems."""
 
-import dataclasses
-from typing import Callable
-
-import jax
-import jax.flatten_util
-import jax.numpy as jnp
+from matfree.backend import containers, control_flow, func, linalg, np, tree
+from matfree.backend.typing import Array, Callable
 
 # todo: make functions compatible with pytree-valued vecmats
 
 
 _LARGE_VALUE = 1e10
-"""A placeholder for jnp.inf.
+"""A placeholder for np.inf.
 
 In stopping criteria, if we divide something by something that's almost zero,
 we don't want the result to be infinite
@@ -25,7 +21,7 @@ def lsmr(
     btol: float = 1e-6,
     ctol: float = 1e-8,
     maxiter: int = 1_000_000,
-    while_loop=jax.lax.while_loop,
+    while_loop=control_flow.while_loop,
 ):
     """Construct an experimental implementation of LSMR.
 
@@ -36,8 +32,8 @@ def lsmr(
     """
     # todo: stop iteration when NaN or Inf are detected.
 
-    @jax.tree_util.register_dataclass
-    @dataclasses.dataclass
+    @tree.register_dataclass
+    @containers.dataclass
     class State:
         """LSMR state."""
 
@@ -45,8 +41,8 @@ def lsmr(
         itn: int
         # Bidiagonalisation variables:
         alpha: float
-        u: jax.Array
-        v: jax.Array
+        u: Array
+        v: Array
         # LSMR-specific variables:
         alphabar: float
         rhobar: float
@@ -55,9 +51,9 @@ def lsmr(
         sbar: float
         cbar: float
         zetabar: float
-        hbar: jax.Array
-        h: jax.Array
-        x: jax.Array
+        hbar: Array
+        h: Array
+        x: Array
         # Variables for estimation of ||r||:
         betadd: float
         thetatilde: float
@@ -86,7 +82,7 @@ def lsmr(
         def vecmat_noargs(v):
             return vecmat(v, *vecmat_args)
 
-        (ncols,) = jax.eval_shape(vecmat, b, *vecmat_args).shape
+        (ncols,) = func.eval_shape(vecmat, b, *vecmat_args).shape
 
         state, normb, matvec_noargs = init(vecmat_noargs, b, ncols=ncols)
         step_fun = make_step(matvec_noargs, normb=normb, damp=damp)
@@ -96,18 +92,18 @@ def lsmr(
         return state.x, stats_
 
     def init(vecmat, b, ncols: int):
-        normb = jnp.linalg.norm(b)
-        x = jnp.zeros(ncols, b.dtype)
+        normb = linalg.vector_norm(b)
+        x = np.zeros(ncols, dtype=b.dtype)
         beta = normb
 
         u = b
-        u = u / jnp.where(beta > 0, beta, 1.0)
+        u = u / np.where(beta > 0, beta, 1.0)
 
-        v, matvec = jax.vjp(vecmat, u)
-        alpha = jnp.linalg.norm(v)
-        v = v / jnp.where(alpha > 0, alpha, 1)
-        v = jnp.where(beta == 0, jnp.zeros_like(v), v)
-        alpha = jnp.where(beta == 0, jnp.zeros_like(alpha), alpha)
+        v, matvec = func.vjp(vecmat, u)
+        alpha = linalg.vector_norm(v)
+        v = v / np.where(alpha > 0, alpha, 1)
+        v = np.where(beta == 0, np.zeros_like(v), v)
+        alpha = np.where(beta == 0, np.zeros_like(alpha), alpha)
 
         # Initialize variables for 1st iteration.
 
@@ -119,7 +115,7 @@ def lsmr(
         sbar = 0.0
 
         h = v
-        hbar = jnp.zeros(ncols, b.dtype)
+        hbar = np.zeros(ncols, dtype=b.dtype)
 
         # Initialize variables for estimation of ||r||.
 
@@ -136,7 +132,7 @@ def lsmr(
         normA2 = alpha * alpha
         maxrbar = 0.0
         minrbar = 1e10
-        normA = jnp.sqrt(normA2)
+        normA = np.sqrt(normA2)
         condA = 1.0
         normx = 0.0
 
@@ -148,7 +144,7 @@ def lsmr(
         normar = alpha * beta
 
         # Main iteration loop.
-        state = State(
+        state = State(  # type: ignore
             itn=0,
             alpha=alpha,
             u=u,
@@ -179,21 +175,21 @@ def lsmr(
             normx=normx,
             istop=0,
         )
-        state = jax.tree.map(lambda z: jnp.asarray(z), state)
+        state = tree.tree_map(lambda z: np.asarray(z), state)
         return state, normb, lambda *a: matvec(*a)[0]
 
     def make_step(matvec, normb: float, damp) -> Callable:
         def step(state: State) -> State:
             # Perform the next step of the bidiagonalization
 
-            Av, A_t = jax.vjp(matvec, state.v)
+            Av, A_t = func.vjp(matvec, state.v)
             u = Av - state.alpha * state.u
-            beta = jnp.linalg.norm(u)
+            beta = linalg.vector_norm(u)
 
-            u = u / jnp.where(beta > 0, beta, 1.0)
+            u = u / np.where(beta > 0, beta, 1.0)
             v = A_t(u)[0] - beta * state.v
-            alpha = jnp.linalg.norm(v)
-            v = v / jnp.where(alpha > 0, alpha, 1)
+            alpha = linalg.vector_norm(v)
+            v = v / np.where(alpha > 0, alpha, 1)
 
             # Construct rotation Qhat_{k,2k+1}.
 
@@ -243,47 +239,51 @@ def lsmr(
             tautildeold = (zetaold - thetatildeold * state.tautildeold) / rhotildeold
             taud = (zeta - thetatilde * tautildeold) / rhodold
             d = state.d + betacheck * betacheck
-            normr = jnp.sqrt(d + (betad - taud) ** 2 + betadd * betadd)
+            normr = np.sqrt(d + (betad - taud) ** 2 + betadd * betadd)
 
             # Estimate ||A||.
             normA2 = state.normA2 + beta * beta
-            normA = jnp.sqrt(normA2)
+            normA = np.sqrt(normA2)
             normA2 = normA2 + alpha * alpha
 
             # Estimate cond(A).
-            maxrbar = jnp.maximum(state.maxrbar, rhobarold)
-            minrbar = jnp.where(
-                state.itn > 1, jnp.minimum(state.minrbar, rhobarold), state.minrbar
+            maxrbar = np.elementwise_max(state.maxrbar, rhobarold)
+            minrbar = np.where(
+                state.itn > 1,
+                np.elementwise_min(state.minrbar, rhobarold),
+                state.minrbar,
             )
-            condA = jnp.maximum(maxrbar, rhotemp) / jnp.minimum(minrbar, rhotemp)
+            condA = np.elementwise_max(maxrbar, rhotemp) / np.elementwise_min(
+                minrbar, rhotemp
+            )
 
             # Compute norms for convergence testing.
-            normar = jnp.abs(zetabar)
-            normx = jnp.linalg.norm(x)
+            normar = np.abs(zetabar)
+            normx = linalg.vector_norm(x)
 
             # Check whether we should stop
             itn = state.itn + 1
             test1 = normr / normb
             z = normA * normr
-            z_safe = jnp.where(z != 0, z, 1.0)
-            test2 = jnp.where(z != 0, normar / z_safe, _LARGE_VALUE)
+            z_safe = np.where(z != 0, z, 1.0)
+            test2 = np.where(z != 0, normar / z_safe, _LARGE_VALUE)
             test3 = 1 / condA
             t1 = test1 / (1 + normA * normx / normb)
             rtol = btol + atol * normA * normx / normb
 
             # Early exits
             istop = 0
-            istop = jnp.where(normar == 0, 9, istop)
-            istop = jnp.where(normb == 0, 8, istop)
-            istop = jnp.where(itn >= maxiter, 7, istop)
-            istop = jnp.where(1 + test3 <= 1, 6, istop)
-            istop = jnp.where(1 + test2 <= 1, 5, istop)
-            istop = jnp.where(1 + t1 <= 1, 4, istop)
-            istop = jnp.where(test3 <= ctol, 3, istop)
-            istop = jnp.where(test2 <= atol, 2, istop)
-            istop = jnp.where(test1 <= rtol, 1, istop)
+            istop = np.where(normar == 0, 9, istop)
+            istop = np.where(normb == 0, 8, istop)
+            istop = np.where(itn >= maxiter, 7, istop)
+            istop = np.where(1 + test3 <= 1, 6, istop)
+            istop = np.where(1 + test2 <= 1, 5, istop)
+            istop = np.where(1 + t1 <= 1, 4, istop)
+            istop = np.where(test3 <= ctol, 3, istop)
+            istop = np.where(test2 <= atol, 2, istop)
+            istop = np.where(test1 <= rtol, 1, istop)
 
-            return State(
+            return State(  # type: ignore
                 itn=itn,
                 alpha=alpha,
                 u=u,
@@ -319,10 +319,10 @@ def lsmr(
 
     def make_cond_fun() -> Callable:
         def cond(state):
-            state_flat, _ = jax.flatten_util.ravel_pytree(state)
-            no_nans = jnp.logical_not(jnp.any(jnp.isnan(state_flat)))
-            proceed = jnp.where(state.istop == 0, True, False)
-            return jnp.logical_and(proceed, no_nans)
+            state_flat, _ = tree.ravel_pytree(state)
+            no_nans = np.logical_not(np.any(np.isnan(state_flat)))
+            proceed = np.where(state.istop == 0, True, False)
+            return np.logical_and(proceed, no_nans)
 
         return cond
 
@@ -343,27 +343,27 @@ def lsmr(
 def _sym_ortho(a, b):
     """Stable implementation of Givens rotation. Like in Scipy."""
     idx = 3  # The "else" branch.
-    idx = jnp.where(jnp.abs(b) > jnp.abs(a), 2, idx)
-    idx = jnp.where(a == 0, 1, idx)
-    idx = jnp.where(b == 0, 0, idx)
+    idx = np.where(np.abs(b) > np.abs(a), 2, idx)
+    idx = np.where(a == 0, 1, idx)
+    idx = np.where(b == 0, 0, idx)
 
     branches = [_sym_ortho_0, _sym_ortho_1, _sym_ortho_2, _sym_ortho_3]
-    return jax.lax.switch(idx, branches, a, b)
+    return control_flow.switch(idx, branches, a, b)
 
 
 def _sym_ortho_0(a, _b):
-    zero = jnp.zeros((), dtype=a.dtype)
-    return jnp.sign(a), zero, jnp.abs(a)
+    zero = np.zeros((), dtype=a.dtype)
+    return np.sign(a), zero, np.abs(a)
 
 
 def _sym_ortho_1(_a, b):
-    zero = jnp.zeros((), dtype=b.dtype)
-    return zero, jnp.sign(b), jnp.abs(b)
+    zero = np.zeros((), dtype=b.dtype)
+    return zero, np.sign(b), np.abs(b)
 
 
 def _sym_ortho_2(a, b):
     tau = a / b
-    s = jnp.sign(b) / jnp.sqrt(1 + tau * tau)
+    s = np.sign(b) / np.sqrt(1 + tau * tau)
     c = s * tau
     r = b / s
     return c, s, r
@@ -371,7 +371,7 @@ def _sym_ortho_2(a, b):
 
 def _sym_ortho_3(a, b):
     tau = b / a
-    c = jnp.sign(a) / jnp.sqrt(1 + tau * tau)
+    c = np.sign(a) / np.sqrt(1 + tau * tau)
     s = c * tau
     r = a / c
     return c, s, r
