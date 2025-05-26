@@ -13,7 +13,7 @@ import jax.numpy as jnp
 LARGE_VALUE = 1e10
 
 
-def lstsq_lsmr(
+def lsmr(
     *,
     atol: float = 1e-6,
     btol: float = 1e-6,

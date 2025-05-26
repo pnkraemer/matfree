@@ -9,9 +9,9 @@ import pytest_cases as ptc
 from matfree import lstsq
 
 
-@ptc.case(tags=["fwd", "weight"])  # no rev-ad because while-loop
+@ptc.case()
 def case_lstsq_lsmr() -> Callable:
-    return lstsq.lstsq_lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
+    return lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
 
 
 def case_A_shape_wide() -> tuple:
@@ -26,7 +26,7 @@ def case_A_shape_square() -> tuple:
     return 3, 3
 
 
-@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_", has_tag="fwd")
+@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
 @ptc.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 def test_fwd_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
     key = jax.random.PRNGKey(1)
