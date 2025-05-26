@@ -1,4 +1,4 @@
-"""Matrix-free algorithms for least-squares problems."""
+"""Matrix-free algorithms for least-squares-type problems."""
 
 from matfree.backend import containers, control_flow, func, linalg, np, tree
 from matfree.backend.typing import Array, Callable
@@ -25,10 +25,8 @@ def lsmr(
 ):
     """Construct an experimental implementation of LSMR.
 
-    Follows the implementation in SciPy, but uses JAX.
-
-    Link to Scipy's version:
-    https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html
+    Follows the [implementation in SciPy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html),
+    but uses JAX.
     """
     # todo: stop iteration when NaN or Inf are detected.
 
