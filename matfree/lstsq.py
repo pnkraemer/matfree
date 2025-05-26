@@ -10,7 +10,13 @@ import jax.numpy as jnp
 # todo: make functions compatible with pytree-valued vecmats
 
 
-LARGE_VALUE = 1e10
+_LARGE_VALUE = 1e10
+"""A placeholder for jnp.inf.
+
+In stopping criteria, if we divide something by something that's almost zero,
+we don't want the result to be infinite
+but only 'large enough to terminate the iteration'.
+"""
 
 
 def lsmr(
@@ -18,8 +24,7 @@ def lsmr(
     atol: float = 1e-6,
     btol: float = 1e-6,
     ctol: float = 1e-8,
-    maxiter: int = 100_000,
-    damp=0.0,
+    maxiter: int = 1_000_000,
     while_loop=jax.lax.while_loop,
 ):
     """Construct an experimental implementation of LSMR.
@@ -29,7 +34,6 @@ def lsmr(
     Link to Scipy's version:
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html
     """
-    # todo: move 'damp' to run() and derive custom VJPs?
     # todo: stop iteration when NaN or Inf are detected.
 
     @jax.tree_util.register_dataclass
@@ -78,14 +82,14 @@ def lsmr(
     # more often than not, the matvec is defined after the LSMR
     # solver has been constructed. So it's part of the run()
     # function, not the LSMR constructor.
-    def run(vecmat, b, vecmat_args=()):
+    def run(vecmat, b, *vecmat_args, damp=0.0):
         def vecmat_noargs(v):
             return vecmat(v, *vecmat_args)
 
         (ncols,) = jax.eval_shape(vecmat, b, *vecmat_args).shape
 
         state, normb, matvec_noargs = init(vecmat_noargs, b, ncols=ncols)
-        step_fun = make_step(matvec_noargs, normb=normb)
+        step_fun = make_step(matvec_noargs, normb=normb, damp=damp)
         cond_fun = make_cond_fun()
         state = while_loop(cond_fun, step_fun, state)
         stats_ = stats(state)
@@ -178,7 +182,7 @@ def lsmr(
         state = jax.tree.map(lambda z: jnp.asarray(z), state)
         return state, normb, lambda *a: matvec(*a)[0]
 
-    def make_step(matvec, normb: float) -> Callable:
+    def make_step(matvec, normb: float, damp) -> Callable:
         def step(state: State) -> State:
             # Perform the next step of the bidiagonalization
 
@@ -262,7 +266,7 @@ def lsmr(
             test1 = normr / normb
             z = normA * normr
             z_safe = jnp.where(z != 0, z, 1.0)
-            test2 = jnp.where(z != 0, normar / z_safe, LARGE_VALUE)
+            test2 = jnp.where(z != 0, normar / z_safe, _LARGE_VALUE)
             test3 = 1 / condA
             t1 = test1 / (1 + normA * normx / normb)
             rtol = btol + atol * normA * normx / normb

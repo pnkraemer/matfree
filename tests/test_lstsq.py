@@ -39,7 +39,7 @@ def test_fwd_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
     def vecmat(vector, A):
         return A.T @ vector
 
-    received, _stats = lstsq_fun(vecmat, rhs, vecmat_args=(matrix,))
+    received, _stats = lstsq_fun(vecmat, rhs, matrix, damp=0.0)
     expected = jnp.linalg.lstsq(matrix, rhs)[0]
     tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
     assert jnp.allclose(received, expected, atol=tol, rtol=tol)
