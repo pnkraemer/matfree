@@ -173,7 +173,7 @@ def lsmr(
             normx=normx,
             istop=0,
         )
-        state = tree.tree_map(lambda z: np.asarray(z), state)
+        state = tree.tree_map(np.asarray, state)
         return state, normb, lambda *a: matvec(*a)[0]
 
     def make_step(matvec, normb: float, damp) -> Callable:
