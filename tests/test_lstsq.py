@@ -1,15 +1,11 @@
 """Tests for least-squares functionality."""
 
-from typing import Callable
-
-import jax
-import jax.numpy as jnp
-import pytest_cases as ptc
-
-from matfree import lstsq
+from matfree import lstsq, test_util
+from matfree.backend import linalg, prng, testing
+from matfree.backend.typing import Callable
 
 
-@ptc.case()
+@testing.case()
 def case_lstsq_lsmr() -> Callable:
     return lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
 
@@ -26,58 +22,55 @@ def case_A_shape_square() -> tuple:
     return 3, 3
 
 
-@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
-@ptc.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+@testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
+@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 def test_fwd_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
-    key = jax.random.PRNGKey(1)
+    key = prng.prng_key(1)
 
-    key, subkey = jax.random.split(key, 2)
-    matrix = jax.random.normal(subkey, shape=A_shape)
-    key, subkey = jax.random.split(key, 2)
-    rhs = jax.random.normal(subkey, shape=(A_shape[0],))
+    key, subkey = prng.split(key, 2)
+    matrix = prng.normal(subkey, shape=A_shape)
+    key, subkey = prng.split(key, 2)
+    rhs = prng.normal(subkey, shape=(A_shape[0],))
 
     def vecmat(vector):
         return matrix.T @ vector
 
     received, _stats = lstsq_fun(vecmat, rhs)
-    expected = jnp.linalg.lstsq(matrix, rhs)[0]
-    tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
-    assert jnp.allclose(received, expected, atol=tol, rtol=tol)
+    expected = linalg.lstsq(matrix, rhs)[0]
+    test_util.assert_allclose(received, expected)
 
 
-@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
-@ptc.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+@testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
+@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 def test_fwd_matches_numpy_lstsq_parametrized(lstsq_fun: Callable, A_shape: tuple):
-    key = jax.random.PRNGKey(1)
+    key = prng.prng_key(1)
 
-    key, subkey = jax.random.split(key, 2)
-    matrix = jax.random.normal(subkey, shape=A_shape)
-    key, subkey = jax.random.split(key, 2)
-    rhs = jax.random.normal(subkey, shape=(A_shape[0],))
+    key, subkey = prng.split(key, 2)
+    matrix = prng.normal(subkey, shape=A_shape)
+    key, subkey = prng.split(key, 2)
+    rhs = prng.normal(subkey, shape=(A_shape[0],))
 
     def vecmat(vector, A):
         return A.T @ vector
 
     received, _stats = lstsq_fun(vecmat, rhs, matrix)
-    expected = jnp.linalg.lstsq(matrix, rhs)[0]
-    tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
-    assert jnp.allclose(received, expected, atol=tol, rtol=tol)
+    expected = linalg.lstsq(matrix, rhs)[0]
+    test_util.assert_allclose(received, expected)
 
 
-@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
-@ptc.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+@testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
+@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 def test_fwd_matches_numpy_lstsq_damped(lstsq_fun: Callable, A_shape: tuple):
-    key = jax.random.PRNGKey(1)
+    key = prng.prng_key(1)
 
-    key, subkey = jax.random.split(key, 2)
-    matrix = jax.random.normal(subkey, shape=A_shape)
-    key, subkey = jax.random.split(key, 2)
-    rhs = jax.random.normal(subkey, shape=(A_shape[0],))
+    key, subkey = prng.split(key, 2)
+    matrix = prng.normal(subkey, shape=A_shape)
+    key, subkey = prng.split(key, 2)
+    rhs = prng.normal(subkey, shape=(A_shape[0],))
 
     def vecmat(vector):
         return matrix.T @ vector
 
     received, _stats = lstsq_fun(vecmat, rhs, damp=0.0)
-    expected = jnp.linalg.lstsq(matrix, rhs)[0]
-    tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
-    assert jnp.allclose(received, expected, atol=tol, rtol=tol)
+    expected = linalg.lstsq(matrix, rhs)[0]
+    test_util.assert_allclose(received, expected)

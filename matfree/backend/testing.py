@@ -22,3 +22,7 @@ def raises(err, /, match):
 
 def warns(warning, /):
     return pytest.warns(warning)
+
+
+def case():
+    return pytest_cases.case()
