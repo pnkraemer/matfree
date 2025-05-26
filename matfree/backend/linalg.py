@@ -96,3 +96,7 @@ def funm_schur(A, f, /):
 
 def funm_pade_exp(A, /):
     return jax.scipy.linalg.expm(A)
+
+
+def lstsq(A, b):
+    return jnp.linalg.lstsq(A, b)

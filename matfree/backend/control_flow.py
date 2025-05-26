@@ -22,3 +22,7 @@ def fori_loop(lower, upper, body_fun, init_val):
 
 def while_loop(cond_fun, body_fun, init_val):
     return jax.lax.while_loop(cond_fun, body_fun, init_val)
+
+
+def switch(index, branches, *operands):
+    return jax.lax.switch(index, branches, *operands)

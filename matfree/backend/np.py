@@ -93,6 +93,10 @@ def logical_and(a, b, /):
     return jnp.logical_and(a, b)
 
 
+def logical_not(a, /):
+    return jnp.logical_not(a)
+
+
 # Utility functions
 
 
@@ -133,6 +137,14 @@ def argsort(x, /):
 
 def nanmean(x, /, axis=None):
     return jnp.nanmean(x, axis)
+
+
+def elementwise_max(a, b, /):
+    return jnp.maximum(a, b)
+
+
+def elementwise_min(a, b, /):
+    return jnp.minimum(a, b)
 
 
 # Searching functions
