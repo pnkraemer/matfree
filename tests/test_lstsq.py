@@ -36,10 +36,48 @@ def test_fwd_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
     key, subkey = jax.random.split(key, 2)
     rhs = jax.random.normal(subkey, shape=(A_shape[0],))
 
+    def vecmat(vector):
+        return matrix.T @ vector
+
+    received, _stats = lstsq_fun(vecmat, rhs)
+    expected = jnp.linalg.lstsq(matrix, rhs)[0]
+    tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
+    assert jnp.allclose(received, expected, atol=tol, rtol=tol)
+
+
+@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
+@ptc.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+def test_fwd_matches_numpy_lstsq_parametrized(lstsq_fun: Callable, A_shape: tuple):
+    key = jax.random.PRNGKey(1)
+
+    key, subkey = jax.random.split(key, 2)
+    matrix = jax.random.normal(subkey, shape=A_shape)
+    key, subkey = jax.random.split(key, 2)
+    rhs = jax.random.normal(subkey, shape=(A_shape[0],))
+
     def vecmat(vector, A):
         return A.T @ vector
 
-    received, _stats = lstsq_fun(vecmat, rhs, matrix, damp=0.0)
+    received, _stats = lstsq_fun(vecmat, rhs, matrix)
+    expected = jnp.linalg.lstsq(matrix, rhs)[0]
+    tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
+    assert jnp.allclose(received, expected, atol=tol, rtol=tol)
+
+
+@ptc.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
+@ptc.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+def test_fwd_matches_numpy_lstsq_damped(lstsq_fun: Callable, A_shape: tuple):
+    key = jax.random.PRNGKey(1)
+
+    key, subkey = jax.random.split(key, 2)
+    matrix = jax.random.normal(subkey, shape=A_shape)
+    key, subkey = jax.random.split(key, 2)
+    rhs = jax.random.normal(subkey, shape=(A_shape[0],))
+
+    def vecmat(vector):
+        return matrix.T @ vector
+
+    received, _stats = lstsq_fun(vecmat, rhs, damp=0.0)
     expected = jnp.linalg.lstsq(matrix, rhs)[0]
     tol = jnp.sqrt(jnp.finfo(received.dtype).eps)
     assert jnp.allclose(received, expected, atol=tol, rtol=tol)
