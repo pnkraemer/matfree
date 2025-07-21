@@ -1,7 +1,7 @@
 """Tests for least-squares functionality."""
 
 from matfree import lstsq, test_util
-from matfree.backend import linalg, prng, testing
+from matfree.backend import func, linalg, prng, testing
 from matfree.backend.typing import Callable
 
 
@@ -24,53 +24,34 @@ def case_A_shape_square() -> tuple:
 
 @testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
-def test_fwd_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
+def test_value_and_grad_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
     key = prng.prng_key(1)
 
     key, subkey = prng.split(key, 2)
     matrix = prng.normal(subkey, shape=A_shape)
     key, subkey = prng.split(key, 2)
     rhs = prng.normal(subkey, shape=(A_shape[0],))
+    key, subkey = prng.split(key, num=2)
+    dsol = prng.normal(subkey, shape=(A_shape[1],))
 
-    def vecmat(vector):
-        return matrix.T @ vector
+    def lstsq_jnp(a, b):
+        sol, *_ = linalg.lstsq(a, b)
+        return sol
 
-    received, _stats = lstsq_fun(vecmat, rhs)
-    expected = linalg.lstsq(matrix, rhs)[0]
+    expected, expected_vjp = func.vjp(lstsq_jnp, matrix, rhs)
+    dmatrix1, drhs1 = expected_vjp(dsol)
+
+    def vecmat(vector, p_as_list):
+        [p] = p_as_list
+        return p.T @ vector
+
+    def lstsq_matfree(a, b):
+        sol, _ = lstsq_fun(vecmat, a, b)
+        return sol
+
+    received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix])
+    drhs2, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
+
     test_util.assert_allclose(received, expected)
-
-
-@testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
-@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
-def test_fwd_matches_numpy_lstsq_parametrized(lstsq_fun: Callable, A_shape: tuple):
-    key = prng.prng_key(1)
-
-    key, subkey = prng.split(key, 2)
-    matrix = prng.normal(subkey, shape=A_shape)
-    key, subkey = prng.split(key, 2)
-    rhs = prng.normal(subkey, shape=(A_shape[0],))
-
-    def vecmat(vector, A):
-        return A.T @ vector
-
-    received, _stats = lstsq_fun(vecmat, rhs, matrix)
-    expected = linalg.lstsq(matrix, rhs)[0]
-    test_util.assert_allclose(received, expected)
-
-
-@testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
-@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
-def test_fwd_matches_numpy_lstsq_damped(lstsq_fun: Callable, A_shape: tuple):
-    key = prng.prng_key(1)
-
-    key, subkey = prng.split(key, 2)
-    matrix = prng.normal(subkey, shape=A_shape)
-    key, subkey = prng.split(key, 2)
-    rhs = prng.normal(subkey, shape=(A_shape[0],))
-
-    def vecmat(vector):
-        return matrix.T @ vector
-
-    received, _stats = lstsq_fun(vecmat, rhs, damp=0.0)
-    expected = linalg.lstsq(matrix, rhs)[0]
-    test_util.assert_allclose(received, expected)
+    test_util.assert_allclose(dmatrix1, dmatrix2)
+    test_util.assert_allclose(drhs1, drhs2)
