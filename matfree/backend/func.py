@@ -38,8 +38,16 @@ def jacfwd(fun, /, argnums=0):
     return jax.jacfwd(fun, argnums)
 
 
-def vjp(func, /, *primals):
-    return jax.vjp(func, *primals)
+def vjp(func, *primals, has_aux=False):
+    return jax.vjp(func, *primals, has_aux=has_aux)
+
+
+def linear_transpose(func, *primals):
+    return jax.linear_transpose(func, *primals)
+
+
+def grad(func):
+    return jax.grad(func)
 
 
 def custom_vjp(func, /, nondiff_argnums=()):
