@@ -483,9 +483,7 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
     Pi_gamma = -dc * c * linalg.outer(e_1, e_1) + H @ dH.T - (dQ.T @ Q)
 
     # Prepare reorthogonalisation:
-    P = Q.T
-    ps = dH.T
-    ps_mask = np.tril(np.ones((num_matvecs, num_matvecs)), 1)
+    reortho_mask = np.tril(np.ones((num_matvecs, num_matvecs)), 1)
 
     # Loop over those values
     indices = np.arange(0, len(H), step=1)
@@ -500,8 +498,8 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
         "lower_mask": lower_mask,
         "Pi_gamma": Pi_gamma,
         "Pi_xi": Pi_xi,
-        "p": ps,
-        "p_mask": ps_mask,
+        "dH_T_k": dH.T,
+        "reortho_mask_k": reortho_mask,
         "q": Q.T,
     }
 
@@ -513,9 +511,9 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
         return output, ()
 
     # Scan
-    init = (lambda_k, Lambda, Gamma, P, dp)
+    init = (lambda_k, Lambda, Gamma, dp)
     result, _ = control_flow.scan(adjoint_step, init, xs=scan_over, reverse=True)
-    (lambda_k, Lambda, Gamma, _P, dp) = result
+    (lambda_k, Lambda, Gamma, dp) = result
 
     # Solve for the input gradient
     dv = lambda_k * c
@@ -528,7 +526,6 @@ def _hessenberg_adjoint_step(
     lambda_k,
     Lambda,
     Gamma,
-    P,
     dp,
     *,
     # Matrix-vector product
@@ -546,17 +543,22 @@ def _hessenberg_adjoint_step(
     Pi_xi,
     q,
     # Loop over: reorthogonalisation
-    p,
-    p_mask,
+    dH_T_k,
+    reortho_mask_k,
     # Other parameters
     Q,
     reortho: str,
 ):
     # Reorthogonalise
     if reortho == "full":
-        P = p_mask[:, None] * P
-        p = p_mask * p
-        lambda_k = lambda_k - P.T @ (P @ lambda_k) + P.T @ p
+        # Get rid of the (I_ll o Sigma) term by multiplying with a mask
+        Q_masked = reortho_mask_k[None, :] * Q
+        rhs_masked = reortho_mask_k * dH_T_k
+
+        # Project x to Q^T x = y via
+        # x = x - Q Q^\top x + Q Q^\top x = x - Q Q^\top x + Q y
+        # (here, x = lambda_k and y = dH_T_k)
+        lambda_k = lambda_k - Q_masked @ (Q_masked.T @ lambda_k) + Q_masked @ rhs_masked
 
     # Transposed matvec and parameter-gradient in a single matvec
     _, vjp = func.vjp(lambda u, v: matvec(u, *v), q, params)
@@ -572,7 +574,7 @@ def _hessenberg_adjoint_step(
     xi = Pi_xi + (Gamma + Gamma.T)[idx, :] @ Q.T
     lambda_k = xi - (alpha * lambda_k - vecmat_lambda) - beta_plus @ Lambda.T
     lambda_k /= beta_minus
-    return lambda_k, Lambda, Gamma, P, dp
+    return lambda_k, Lambda, Gamma, dp
 
 
 def _extract_diag(x, offset=0):
