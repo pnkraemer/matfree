@@ -10,7 +10,8 @@ def case_expm():
 
 @testing.parametrize("reortho", ["full", "none"])
 @testing.parametrize_with_cases("dense_funm", cases=".", prefix="case_")
-def test_funm_arnoldi_matches_schur_implementation(dense_funm, reortho, n=11):
+@testing.parametrize("n", [11])
+def test_funm_arnoldi_matches_schur_implementation(dense_funm, reortho, n):
     """Test matrix-function-vector products via the Arnoldi iteration."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).

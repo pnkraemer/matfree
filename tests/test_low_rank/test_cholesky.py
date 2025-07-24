@@ -13,8 +13,9 @@ def case_cholesky_partial_pivot():
     return low_rank.cholesky_partial_pivot
 
 
+@testing.parametrize("n", [5])
 @testing.parametrize_with_cases("cholesky", cases=".", prefix="case_cholesky")
-def test_full_rank_cholesky_reconstructs_matrix(cholesky, n=5):
+def test_full_rank_cholesky_reconstructs_matrix(cholesky, n):
     key = prng.prng_key(2)
 
     cov_eig = 1.0 + prng.uniform(key, shape=(n,), dtype=float)
@@ -26,8 +27,10 @@ def test_full_rank_cholesky_reconstructs_matrix(cholesky, n=5):
     assert np.allclose(approximation @ approximation.T, cov, atol=tol, rtol=tol)
 
 
+@testing.parametrize("n", [4])
+@testing.parametrize("rank", [4])
 @testing.parametrize_with_cases("cholesky", cases=".", prefix="case_cholesky")
-def test_output_the_right_shapes(cholesky: Callable, n=4, rank=4):
+def test_output_the_right_shapes(cholesky: Callable, n, rank):
     key = prng.prng_key(1)
 
     cov_eig = 0.1 + prng.uniform(key, shape=(n,))
@@ -37,7 +40,8 @@ def test_output_the_right_shapes(cholesky: Callable, n=4, rank=4):
     assert approximation.shape == (n, rank)
 
 
-def test_full_rank_nopivot_matches_cholesky(n=10):
+@testing.parametrize("n", [10])
+def test_full_rank_nopivot_matches_cholesky(n):
     key = prng.prng_key(2)
     cov_eig = 0.01 + prng.uniform(key, shape=(n,), dtype=float)
     cov = test_util.symmetric_matrix_from_eigenvalues(cov_eig)
@@ -56,7 +60,9 @@ def test_full_rank_nopivot_matches_cholesky(n=10):
     assert np.allclose(received, reference, atol=1e-6)
 
 
-def test_pivoting_improves_the_estimate(n=10, rank=5):
+@testing.parametrize("n", [10])
+@testing.parametrize("rank", [5])
+def test_pivoting_improves_the_estimate(n, rank):
     key = prng.prng_key(1)
 
     cov_eig = 0.1 + prng.uniform(key, shape=(n,))

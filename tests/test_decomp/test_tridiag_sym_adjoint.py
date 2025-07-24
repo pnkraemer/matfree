@@ -5,7 +5,9 @@ from matfree.backend import func, linalg, np, prng, testing, tree
 
 
 @testing.parametrize("reortho", ["full", "none"])
-def test_adjoint_vjp_matches_jax_vjp(reortho, n=10, krylov_num_matvecs=4):
+@testing.parametrize("n", [10])
+@testing.parametrize("krylov_num_matvecs", [4])
+def test_adjoint_vjp_matches_jax_vjp(reortho, n, krylov_num_matvecs):
     """Test that the custom VJP yields the same output as autodiff."""
     # Set up a test-matrix
     eigvals = prng.uniform(prng.prng_key(2), shape=(n,)) + 1.0

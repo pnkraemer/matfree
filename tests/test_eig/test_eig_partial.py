@@ -4,7 +4,8 @@ from matfree import decomp, eig
 from matfree.backend import linalg, np, testing
 
 
-def test_equal_to_linalg_eig(nrows=7):
+@testing.parametrize("nrows", [7])
+def test_equal_to_linalg_eig(nrows):
     """The output of full-depth decomposition should be equal (*) to linalg.svd().
 
     (*) Note: The singular values should be identical,
