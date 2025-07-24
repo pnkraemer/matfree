@@ -1,6 +1,7 @@
 """Create developer documentation from the README."""
 
 import contextlib
+import itertools
 import os
 from re import sub
 
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     # Create all dev-docs pages
 
     indices = [*indices, -1]
-    for i, (idx_from, idx_to) in enumerate(zip(indices[:-1], indices[1:])):
+    for i, (idx_from, idx_to) in enumerate(itertools.pairwise(indices)):
         # Extract subsection of README
         block = full_readme[idx_from:idx_to]
 
