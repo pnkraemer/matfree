@@ -4,7 +4,8 @@ from matfree import decomp, eig, test_util
 from matfree.backend import linalg, np, testing
 
 
-def test_equal_to_linalg_eigh(nrows=10):
+@testing.parametrize("nrows", [10])
+def test_equal_to_linalg_eigh(nrows):
     eigvals = np.arange(1.0, 1.0 + nrows)
     A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
     v0 = np.ones((nrows,))

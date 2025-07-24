@@ -6,7 +6,8 @@ from matfree.backend import linalg, np, prng, testing
 
 @testing.parametrize("dense_funm", [funm.dense_funm_sym_eigh, funm.dense_funm_schur])
 @testing.parametrize("reortho", ["full", "none"])
-def test_funm_lanczos_sym_matches_eigh_implementation(dense_funm, reortho, n=11):
+@testing.parametrize("n", [11])
+def test_funm_lanczos_sym_matches_eigh_implementation(dense_funm, reortho, n):
     """Test matrix-function-vector products via Lanczos' algorithm."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
