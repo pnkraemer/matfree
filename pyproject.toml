@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Matrix-free numerical linear algebra."
 readme = "README.md"
-requires-python=">=3.9"
+requires-python=">=3.11"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
