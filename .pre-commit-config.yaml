@@ -2,21 +2,11 @@
 default_language_version:
   python: python3
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
-    hooks:
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: check-merge-conflict
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
     rev: v0.12.4
     hooks:
-      # Run the linter.
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
-      # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.17.0

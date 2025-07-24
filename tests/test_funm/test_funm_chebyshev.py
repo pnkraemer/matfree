@@ -1,10 +1,11 @@
 """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
 
 from matfree import funm, test_util
-from matfree.backend import linalg, np, prng
+from matfree.backend import linalg, np, prng, testing
 
 
-def test_funm_chebyshev(n=12):
+@testing.parametrize("n", [12])
+def test_funm_chebyshev(n):
     """Test matrix-polynomial-vector algorithms via Chebyshev's recursion."""
     # Create a test-problem: matvec, matrix function,
     # vector, and parameters (a matrix).
