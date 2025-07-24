@@ -21,9 +21,9 @@ def lsmr(
     btol: float = 1e-6,
     ctol: float = 1e-8,
     maxiter: int = 1_000_000,
-    while_loop=control_flow.while_loop,
-    use_custom_vjp=True,
-    damp=0.0,
+    while_loop: Callable = control_flow.while_loop,
+    custom_vjp: bool = True,
+    damp: float = 0.0,
 ):
     """Construct an experimental implementation of LSMR.
 
@@ -337,7 +337,7 @@ def lsmr(
             "istop": state.istop,
         }
 
-    if use_custom_vjp:
+    if custom_vjp:
         return _lstsq_custom_vjp(run)
     return run
 
