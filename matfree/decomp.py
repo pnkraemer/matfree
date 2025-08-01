@@ -498,7 +498,7 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
         "lower_mask": lower_mask,
         "Pi_gamma": Pi_gamma,
         "Pi_xi": Pi_xi,
-        "dH_k": dH.T,
+        "dh_k": dH.T,
         "reortho_mask_k": reortho_mask,
         "q": Q.T,
     }
@@ -543,7 +543,7 @@ def _hessenberg_adjoint_step(
     Pi_xi,
     q,
     # Loop over: reorthogonalisation
-    dH_k,
+    dh_k,
     reortho_mask_k,
     # Other parameters
     Q,
@@ -553,11 +553,11 @@ def _hessenberg_adjoint_step(
     if reortho == "full":
         # Get rid of the (I_ll o Sigma) term by multiplying with a mask
         Q_masked = reortho_mask_k[None, :] * Q
-        rhs_masked = reortho_mask_k * dH_k
+        rhs_masked = reortho_mask_k * dh_k
 
         # Project x to Q^T x = y via
         # x = x - Q Q^\top x + Q Q^\top x = x - Q Q^\top x + Q y
-        # (here, x = lambda_k and y = dH_k)
+        # (here, x = lambda_k and y = dh_k)
         lambda_k = lambda_k - Q_masked @ (Q_masked.T @ lambda_k) + Q_masked @ rhs_masked
 
     # Transposed matvec and parameter-gradient in a single matvec
