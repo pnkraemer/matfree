@@ -472,14 +472,14 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
     lower_mask = lower(np.ones((num_matvecs, num_matvecs)))
 
     # Initialise
-    eta = dH @ e_K - Q.T @ dr
-    lambda_k = dr + Q @ eta
+    gamma = dH @ e_K - Q.T @ dr
+    lambda_k = dr + Q @ gamma
     Lambda = np.zeros_like(Q)
     Gamma = np.zeros_like(dQ.T @ Q)
     dp = tree.tree_map(np.zeros_like, params)
 
     # Prepare more  auxiliary matrices
-    Pi_xi = dQ.T + linalg.outer(eta, r)
+    Pi_xi = dQ.T + linalg.outer(gamma, r)
     Pi_gamma = -dc * c * linalg.outer(e_1, e_1) + H @ dH.T - (dQ.T @ Q)
 
     # Prepare reorthogonalisation:
