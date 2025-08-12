@@ -463,6 +463,7 @@ def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: st
     _, num_matvecs = np.shape(Q)
     if num_matvecs == 0:
         msg = "Custom Hessenberg-adjoints are not implemented for num_matvecs = 0."
+        # todo: implement this corner case
         raise ValueError(msg)
 
     # Prepare a bunch of auxiliary matrices
