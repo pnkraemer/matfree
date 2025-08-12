@@ -36,7 +36,7 @@ def test_adjoint_matches_jax_dot_vjp(nrows, num_matvecs, reortho, dtype):
 
     # Assert that the values are only similar, not identical
     assert not np.all(dv_adjoint == dv_autodiff)
-    assert not np.all(dp_adjoint == dp_autodiff) @ testing.parametrize("nrows", [3])
+    assert not np.all(dp_adjoint == dp_autodiff)
 
 
 @testing.parametrize("nrows", [3])
