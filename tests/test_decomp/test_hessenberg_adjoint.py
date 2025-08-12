@@ -36,7 +36,29 @@ def test_adjoint_matches_jax_dot_vjp(nrows, num_matvecs, reortho, dtype):
 
     # Assert that the values are only similar, not identical
     assert not np.all(dv_adjoint == dv_autodiff)
-    assert not np.all(dp_adjoint == dp_autodiff)
+    assert not np.all(dp_adjoint == dp_autodiff) @ testing.parametrize("nrows", [3])
+
+
+@testing.parametrize("nrows", [3])
+@testing.parametrize("dtype", [float])
+def test_custom_adjoint_k_zero_raises_valueerror(nrows, dtype):
+    # Create a matrix and a direction as a test-case
+    A = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=dtype)
+    v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=dtype)
+
+    # Set up the algorithms
+    algorithm_adjoint = decomp.hessenberg(0, reortho="full")
+
+    # Forward pass
+    algorithm_adjoint = func.partial(algorithm_adjoint, lambda s, p: p @ s)
+    fwd_output, vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
+
+    # Random input gradients (no sparsity at all)
+    vjp_input = test_util.tree_random_like(prng.prng_key(3), fwd_output)
+
+    # Call the auto-diff VJP
+    with testing.raises(ValueError, match="= 0"):
+        dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
 
 
 @testing.parametrize("nrows", [15])

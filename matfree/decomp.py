@@ -461,6 +461,9 @@ def _hessenberg_forward_step(Q, H, v, length, matvec, *params, idx, reortho: str
 def _hessenberg_adjoint(matvec, *params, Q, H, r, c, dQ, dH, dr, dc, reortho: str):
     # Extract the matrix shapes from Q
     _, num_matvecs = np.shape(Q)
+    if num_matvecs == 0:
+        msg = "Custom Hessenberg-adjoints are not implemented for num_matvecs = 0."
+        raise ValueError(msg)
 
     # Prepare a bunch of auxiliary matrices
 
