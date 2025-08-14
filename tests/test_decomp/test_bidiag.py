@@ -20,12 +20,35 @@ def make_A(nrows, ncols, num_significant_singular_vals):
 def test_bidiag_decomposition_is_satisfied(
     nrows, ncols, num_significant_singular_vals, num_matvecs
 ):
-    """Test that Lanczos tridiagonalisation yields an orthogonal-tridiagonal decomp."""
+    """Test that bidiagonalisation yields an orthogonal-bidiagonal decomp."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
 
     algorithm = decomp.bidiag(num_matvecs, materialize=True)
+    (U, V), B, res, ln = algorithm(lambda v: A @ v, v0)
+
+    test_util.assert_columns_orthonormal(U)
+    test_util.assert_columns_orthonormal(V)
+
+    em = np.eye(num_matvecs)[:, -1]
+    test_util.assert_allclose(A @ V, U @ B)
+    test_util.assert_allclose(A.T @ U, V @ B.T + linalg.outer(res, em))
+    test_util.assert_allclose(1.0 / linalg.vector_norm(v0), ln)
+
+
+@testing.parametrize("nrows", [15, 13])
+@testing.parametrize("ncols", [15, 13])
+@testing.parametrize("num_matvecs", [12])
+def test_bidiag_decomposition_is_satisfied_hilbert(nrows, ncols, num_matvecs):
+    """Test that bidiagonalisation implementation is numerically stable."""
+    a = np.arange(0, max(ncols, nrows), step=1)
+    A = 1.0 / (1.0 + a[:, None] + a[None, :])[:nrows, :ncols]
+
+    key = prng.prng_key(1)
+    v0 = prng.normal(key, shape=(ncols,))
+
+    algorithm = decomp.bidiag(num_matvecs, materialize=True, reortho="full")
     (U, V), B, res, ln = algorithm(lambda v: A @ v, v0)
 
     test_util.assert_columns_orthonormal(U)
