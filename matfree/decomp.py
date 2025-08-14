@@ -586,7 +586,7 @@ def _extract_diag(x, offset=0):
     return linalg.diagonal_matrix(diag, offset=offset)
 
 
-def bidiag(num_matvecs: int, /, materialize: bool = True):
+def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full"):
     """Construct an implementation of **bidiagonalisation**.
 
     Uses pre-allocation and full reorthogonalisation.
@@ -670,15 +670,23 @@ def bidiag(num_matvecs: int, /, materialize: bool = True):
         # Use jax.vjp to evaluate the vector-matrix product
         Av_eval, vA = func.vjp(lambda v: Av(v, *parameters), vk)
         uk = Av_eval - beta * Us[i - 1]
+        if reortho == "full":
+            # For some reason, two reorthogonalsiation calls are needed...
+            uk = uk - Us.T @ (Us @ uk)
+            uk = uk - Us.T @ (Us @ uk)
+
         uk, alpha = _normalise(uk)
-        uk, *_ = _gram_schmidt_classical(uk, Us)  # full reorthogonalisation
         Us = Us.at[i].set(uk)
         alphas = alphas.at[i].set(alpha)
 
         (vA_eval,) = vA(uk)
         vk = vA_eval - alpha * vk
+        if reortho == "full":
+            # For some reason, two reorthogonalsiation calls are needed...
+            vk = vk - Vs.T @ (Vs @ vk)
+            vk = vk - Vs.T @ (Vs @ vk)
+
         vk, beta = _normalise(vk)
-        vk, *_ = _gram_schmidt_classical(vk, Vs)  # full reorthogonalisation
 
         return State(i + 1, Us, Vs, alphas, betas, beta, vk)
 
@@ -690,16 +698,6 @@ def bidiag(num_matvecs: int, /, materialize: bool = True):
             return uk_all.T, B, vk_all, (beta, vk)
 
         return uk_all.T, (alphas, betas[1:]), vk_all, (beta, vk)
-
-    def _gram_schmidt_classical(vec, vectors):  # Gram-Schmidt
-        vec, coeffs = control_flow.scan(_gram_schmidt_classical_step, vec, xs=vectors)
-        vec, length = _normalise(vec)
-        return vec, length, coeffs
-
-    def _gram_schmidt_classical_step(vec1, vec2):
-        coeff = linalg.inner(vec1, vec2)
-        vec_ortho = vec1 - coeff * vec2
-        return vec_ortho, coeff
 
     def _normalise(vec):
         length = linalg.vector_norm(vec)
