@@ -46,6 +46,7 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
         [p] = p_as_list
         return p.T @ vector
 
+    @func.jit
     def lstsq_matfree(a, b):
         lsmr = lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
         sol, _ = lsmr(vecmat, a, b, x0=x0)

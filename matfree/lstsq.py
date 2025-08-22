@@ -78,6 +78,12 @@ def lsmr(
     # solver has been constructed. So it's part of the run()
     # function, not the LSMR constructor.
     def run(vecmat, b, *vecmat_args, x0=None, damp=0.0):
+        """Run LSMR.
+
+        Matches Scipy's implementation.
+
+        Warning: gradients wrt "x0" and "damp" are not defined.
+        """
         x_like = func.eval_shape(vecmat, b, *vecmat_args)
         (ncols,) = x_like.shape
         x = x0 if x0 is not None else np.zeros(ncols, dtype=b.dtype)
@@ -404,14 +410,14 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         cache = {"x": x, "rhs": rhs, "vecmat_args": vecmat_args, "x0": x0, "damp": damp}
         return (x, stats), cache
 
-    def lstsq_rev(vecmat, x0, damp, cache, dmu_dx):
+    def lstsq_rev(vecmat, cache, dmu_dx):
         dmu_dx, _ = dmu_dx
         x_like = func.eval_shape(vecmat, cache["rhs"], *cache["vecmat_args"])
         if cache["rhs"].size <= x_like.size:
-            return lstsq_rev_wide(vecmat, x0, damp, cache, dmu_dx)
-        return lstsq_rev_tall(vecmat, x0, damp, cache, dmu_dx)
+            return lstsq_rev_wide(vecmat, cache, dmu_dx)
+        return lstsq_rev_tall(vecmat, cache, dmu_dx)
 
-    def lstsq_rev_tall(vecmat, x0, damp, cache, dmu_dx):
+    def lstsq_rev_tall(vecmat, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
         x0 = cache["x0"]
@@ -438,11 +444,13 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             return linalg.inner(rA, p) + linalg.inner(pAA, x)
 
         dmu_dparams = grad_theta(vecmat_args)
-        return dmu_db, dmu_dparams
+        return dmu_db, dmu_dparams, None, None
 
-    def lstsq_rev_wide(vecmat, x0, damp, cache, dmu_dx):
+    def lstsq_rev_wide(vecmat, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
+        x0 = cache["x0"]
+        damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
         def vecmat_noargs(z):
@@ -467,8 +475,8 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
 
         grad_vecmat_args = grad_theta(vecmat_args)
         grad_rhs = -q
-        return grad_rhs, grad_vecmat_args
+        return grad_rhs, grad_vecmat_args, None, None
 
-    lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0, 3, 4))
+    lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
     lstsq_fun.defvjp(lstsq_fwd, lstsq_rev)  # type: ignore
     return lstsq_fun
