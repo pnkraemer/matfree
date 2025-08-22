@@ -1,7 +1,7 @@
 """Tests for least-squares functionality."""
 
 from matfree import lstsq, test_util
-from matfree.backend import func, linalg, np, prng, testing
+from matfree.backend import config, func, linalg, np, prng, testing
 
 
 def case_A_shape_wide() -> tuple:
@@ -66,6 +66,9 @@ def test_output_matches_original_scipy_lsmr(A_shape: tuple):
     import numpy as onp  # noqa: ICN001
     import scipy.sparse.linalg
 
+    # Scipy uses double precision, so we emulate this behaviour
+    config.update("jax_enable_x64", True)
+
     key = prng.prng_key(1)
     key, subkey = prng.split(key, 2)
     matrix = prng.normal(subkey, shape=A_shape)
@@ -90,3 +93,6 @@ def test_output_matches_original_scipy_lsmr(A_shape: tuple):
     )
 
     assert np.allclose(sol, np.asarray(sol2))
+
+    # Scipy uses double precision, so we emulate this behaviour
+    config.update("jax_enable_x64", False)
