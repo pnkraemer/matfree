@@ -77,21 +77,28 @@ def lsmr(
     # more often than not, the matvec is defined after the LSMR
     # solver has been constructed. So it's part of the run()
     # function, not the LSMR constructor.
-    def run(vecmat, b, *vecmat_args, x0=None, damp=0.0):
+    def run(vecmat, b, *vecmat_args, x0, damp=0.0):
+        x_like = func.eval_shape(vecmat, b, *vecmat_args)
+        (ncols,) = x_like.shape
+        x = x0 if x0 is not None else np.zeros(ncols, dtype=b.dtype)
+
+        # Combine the lstsq_fun wiht a closure convert, because
+        # typically, vecmat is a lambda function and if we want to
+        # have explicit parameter-VJPs, all parameters need to be explicit.
+        # This means that in this function here, we always use lstsq_public
+        # (and return lstsq_public!), but provide lstsq_fun with the custom VJP.
+        # Thereby, the function that gets the custom VJP is, from now on, only
+        # called after a previous call to closure convert which 'fixes' all namespaces.
         vecmat_closure, args = func.closure_convert(
             lambda s: vecmat(s, *vecmat_args), b
         )
-        return _run(vecmat_closure, b, args, x0, damp)
+        return _run(vecmat_closure, b, args, x, damp)
 
     def _run(vecmat, b, vecmat_args, x0, damp):
         def vecmat_noargs(v):
             return vecmat(v, *vecmat_args)
 
-        x_like = func.eval_shape(vecmat, b, *vecmat_args)
-        (ncols,) = x_like.shape
-        x0 = x0 if x0 is not None else np.ones(ncols, dtype=b.dtype)
         state, normb, matvec_noargs = init(vecmat_noargs, b, x0)
-
         step_fun = make_step(matvec_noargs, normb=normb, damp=damp)
         cond_fun = make_cond_fun()
         state = while_loop(cond_fun, step_fun, state)
@@ -386,30 +393,19 @@ def _sym_ortho_3(a, b):
 
 
 def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
-    # Combine the lstsq_fun wiht a closure convert, because
-    # typically, vecmat is a lambda function and if we want to
-    # have explicit parameter-VJPs, all parameters need to be explicit.
-    # This means that in this function here, we always use lstsq_public
-    # (and return lstsq_public!), but provide lstsq_fun with the custom VJP.
-    # Thereby, the function that gets the custom VJP is, from now on, only
-    # called after a previous call to closure convert which 'fixes' all namespaces.
-    # def lstsq_public(vecmat, rhs, *vecmat_args):
-    #     vecmat_, args = func.closure_convert(lambda s: vecmat(s, *vecmat_args), rhs)
-    #     return lstsq_fun(vecmat_, rhs, *args)
-
     def lstsq_fwd(vecmat, rhs, vecmat_args, x0, damp):
         x, stats = lstsq_fun(vecmat, rhs, vecmat_args, x0, damp)
         cache = {"x": x, "rhs": rhs, "vecmat_args": vecmat_args, "x0": x0, "damp": damp}
         return (x, stats), cache
 
-    def lstsq_rev(vecmat, cache, dmu_dx):
+    def lstsq_rev(vecmat, x0, damp, cache, dmu_dx):
         dmu_dx, _ = dmu_dx
         x_like = func.eval_shape(vecmat, cache["rhs"], *cache["vecmat_args"])
         if cache["rhs"].size <= x_like.size:
-            return lstsq_rev_wide(vecmat, cache, dmu_dx)
-        return lstsq_rev_tall(vecmat, cache, dmu_dx)
+            return lstsq_rev_wide(vecmat, x0, damp, cache, dmu_dx)
+        return lstsq_rev_tall(vecmat, x0, damp, cache, dmu_dx)
 
-    def lstsq_rev_tall(vecmat, cache, dmu_dx):
+    def lstsq_rev_tall(vecmat, x0, damp, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
         x0 = cache["x0"]
@@ -422,11 +418,12 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         def matvec_noargs(z):
             return func.vjp(vecmat_noargs, rhs)[1](z)[0]
 
-        dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), None, damp)[0]
+        x0_rev = np.zeros_like(rhs)
+        dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
         p = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, damp)[0]
 
-        Ax_minus_b = matvec_noargs(x) - rhs
         Ap = matvec_noargs(p)
+        Ax_minus_b = matvec_noargs(x) - rhs
 
         @func.grad
         def grad_theta(theta):
@@ -435,14 +432,11 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             return linalg.inner(rA, p) + linalg.inner(pAA, x)
 
         dmu_dparams = grad_theta(vecmat_args)
-        dmu_dx0 = np.zeros_like(x0) if x0 is not None else None
-        return dmu_db, dmu_dparams, dmu_dx0, np.zeros_like(damp)
+        return dmu_db, dmu_dparams
 
-    def lstsq_rev_wide(vecmat, cache, dmu_dx):
+    def lstsq_rev_wide(vecmat, x0, damp, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
-        x0 = cache["x0"]
-        damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
         def vecmat_noargs(z):
@@ -452,11 +446,12 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             return func.linear_transpose(vecmat_noargs, rhs)(z)[0]
 
         # Compute the Lagrange multiplier from the forward pass
-        y = lstsq_fun(matvec_noargs, x, (), None, damp)[0]
+        x0_rev = np.zeros_like(rhs)
+        y = lstsq_fun(matvec_noargs, x, (), x0_rev, damp)[0]
 
         # Compute the two solutions of the backward pass
         p = dmu_dx - lstsq_fun(vecmat_noargs, matvec_noargs(dmu_dx), (), x0, damp)[0]
-        q = lstsq_fun(matvec_noargs, p - dmu_dx, (), None, damp)[0]
+        q = lstsq_fun(matvec_noargs, p - dmu_dx, (), x0_rev, damp)[0]
 
         @func.grad
         def grad_theta(theta):
@@ -466,9 +461,8 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
 
         grad_vecmat_args = grad_theta(vecmat_args)
         grad_rhs = -q
-        dmu_dx0 = np.zeros_like(x0) if x0 is not None else None
-        return grad_rhs, grad_vecmat_args, dmu_dx0, np.zeros_like(damp)
+        return grad_rhs, grad_vecmat_args
 
-    lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
+    lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0, 3, 4))
     lstsq_fun.defvjp(lstsq_fwd, lstsq_rev)  # type: ignore
     return lstsq_fun

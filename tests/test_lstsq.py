@@ -50,5 +50,8 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     drhs2, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
 
     test_util.assert_allclose(received, expected)
-    test_util.assert_allclose(dmatrix1, dmatrix2)
+
+    print(dmatrix1)
+    print(dmatrix2)
     test_util.assert_allclose(drhs1, drhs2)
+    test_util.assert_allclose(dmatrix1, dmatrix2)
