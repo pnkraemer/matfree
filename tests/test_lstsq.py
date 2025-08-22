@@ -28,6 +28,14 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     key, subkey = prng.split(key, num=2)
     dsol = prng.normal(subkey, shape=(A_shape[1],))
 
+    # If the matrix is wide, any nonzero initial guess affects the optimal solution
+    # so the comparison to np.linalg.lstsq() is no longer valid. Thus, the caveat below.
+    key, subkey = prng.split(key, num=2)
+    is_wide = A_shape[1] > A_shape[0]
+    x0 = (
+        prng.normal(subkey, shape=(A_shape[1],)) if provide_x0 and not is_wide else None
+    )
+
     def lstsq_jnp(a, b):
         sol, *_ = linalg.lstsq(a, b)
         return sol
@@ -39,8 +47,6 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
         [p] = p_as_list
         return p.T @ vector
 
-    x0 = 100 * np.ones_like(expected) if provide_x0 else None
-
     def lstsq_matfree(a, b):
         lsmr = lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
         sol, _ = lsmr(vecmat, a, b, x0=x0)
@@ -49,6 +55,8 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix])
     drhs2, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
 
+    print(received)
+    print(expected)
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)
     test_util.assert_allclose(dmatrix1, dmatrix2)
