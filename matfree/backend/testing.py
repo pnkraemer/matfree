@@ -24,5 +24,9 @@ def warns(warning, /):
     return pytest.warns(warning)
 
 
+def filterwarnings(warning, /):
+    return pytest.mark.filterwarnings(warning)
+
+
 def case():
     return pytest_cases.case()

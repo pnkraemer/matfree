@@ -50,8 +50,38 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     drhs2, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
 
     test_util.assert_allclose(received, expected)
-
-    print(dmatrix1)
-    print(dmatrix2)
     test_util.assert_allclose(drhs1, drhs2)
     test_util.assert_allclose(dmatrix1, dmatrix2)
+
+
+@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+@testing.filterwarnings("ignore: overflow encountered in")  # SciPy LSMR warns...
+def test_output_matches_original_scipy_lsmr(A_shape: tuple):
+    """Assert that the implementation of scipy's LSMR is matched exactly."""
+    import numpy as onp  # noqa: ICN001
+    import scipy.sparse.linalg
+
+    key = prng.prng_key(1)
+    key, subkey = prng.split(key, 2)
+    matrix = prng.normal(subkey, shape=A_shape)
+    key, subkey = prng.split(key, 2)
+    rhs = prng.normal(subkey, shape=(A_shape[0],))
+    key, subkey = prng.split(key, num=2)
+    x0 = prng.normal(subkey, shape=(A_shape[1],))
+    key, subkey = prng.split(key, num=2)
+    damp = (prng.uniform(subkey, shape=())) ** 2
+
+    # Our code
+    lsmr = lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
+    sol, _ = lsmr(lambda v: matrix.T @ v, rhs, damp=damp, x0=x0)
+
+    # Original NumPy
+    matrix = onp.asarray(matrix)
+    rhs = onp.asarray(rhs)
+    x0 = onp.asarray(x0)
+    damp = onp.asarray(damp)
+    sol2, *_ = scipy.sparse.linalg.lsmr(
+        matrix, rhs, atol=1e-5, btol=1e-5, conlim=1e5, damp=damp, x0=x0
+    )
+
+    assert np.allclose(sol, sol2)

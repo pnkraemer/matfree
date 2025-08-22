@@ -77,7 +77,7 @@ def lsmr(
     # more often than not, the matvec is defined after the LSMR
     # solver has been constructed. So it's part of the run()
     # function, not the LSMR constructor.
-    def run(vecmat, b, *vecmat_args, x0, damp=0.0):
+    def run(vecmat, b, *vecmat_args, x0=None, damp=0.0):
         x_like = func.eval_shape(vecmat, b, *vecmat_args)
         (ncols,) = x_like.shape
         x = x0 if x0 is not None else np.zeros(ncols, dtype=b.dtype)
@@ -98,21 +98,27 @@ def lsmr(
         def vecmat_noargs(v):
             return vecmat(v, *vecmat_args)
 
-        state, normb, matvec_noargs = init(vecmat_noargs, b, x0)
+        def matvec_noargs(w):
+            matvec = func.linear_transpose(vecmat_noargs, b)
+            (Aw,) = matvec(w)
+            return Aw
+
+        state, normb = init(matvec_noargs, b, x0)
         step_fun = make_step(matvec_noargs, normb=normb, damp=damp)
         cond_fun = make_cond_fun()
         state = while_loop(cond_fun, step_fun, state)
         stats_ = stats(state)
-        return state.x - x0, stats_
+        return state.x, stats_
 
-    def init(vecmat, b, x):
+    def init(matvec_noargs, b, x):
         normb = linalg.vector_norm(b)
-        beta = normb
 
-        u = b
+        Ax, vecmat_noargs = func.vjp(matvec_noargs, x)
+        u = b - Ax
+        beta = linalg.vector_norm(u)
         u = u / np.where(beta > 0, beta, 1.0)
 
-        v, matvec = func.vjp(vecmat, u)
+        (v,) = vecmat_noargs(u)
         alpha = linalg.vector_norm(v)
         v = v / np.where(alpha > 0, alpha, 1)
         v = np.where(beta == 0, np.zeros_like(v), v)
@@ -189,7 +195,7 @@ def lsmr(
             istop=0,
         )
         state = tree.tree_map(np.asarray, state)
-        return state, normb, lambda *a: matvec(*a)[0]
+        return state, normb
 
     def make_step(matvec, normb: float, damp: float) -> Callable:
         def step(state: State) -> State:
