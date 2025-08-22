@@ -32,9 +32,8 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     # so the comparison to np.linalg.lstsq() is no longer valid. Thus, the caveat below.
     key, subkey = prng.split(key, num=2)
     is_wide = A_shape[1] > A_shape[0]
-    x0 = (
-        prng.normal(subkey, shape=(A_shape[1],)) if provide_x0 and not is_wide else None
-    )
+    x0_suggestion = prng.normal(subkey, shape=(A_shape[1],))
+    x0 = x0_suggestion if provide_x0 and not is_wide else None
 
     def lstsq_jnp(a, b):
         sol, *_ = linalg.lstsq(a, b)
@@ -55,8 +54,6 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix])
     drhs2, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
 
-    print(received)
-    print(expected)
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)
     test_util.assert_allclose(dmatrix1, dmatrix2)
@@ -92,4 +89,4 @@ def test_output_matches_original_scipy_lsmr(A_shape: tuple):
         matrix, rhs, atol=1e-5, btol=1e-5, conlim=1e5, damp=damp, x0=x0
     )
 
-    assert np.allclose(sol, sol2)
+    assert np.allclose(sol, np.asarray(sol2))
