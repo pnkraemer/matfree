@@ -1,13 +1,7 @@
 """Tests for least-squares functionality."""
 
 from matfree import lstsq, test_util
-from matfree.backend import func, linalg, prng, testing
-from matfree.backend.typing import Callable
-
-
-@testing.case()
-def case_lstsq_lsmr() -> Callable:
-    return lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
+from matfree.backend import func, linalg, np, prng, testing
 
 
 def case_A_shape_wide() -> tuple:
@@ -22,9 +16,9 @@ def case_A_shape_square() -> tuple:
     return 3, 3
 
 
-@testing.parametrize_with_cases("lstsq_fun", cases=".", prefix="case_lstsq_")
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
-def test_value_and_grad_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple):
+@testing.parametrize("provide_x0", [True, False])
+def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
     key = prng.prng_key(1)
 
     key, subkey = prng.split(key, 2)
@@ -45,8 +39,11 @@ def test_value_and_grad_matches_numpy_lstsq(lstsq_fun: Callable, A_shape: tuple)
         [p] = p_as_list
         return p.T @ vector
 
+    x0 = 100 * np.ones_like(expected) if provide_x0 else None
+
     def lstsq_matfree(a, b):
-        sol, _ = lstsq_fun(vecmat, a, b)
+        lsmr = lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
+        sol, _ = lsmr(vecmat, a, b, x0=x0)
         return sol
 
     received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix])

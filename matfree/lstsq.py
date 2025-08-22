@@ -23,7 +23,6 @@ def lsmr(
     maxiter: int = 1_000_000,
     while_loop: Callable = control_flow.while_loop,
     custom_vjp: bool = True,
-    damp: float = 0.0,
 ):
     """Construct an experimental implementation of LSMR.
 
@@ -78,22 +77,29 @@ def lsmr(
     # more often than not, the matvec is defined after the LSMR
     # solver has been constructed. So it's part of the run()
     # function, not the LSMR constructor.
-    def run(vecmat, b, *vecmat_args):
+    def run(vecmat, b, *vecmat_args, x0=None, damp=0.0):
+        vecmat_closure, args = func.closure_convert(
+            lambda s: vecmat(s, *vecmat_args), b
+        )
+        return _run(vecmat_closure, b, args, x0, damp)
+
+    def _run(vecmat, b, vecmat_args, x0, damp):
         def vecmat_noargs(v):
             return vecmat(v, *vecmat_args)
 
-        (ncols,) = func.eval_shape(vecmat, b, *vecmat_args).shape
+        x_like = func.eval_shape(vecmat, b, *vecmat_args)
+        (ncols,) = x_like.shape
+        x0 = x0 if x0 is not None else np.ones(ncols, dtype=b.dtype)
+        state, normb, matvec_noargs = init(vecmat_noargs, b, x0)
 
-        state, normb, matvec_noargs = init(vecmat_noargs, b, ncols=ncols)
-        step_fun = make_step(matvec_noargs, normb=normb)
+        step_fun = make_step(matvec_noargs, normb=normb, damp=damp)
         cond_fun = make_cond_fun()
         state = while_loop(cond_fun, step_fun, state)
         stats_ = stats(state)
-        return state.x, stats_
+        return state.x - x0, stats_
 
-    def init(vecmat, b, ncols: int):
+    def init(vecmat, b, x):
         normb = linalg.vector_norm(b)
-        x = np.zeros(ncols, dtype=b.dtype)
         beta = normb
 
         u = b
@@ -115,7 +121,7 @@ def lsmr(
         sbar = 0.0
 
         h = v
-        hbar = np.zeros(ncols, dtype=b.dtype)
+        hbar = np.zeros_like(x)
 
         # Initialize variables for estimation of ||r||.
 
@@ -178,7 +184,7 @@ def lsmr(
         state = tree.tree_map(np.asarray, state)
         return state, normb, lambda *a: matvec(*a)[0]
 
-    def make_step(matvec, normb: float) -> Callable:
+    def make_step(matvec, normb: float, damp: float) -> Callable:
         def step(state: State) -> State:
             # Perform the next step of the bidiagonalization
 
@@ -338,7 +344,7 @@ def lsmr(
         }
 
     if custom_vjp:
-        return _lstsq_custom_vjp(run)
+        _run = _lstsq_custom_vjp(_run)
     return run
 
 
@@ -387,13 +393,13 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
     # (and return lstsq_public!), but provide lstsq_fun with the custom VJP.
     # Thereby, the function that gets the custom VJP is, from now on, only
     # called after a previous call to closure convert which 'fixes' all namespaces.
-    def lstsq_public(vecmat, rhs, *vecmat_args):
-        vecmat_, args = func.closure_convert(lambda s: vecmat(s, *vecmat_args), rhs)
-        return lstsq_fun(vecmat_, rhs, *args)
+    # def lstsq_public(vecmat, rhs, *vecmat_args):
+    #     vecmat_, args = func.closure_convert(lambda s: vecmat(s, *vecmat_args), rhs)
+    #     return lstsq_fun(vecmat_, rhs, *args)
 
-    def lstsq_fwd(vecmat, rhs, *vecmat_args):
-        x, stats = lstsq_public(vecmat, rhs, *vecmat_args)
-        cache = {"x": x, "rhs": rhs, "vecmat_args": vecmat_args}
+    def lstsq_fwd(vecmat, rhs, vecmat_args, x0, damp):
+        x, stats = lstsq_fun(vecmat, rhs, vecmat_args, x0, damp)
+        cache = {"x": x, "rhs": rhs, "vecmat_args": vecmat_args, "x0": x0, "damp": damp}
         return (x, stats), cache
 
     def lstsq_rev(vecmat, cache, dmu_dx):
@@ -406,6 +412,8 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
     def lstsq_rev_tall(vecmat, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
+        x0 = cache["x0"]
+        damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
         def vecmat_noargs(z):
@@ -414,8 +422,8 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         def matvec_noargs(z):
             return func.vjp(vecmat_noargs, rhs)[1](z)[0]
 
-        dmu_db = lstsq_public(matvec_noargs, dmu_dx)[0]
-        p = lstsq_public(vecmat_noargs, -dmu_db)[0]
+        dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), None, damp)[0]
+        p = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, damp)[0]
 
         Ax_minus_b = matvec_noargs(x) - rhs
         Ap = matvec_noargs(p)
@@ -427,11 +435,14 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             return linalg.inner(rA, p) + linalg.inner(pAA, x)
 
         dmu_dparams = grad_theta(vecmat_args)
-        return dmu_db, *dmu_dparams
+        dmu_dx0 = np.zeros_like(x0) if x0 is not None else None
+        return dmu_db, dmu_dparams, dmu_dx0, np.zeros_like(damp)
 
     def lstsq_rev_wide(vecmat, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
+        x0 = cache["x0"]
+        damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
         def vecmat_noargs(z):
@@ -441,11 +452,11 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             return func.linear_transpose(vecmat_noargs, rhs)(z)[0]
 
         # Compute the Lagrange multiplier from the forward pass
-        y = lstsq_public(matvec_noargs, x)[0]
+        y = lstsq_fun(matvec_noargs, x, (), None, damp)[0]
 
         # Compute the two solutions of the backward pass
-        p = dmu_dx - lstsq_public(vecmat_noargs, matvec_noargs(dmu_dx))[0]
-        q = lstsq_public(matvec_noargs, p - dmu_dx)[0]
+        p = dmu_dx - lstsq_fun(vecmat_noargs, matvec_noargs(dmu_dx), (), x0, damp)[0]
+        q = lstsq_fun(matvec_noargs, p - dmu_dx, (), None, damp)[0]
 
         @func.grad
         def grad_theta(theta):
@@ -455,8 +466,9 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
 
         grad_vecmat_args = grad_theta(vecmat_args)
         grad_rhs = -q
-        return grad_rhs, *grad_vecmat_args
+        dmu_dx0 = np.zeros_like(x0) if x0 is not None else None
+        return grad_rhs, grad_vecmat_args, dmu_dx0, np.zeros_like(damp)
 
     lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
     lstsq_fun.defvjp(lstsq_fwd, lstsq_rev)  # type: ignore
-    return lstsq_public
+    return lstsq_fun
