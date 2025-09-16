@@ -432,7 +432,7 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
 
         x0_rev = np.zeros_like(rhs)
         dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
-        p = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, damp)[0]
+        p = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, 0.0)[0]
 
         Ap = matvec_noargs(p)
         Ax_minus_b = matvec_noargs(x) - rhs
@@ -444,7 +444,9 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             return linalg.inner(rA, p) + linalg.inner(pAA, x)
 
         dmu_dparams = grad_theta(vecmat_args)
-        return dmu_db, dmu_dparams, None, None
+        dmu_dx0 = None  # non-differentiable argument
+        dmu_ddamp = 2 * damp * p.T @ x
+        return dmu_db, dmu_dparams, dmu_dx0, dmu_ddamp
 
     def lstsq_rev_wide(vecmat, cache, dmu_dx):
         x = cache["x"]
@@ -461,11 +463,11 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
 
         # Compute the Lagrange multiplier from the forward pass
         x0_rev = np.zeros_like(rhs)
-        y = lstsq_fun(matvec_noargs, x, (), x0_rev, damp)[0]
+        y = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)[0]
 
         # Compute the two solutions of the backward pass
         p = dmu_dx - lstsq_fun(vecmat_noargs, matvec_noargs(dmu_dx), (), x0, damp)[0]
-        q = lstsq_fun(matvec_noargs, p - dmu_dx, (), x0_rev, damp)[0]
+        q = lstsq_fun(matvec_noargs, p - dmu_dx, (), x0_rev, 0.0)[0]
 
         @func.grad
         def grad_theta(theta):
@@ -473,9 +475,11 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
             qA = vecmat(q, *theta)
             return linalg.inner(yA, p) + linalg.inner(qA, x)
 
-        grad_vecmat_args = grad_theta(vecmat_args)
-        grad_rhs = -q
-        return grad_rhs, grad_vecmat_args, None, None
+        dmu_dargs = grad_theta(vecmat_args)
+        dmu_drhs = -q
+        dmu_dx0 = None  # non-differentiable argument
+        dmu_ddamp = 2 * damp * q.T @ y
+        return dmu_drhs, dmu_dargs, dmu_dx0, dmu_ddamp
 
     lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
     lstsq_fun.defvjp(lstsq_fwd, lstsq_rev)  # type: ignore
