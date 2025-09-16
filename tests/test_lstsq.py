@@ -18,8 +18,11 @@ def case_A_shape_square() -> tuple:
 
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 @testing.parametrize("provide_x0", [True, False])
-def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
-    key = prng.prng_key(1)
+@testing.parametrize("seed", [1])
+def test_value_and_grad_matches_numpy_lstsq_no_damping(
+    seed, A_shape: tuple, provide_x0: bool
+):
+    key = prng.prng_key(seed)
 
     key, subkey = prng.split(key, 2)
     matrix = prng.normal(subkey, shape=A_shape)
@@ -61,8 +64,9 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
 
 
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
-def test_value_and_grad_matches_linalg_solve_with_damping(A_shape: tuple):
-    key = prng.prng_key(2)
+@testing.parametrize("seed", [1])
+def test_value_and_grad_matches_linalg_solve_with_damping(seed, A_shape: tuple):
+    key = prng.prng_key(seed)
 
     key, subkey = prng.split(key, 2)
     matrix = prng.normal(subkey, shape=A_shape)
@@ -95,9 +99,7 @@ def test_value_and_grad_matches_linalg_solve_with_damping(A_shape: tuple):
 
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)
-
     test_util.assert_allclose(ddmp1, ddmp2)
-
     test_util.assert_allclose(dmatrix1, dmatrix2)
 
 
