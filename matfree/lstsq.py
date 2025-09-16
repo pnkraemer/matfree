@@ -466,19 +466,19 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         y = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)[0]
 
         # Compute the two solutions of the backward pass
-        p = dmu_dx - lstsq_fun(vecmat_noargs, matvec_noargs(dmu_dx), (), x0, damp)[0]
-        q = lstsq_fun(matvec_noargs, p - dmu_dx, (), x0_rev, 0.0)[0]
+        xi = dmu_dx - lstsq_fun(vecmat_noargs, matvec_noargs(dmu_dx), (), x0, damp)[0]
+
+        dmu_drhs = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
 
         @func.grad
         def grad_theta(theta):
             yA = vecmat(y, *theta)
-            qA = vecmat(q, *theta)
-            return linalg.inner(yA, p) + linalg.inner(qA, x)
+            qA = vecmat(dmu_drhs, *theta)
+            return linalg.inner(yA, xi) - linalg.inner(qA, x)
 
         dmu_dargs = grad_theta(vecmat_args)
-        dmu_drhs = -q
         dmu_dx0 = None  # non-differentiable argument
-        dmu_ddamp = 2 * damp * q.T @ y
+        dmu_ddamp = -2 * damp * dmu_drhs.T @ y
         return dmu_drhs, dmu_dargs, dmu_dx0, dmu_ddamp
 
     lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
