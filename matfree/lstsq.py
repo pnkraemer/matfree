@@ -430,28 +430,31 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         def matvec_noargs(z):
             return func.vjp(vecmat_noargs, rhs)[1](z)[0]
 
-        x0_rev = np.zeros_like(rhs)
-        dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
-        p = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, 0.0)[0]
+        # RHS gradient
+        x0_rev = np.zeros_like(rhs)  # lacking a better guess
+        dmu_db, _ = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)
 
-        Ap = matvec_noargs(p)
+        # Compute \xi from dmu_db via a pseudo-inverse-
+        # This only works for tall matrices.
+        xi = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, 0.0)[0]
         Ax_minus_b = matvec_noargs(x) - rhs
+
+        # Compute the parameter gradient
 
         @func.grad
         def grad_theta(theta):
             rA = vecmat(Ax_minus_b, *theta)
-            pAA = vecmat(Ap, *theta)
-            return linalg.inner(rA, p) + linalg.inner(pAA, x)
+            pAA = vecmat(dmu_db, *theta)
+            return linalg.inner(rA, xi) - linalg.inner(pAA, x)
 
         dmu_dparams = grad_theta(vecmat_args)
         dmu_dx0 = None  # non-differentiable argument
-        dmu_ddamp = 2 * damp * p.T @ x
+        dmu_ddamp = 2 * damp * xi.T @ x
         return dmu_db, dmu_dparams, dmu_dx0, dmu_ddamp
 
     def lstsq_rev_wide(vecmat, cache, dmu_dx):
         x = cache["x"]
         rhs = cache["rhs"]
-        x0 = cache["x0"]
         damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
@@ -461,25 +464,29 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         def matvec_noargs(z):
             return func.linear_transpose(vecmat_noargs, rhs)(z)[0]
 
-        # Compute the Lagrange multiplier from the forward pass
+        # RHS gradient
         x0_rev = np.zeros_like(rhs)
+        dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
+
+        # Compute the Lagrange multiplier of the forward pass
+        #  as in, for wide matrices, we're finding a minimum norm
+        #  solution subject to a constraint.
         y = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)[0]
 
-        # Compute the two solutions of the backward pass
-        xi = dmu_dx - lstsq_fun(vecmat_noargs, matvec_noargs(dmu_dx), (), x0, damp)[0]
+        # Compute the parameter gradient
 
-        dmu_drhs = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
+        r = -(vecmat_noargs(dmu_db) - dmu_dx)
 
         @func.grad
         def grad_theta(theta):
             yA = vecmat(y, *theta)
-            qA = vecmat(dmu_drhs, *theta)
-            return linalg.inner(yA, xi) - linalg.inner(qA, x)
+            qA = vecmat(dmu_db, *theta)
+            return linalg.inner(yA, r) - linalg.inner(qA, x)
 
         dmu_dargs = grad_theta(vecmat_args)
         dmu_dx0 = None  # non-differentiable argument
-        dmu_ddamp = -2 * damp * dmu_drhs.T @ y
-        return dmu_drhs, dmu_dargs, dmu_dx0, dmu_ddamp
+        dmu_ddamp = -2 * damp * dmu_db.T @ y
+        return dmu_db, dmu_dargs, dmu_dx0, dmu_ddamp
 
     lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
     lstsq_fun.defvjp(lstsq_fwd, lstsq_rev)  # type: ignore
