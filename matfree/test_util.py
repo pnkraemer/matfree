@@ -26,7 +26,7 @@ def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
     """Generate an asymmetric matrix with specific singular values."""
     A = np.reshape(np.arange(1.0, nrows * ncols + 1.0), (nrows, ncols))
     A /= nrows * ncols
-    U, S, Vt = linalg.svd(A, full_matrices=False)
+    U, _S, Vt = linalg.svd(A, full_matrices=False)
     return U @ linalg.diagonal(vals) @ Vt
 
 

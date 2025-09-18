@@ -219,7 +219,7 @@ def integrand_funm_sym(dense_funm, tridiag_sym, /):
         def matvec_flat(v_flat, *p):
             v = v_unflatten(v_flat)
             Av = matvec(v, *p)
-            flat, unflatten = tree.ravel_pytree(Av)
+            flat, _unflatten = tree.ravel_pytree(Av)
             return flat
 
         _, dense, *_ = tridiag_sym(matvec_flat, v0_flat, *parameters)
