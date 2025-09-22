@@ -18,8 +18,11 @@ def case_A_shape_square() -> tuple:
 
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 @testing.parametrize("provide_x0", [True, False])
-def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
-    key = prng.prng_key(1)
+@testing.parametrize("seed", [1])
+def test_value_and_grad_matches_numpy_lstsq_no_damping(
+    seed, A_shape: tuple, provide_x0: bool
+):
+    key = prng.prng_key(seed)
 
     key, subkey = prng.split(key, 2)
     matrix = prng.normal(subkey, shape=A_shape)
@@ -57,6 +60,46 @@ def test_value_and_grad_matches_numpy_lstsq(A_shape: tuple, provide_x0: bool):
 
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)
+    test_util.assert_allclose(dmatrix1, dmatrix2)
+
+
+@testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
+@testing.parametrize("seed", [1])
+def test_value_and_grad_matches_linalg_solve_with_damping(seed, A_shape: tuple):
+    key = prng.prng_key(seed)
+
+    key, subkey = prng.split(key, 2)
+    matrix = prng.normal(subkey, shape=A_shape)
+    key, subkey = prng.split(key, 2)
+    rhs = prng.normal(subkey, shape=(A_shape[0],))
+    key, subkey = prng.split(key, 2)
+    damp = prng.normal(subkey, shape=())
+    key, subkey = prng.split(key, num=2)
+    dsol = prng.normal(subkey, shape=(A_shape[1],))
+
+    def lstsq_linalg_solve(a, b, dmp):
+        eye = np.eye(len(a.T))
+        return linalg.solve(dmp**2 * eye + a.T @ a, a.T @ b)
+
+    expected, expected_vjp = func.vjp(lstsq_linalg_solve, matrix, rhs, damp)
+    dmatrix1, drhs1, ddmp1 = expected_vjp(dsol)
+
+    def vecmat(vector, p_as_list):
+        [p] = p_as_list
+        return p.T @ vector
+
+    @func.jit
+    def lstsq_matfree(a, b, dmp):
+        lsmr = lstsq.lsmr(atol=1e-10, btol=1e-10, ctol=1e-10)
+        sol, _ = lsmr(vecmat, a, b, damp=dmp)
+        return sol
+
+    received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix], damp)
+    drhs2, [dmatrix2], ddmp2 = received_vjp(dsol)  # mind the order of rhs & matrix
+
+    test_util.assert_allclose(received, expected)
+    test_util.assert_allclose(drhs1, drhs2)
+    test_util.assert_allclose(ddmp1, ddmp2)
     test_util.assert_allclose(dmatrix1, dmatrix2)
 
 

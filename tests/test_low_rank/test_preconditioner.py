@@ -30,7 +30,7 @@ def test_preconditioner_solves_correctly(n):
 
     # Derive the preconditioner
     precondition = low_rank.preconditioner(cholesky)
-    received, info = precondition(b, small_value)
+    received, _info = precondition(b, small_value)
 
     # Test that the preconditioner solves correctly
     assert np.allclose(received, expected, rtol=1e-2)

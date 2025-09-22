@@ -58,7 +58,7 @@ def test_custom_adjoint_k_zero_raises_valueerror(nrows, dtype):
 
     # Call the auto-diff VJP
     with testing.raises(ValueError, match="= 0"):
-        dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
+        _dv_adjoint, _dp_adjoint = vjp_adjoint(vjp_input)
 
 
 @testing.parametrize("nrows", [15])

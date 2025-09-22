@@ -61,7 +61,7 @@ def integrand_trace():
 
     def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
-        v_flat, unflatten = tree.ravel_pytree(v)
+        v_flat, _unflatten = tree.ravel_pytree(v)
         Qv_flat, _unflatten = tree.ravel_pytree(Qv)
         return linalg.inner(v_flat, Qv_flat)
 
@@ -87,7 +87,7 @@ def integrand_frobeniusnorm_squared():
 
     def integrand(matvec, vec, *parameters):
         x = matvec(vec, *parameters)
-        v_flat, unflatten = tree.ravel_pytree(x)
+        v_flat, _unflatten = tree.ravel_pytree(x)
         return linalg.inner(v_flat, v_flat)
 
     return integrand

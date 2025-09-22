@@ -51,12 +51,12 @@ def test_full_rank_nopivot_matches_cholesky(n):
     cholesky_p = low_rank.cholesky_partial_pivot(
         lambda i, j: cov[i, j], nrows=n, rank=n
     )
-    received, info = cholesky_p()
+    received, _info = cholesky_p()
     assert not np.allclose(received, reference)
 
     # But without pivoting, we should get there!
     cholesky = low_rank.cholesky_partial(lambda i, j: cov[i, j], nrows=n, rank=n)
-    received, info = cholesky()
+    received, _info = cholesky()
     assert np.allclose(received, reference, atol=1e-6)
 
 

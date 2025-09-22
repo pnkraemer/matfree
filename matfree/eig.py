@@ -23,7 +23,7 @@ def svd_partial(bidiag: Callable) -> Callable:
     def svd(Av: Callable, v0: Array, *parameters):
         # Flatten in- and outputs
         Av_flat, flattened = _partial_and_flatten_matvec(Av, v0, *parameters)
-        (u0_flat, u_unravel), (v0_flat, v_unravel) = flattened
+        (_u0_flat, u_unravel), (v0_flat, v_unravel) = flattened
 
         # Call the flattened SVD
         ut, s, vt = svd_flat(Av_flat, v0_flat)
