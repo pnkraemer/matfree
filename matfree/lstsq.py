@@ -88,7 +88,7 @@ def lsmr(
         (ncols,) = x_like.shape
         x = x0 if x0 is not None else np.zeros(ncols, dtype=b.dtype)
 
-        # Combine the lstsq_fun wiht a closure convert, because
+        # Combine the lstsq_fun with a closure convert, because
         # typically, vecmat is a lambda function and if we want to
         # have explicit parameter-VJPs, all parameters need to be explicit.
         # This means that in this function here, we always use lstsq_public
@@ -99,15 +99,12 @@ def lsmr(
             return vecmat(v, *vecmat_args)
 
         vecmat_closure, args = func.closure_convert(vecmat_noargs, b)
-        sol, stats_, _ = _run(vecmat_closure, b, args, x, damp)
-        return sol, stats_
+        return _run(vecmat_closure, b, args, x, damp)
 
     def _run(vecmat, b, vecmat_args, x0, damp):
-        @tree.partial_pytree
         def vecmat_noargs(v):
             return vecmat(v, *vecmat_args)
 
-        @tree.partial_pytree
         def matvec_noargs(w):
             matvec = func.linear_transpose(vecmat_noargs, b)
             (Aw,) = matvec(w)
@@ -119,8 +116,7 @@ def lsmr(
         state = while_loop(cond_fun, step_fun, state)
 
         stats_ = stats(state)
-        vecmat_noargs_cache = vecmat_noargs, matvec_noargs
-        return state.x, stats_, vecmat_noargs_cache
+        return state.x, stats_
 
     def init(matvec_noargs, vecmat_noargs, b, x):
         normb = linalg.vector_norm(b)
@@ -412,15 +408,8 @@ def _sym_ortho_3(a, b):
 
 def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
     def lstsq_fwd(vecmat, rhs, vecmat_args, x0, damp):
-        x, stats, matvecs_noargs = lstsq_fun(vecmat, rhs, vecmat_args, x0, damp)
-        cache = {
-            "x": x,
-            "rhs": rhs,
-            "vecmat_args": vecmat_args,
-            "x0": x0,
-            "damp": damp,
-            "matvecs_noargs": matvecs_noargs,
-        }
+        x, stats = lstsq_fun(vecmat, rhs, vecmat_args, x0, damp)
+        cache = {"x": x, "rhs": rhs, "vecmat_args": vecmat_args, "x0": x0, "damp": damp}
         return (x, stats), cache
 
     def lstsq_rev(vecmat, cache, dmu_dx):
@@ -436,7 +425,14 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         x0 = cache["x0"]
         damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
-        vecmat_noargs, matvec_noargs = cache["matvecs_noargs"]
+
+        def vecmat_noargs(v):
+            return vecmat(v, *vecmat_args)
+
+        def matvec_noargs(w):
+            matvec = func.linear_transpose(vecmat_noargs, rhs)
+            (Aw,) = matvec(w)
+            return Aw
 
         # RHS gradient
         x0_rev = np.zeros_like(rhs)  # lacking a better guess
@@ -465,7 +461,14 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         rhs = cache["rhs"]
         damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
-        vecmat_noargs, matvec_noargs = cache["matvecs_noargs"]
+
+        def vecmat_noargs(v):
+            return vecmat(v, *vecmat_args)
+
+        def matvec_noargs(w):
+            matvec = func.linear_transpose(vecmat_noargs, rhs)
+            (Aw,) = matvec(w)
+            return Aw
 
         # RHS gradient
         x0_rev = np.zeros_like(rhs)
