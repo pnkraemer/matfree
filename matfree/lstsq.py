@@ -37,7 +37,7 @@ def lsmr(
     If you use this configuration, please consider
     citing Roy et al. (2025; bibtex below).
 
-    ??? note "BibTex for Krämer et al. (2024)"
+    ??? note "BibTex for Roy et al. (2025)"
         ```bibtex
         @article{roy2025matrix,
         title={Matrix-Free Least Squares Solvers:
