@@ -30,9 +30,9 @@ def lsmr(
     but uses JAX.
 
 
-    Setting `custom_vjp` to `True` implies using efficient, numerically stable
-    gradients of matrix-free least squares, according to what has been proposed by
-    Roy et al. (2025).
+    Setting `custom_vjp` to `True` implies using the low-memory
+    gradients of matrix-free least squares,
+    according to what has been proposed by Roy et al. (2025).
     These gradients are exact, so there is little reason not to use them.
     If you use this configuration, please consider
     citing Roy et al. (2025; bibtex below).
