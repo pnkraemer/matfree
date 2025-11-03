@@ -1,9 +1,10 @@
 # Matfree: Matrix-free linear algebra in JAX
 
-[![Actions status](https://github.com/pnkraemer/matfree/workflows/ci/badge.svg)](https://github.com/pnkraemer/matfree/actions)
-[![image](https://img.shields.io/pypi/v/matfree.svg)](https://pypi.python.org/pypi/matfree)
-[![image](https://img.shields.io/pypi/l/matfree.svg)](https://pypi.python.org/pypi/matfree)
-[![image](https://img.shields.io/pypi/pyversions/matfree.svg)](https://pypi.python.org/pypi/matfree)
+[![CI](https://github.com/pnkraemer/matfree/workflows/ci/badge.svg)](https://github.com/pnkraemer/matfree/actions)
+[![PyPI version](https://img.shields.io/pypi/v/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
+[![License](https://img.shields.io/pypi/l/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
+[![Python versions](https://img.shields.io/pypi/pyversions/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
+[![Docs](https://img.shields.io/badge/docs-stable-1E4E8C)](https://pnkraemer.github.io/matfree/)
 
 Randomised and deterministic matrix-free methods for trace estimation, functions of matrices, and matrix factorisations.
 Matfree builds on [JAX](https://jax.readthedocs.io/en/latest/).
