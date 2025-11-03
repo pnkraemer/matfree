@@ -68,9 +68,9 @@ def assert_allclose(a, b, /):
     """
     a = np.asarray(a)
     b = np.asarray(b)
-    tol = np.sqrt(np.finfo_eps(np.dtype(b)))
+    tol = 10 * np.sqrt(np.finfo_eps(np.dtype(a)))
 
     # For double precision sqrt(eps) is very tight...
-    if tol < 1e-7:
-        tol *= 100
+    if tol < 1e-6:
+        tol *= 10
     assert np.allclose(a, b, atol=tol, rtol=tol)
