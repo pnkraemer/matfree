@@ -24,10 +24,29 @@ def lsmr(
     while_loop: Callable = control_flow.while_loop,
     custom_vjp: bool = True,
 ):
-    """Construct an experimental implementation of LSMR.
+    r"""Construct an experimental implementation of LSMR.
 
     Follows the [implementation in SciPy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html),
     but uses JAX.
+
+
+    Setting `custom_vjp` to `True` implies using the low-memory
+    gradients of matrix-free least squares,
+    according to what has been proposed by Roy et al. (2025).
+    These gradients are exact, so there is little reason not to use them.
+    If you use this configuration, please consider
+    citing Roy et al. (2025; bibtex below).
+
+    ??? note "BibTex for Roy et al. (2025)"
+        ```bibtex
+        @article{roy2025matrix,
+        title={Matrix-Free Least Squares Solvers:
+        Values, Gradients, and What to Do With Them},
+        author={Roy, Hrittik and Hauberg, S{\\o}ren and Kr{\"a}mer, Nicholas},
+        journal={arXiv preprint arXiv:2510.19634},
+        year={2025}
+        }
+        ```
     """
     # todo: stop iteration when NaN or Inf are detected.
 
