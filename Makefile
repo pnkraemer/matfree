@@ -1,6 +1,5 @@
 format-and-lint:
 	pre-commit run --all-files
-	blackdoc *.md  --line-length 82
 
 test:
 	pytest

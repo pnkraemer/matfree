@@ -35,8 +35,6 @@ test =[
 format-and-lint =[
     "matfree[test]",
     "pre-commit",
-    "blackdoc",
-    "black<25.9.0",  # temporary for compatibility with blackdoc
 ]
 doc = [
     "mkdocs",

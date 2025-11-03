@@ -8,7 +8,6 @@
 Randomised and deterministic matrix-free methods for trace estimation, functions of matrices, and matrix factorisations.
 Matfree builds on [JAX](https://jax.readthedocs.io/en/latest/).
 
-
 - ⚡ Stochastic **trace estimation** including batching, control variates, and uncertainty quantification
 - ⚡ A stand-alone implementation of **stochastic Lanczos quadrature** for traces of functions of matrices
 - ⚡ Matrix-decomposition algorithms for **large sparse eigenvalue problems**: tridiagonalisation, bidiagonalisation, and Hessenberg factorisation via Lanczos and Arnoldi iterations
@@ -20,7 +19,6 @@ Matfree builds on [JAX](https://jax.readthedocs.io/en/latest/).
 Everything is natively compatible with the rest of JAX:
 JIT compilation, automatic differentiation, vectorisation, and PyTrees.
 [_Let us know what you think about Matfree!_](https://github.com/pnkraemer/matfree/issues)
-
 
 **Installation**
 
@@ -37,6 +35,7 @@ To combine Matfree with a CPU version of JAX, run
 ```commandline
 pip install matfree[cpu]
 ```
+
 which is equivalent to combining `pip install jax[cpu]` with `pip install matfree`.
 (But do not only use Matfree on CPU!)
 
@@ -84,23 +83,20 @@ Estimate the trace of the matrix:
 
 ```
 
-
 **Tutorials**
 
 Find many more tutorials in [Matfree's documentation](https://pnkraemer.github.io/matfree/).
 
 These tutorials include, among other things:
 
-- **Log-determinants:**  Use stochastic Lanczos quadrature to compute matrix functions.
+- **Log-determinants:** Use stochastic Lanczos quadrature to compute matrix functions.
 - **Pytree-valued states:** Combining neural-network Jacobians with stochastic Lanczos quadrature.
 - **Control variates:** Use control variates and multilevel schemes to reduce variances.
 - **Higher moments and UQ:** Compute means, variances, and other moments simultaneously.
 - **Vector calculus:** Use matrix-free linear algebra to implement vector calculus.
 - **Low-memory trace estimation:** Combine Matfree's API with JAX's function transformations for low-memory stochastic trace estimation.
 
-
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use Matfree for!
-
 
 **Citation**
 
@@ -122,35 +118,39 @@ Some of Matfree's docstrings contain additional bibliographic information.
 For example, the `matfree.bounds` functions link to bibtex entries for the articles associated with each bound.
 Go check out the [API documentation](https://pnkraemer.github.io/matfree/).
 
-
 ## Use Matfree's continuous integration
 
-
 To install all test-related dependencies (assuming JAX is installed; if not, run `pip install .[cpu]`), execute
+
 ```commandline
 pip install .[test]
 ```
+
 Then, run the tests via
+
 ```commandline
 make test
 ```
 
 Install all formatting-related dependencies via
+
 ```commandline
 pip install .[format-and-lint]
 pre-commit install
 ```
+
 and format the code via
+
 ```commandline
 make format-and-lint
 ```
-
 
 Install the documentation-related dependencies as
 
 ```commandline
 pip install .[doc]
 ```
+
 Preview the documentation via
 
 ```commandline
@@ -162,7 +162,6 @@ Check whether the docs can be built correctly via
 ```commandline
 make doc-build
 ```
-
 
 ## Contribute to Matfree
 
@@ -185,9 +184,9 @@ To make a pull request, proceed as follows:
 
 When making a pull request, keep in mind the following (rough) guidelines:
 
-* Most PRs resolve an issue.
-* Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
-* Most enhancements (e.g. new features) are covered by tests.
+- Most PRs resolve an issue.
+- Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
+- Most enhancements (e.g. new features) are covered by tests.
 
 [Here is what GitHub considers important for informative pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/best-practices-for-pull-requests).
 
@@ -204,14 +203,12 @@ Then, the documentation pipeline will automatically convert those into a format 
 If you do not want to make the tutorial part of the documentation, make the filename
 have a leading underscore.
 
-
 **Extend the developer documentation:**
 
 To extend the developer documentation, create a new section in the README.
 Use a second-level header (which is a header starting with "##") and fill the section
 with content.
 Then, the documentation pipeline will turn this section into a page in the developer documentation.
-
 
 **Create a new module:**
 
@@ -220,9 +217,7 @@ and fill it with content.
 Unless the module name starts with an underscore or is placed in the backend,
 the documentation pipeline will take care of the rest.
 
-
 ## Understand Matfree's API policy
-
 
 _Matfree is a research project, and parts of its API may change frequently and without warning._
 
@@ -230,7 +225,6 @@ This stage of development aligns with its current (0.y.z) version.
 To quote from [semantic versioning](https://semver.org/):
 
 > Major version zero (0.y.z) is for initial development. Anything MAY change at any time. The public API SHOULD NOT be considered stable.
-
 
 Matfree does not implement an official deprecation policy (just yet) but handles all API change communication via version increments:
 
