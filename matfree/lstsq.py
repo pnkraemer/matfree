@@ -33,6 +33,7 @@ def lsmr(
     Setting `custom_vjp` to `True` implies using the low-memory
     gradients of matrix-free least squares,
     according to what has been proposed by Roy et al. (2025).
+    [Here](https://arxiv.org/abs/2510.19634) is a link to the preprint.
     These gradients are exact, so there is little reason not to use them.
     If you use this configuration, please consider
     citing Roy et al. (2025; bibtex below).
@@ -40,8 +41,7 @@ def lsmr(
     ??? note "BibTex for Roy et al. (2025)"
         ```bibtex
         @article{roy2025matrix,
-        title={Matrix-Free Least Squares Solvers:
-        Values, Gradients, and What to Do With Them},
+        title={Matrix-Free Least Squares Solvers: Values, Gradients, and What to Do With Them},
         author={Roy, Hrittik and Hauberg, S{\\o}ren and Kr{\"a}mer, Nicholas},
         journal={arXiv preprint arXiv:2510.19634},
         year={2025}
