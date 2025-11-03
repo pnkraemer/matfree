@@ -107,10 +107,25 @@ We would appreciate it if you cited the paper as follows:
 
 ```bibtex
 @article{kraemer2024gradients,
-    title={Gradients of functions of large matrices},
-    author={Kr\"amer, Nicholas and Moreno-Mu\~noz, Pablo and Roy, Hrittik and Hauberg, S{\o}ren},
-    journal={arXiv preprint arXiv:2405.17277},
-    year={2024}
+  title={Gradients of functions of large matrices},
+  author={Kr{\"a}mer, Nicholas and Moreno-Mu{\~n}oz, Pablo and Roy, Hrittik and Hauberg, S{\o}ren},
+  journal={Advances in Neural Information Processing Systems},
+  volume={37},
+  pages={49484--49518},
+  year={2024}
+}
+```
+
+If you are using Matfree's differentiable LSMR implementation, then you
+are using the algorithm from [this paper](https://arxiv.org/abs/2510.19634).
+We would appreciate it if you cited the paper as follows:
+
+```bibtex
+@article{roy2025matrix,
+    title={Matrix-Free Least Squares Solvers: Values, Gradients, and What to Do With Them},
+    author={Roy, Hrittik and Hauberg, S{\\o}ren and Kr{\"a}mer, Nicholas},
+    journal={arXiv preprint arXiv:2510.19634},
+    year={2025}
 }
 ```
 

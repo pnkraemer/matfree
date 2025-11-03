@@ -117,6 +117,8 @@ ignore = [
     "D213",
     # zip(..., strict=True/False) is not supported on Python < 3.10
     "B905",
+    # Disable line-too-long because it is handled by formatter (and we allow docstrings to contain long lines)
+    "E501",
 ]
 
 [tool.ruff.format]
