@@ -54,7 +54,7 @@ def tridiag_sym(
 
     ??? note "BibTex for Krämer et al. (2024)"
         ```bibtex
-        @article{kramer2024gradients,
+        @article{kraemer2024gradients,
             title={Gradients of functions of large matrices},
             author={Kr{\"a}mer, Nicholas and Moreno-Mu{\~n}oz, Pablo and Roy, Hrittik and Hauberg, S{\o}ren},
             journal={Advances in Neural Information Processing Systems},
