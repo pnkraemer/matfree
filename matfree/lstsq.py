@@ -88,16 +88,17 @@ def lsmr(
         (ncols,) = x_like.shape
         x = x0 if x0 is not None else np.zeros(ncols, dtype=b.dtype)
 
-        # Combine the lstsq_fun wiht a closure convert, because
+        # Combine the lstsq_fun with a closure convert, because
         # typically, vecmat is a lambda function and if we want to
         # have explicit parameter-VJPs, all parameters need to be explicit.
         # This means that in this function here, we always use lstsq_public
         # (and return lstsq_public!), but provide lstsq_fun with the custom VJP.
         # Thereby, the function that gets the custom VJP is, from now on, only
         # called after a previous call to closure convert which 'fixes' all namespaces.
-        vecmat_closure, args = func.closure_convert(
-            lambda s: vecmat(s, *vecmat_args), b
-        )
+        def vecmat_noargs(v):
+            return vecmat(v, *vecmat_args)
+
+        vecmat_closure, args = func.closure_convert(vecmat_noargs, b)
         return _run(vecmat_closure, b, args, x, damp)
 
     def _run(vecmat, b, vecmat_args, x0, damp):
@@ -109,22 +110,23 @@ def lsmr(
             (Aw,) = matvec(w)
             return Aw
 
-        state, normb = init(matvec_noargs, b, x0)
-        step_fun = make_step(matvec_noargs, normb=normb, damp=damp)
+        state, normb = init(matvec_noargs, vecmat_noargs, b, x0)
+        step_fun = make_step(matvec_noargs, vecmat_noargs, normb=normb, damp=damp)
         cond_fun = make_cond_fun()
         state = while_loop(cond_fun, step_fun, state)
+
         stats_ = stats(state)
         return state.x, stats_
 
-    def init(matvec_noargs, b, x):
+    def init(matvec_noargs, vecmat_noargs, b, x):
         normb = linalg.vector_norm(b)
 
-        Ax, vecmat_noargs = func.vjp(matvec_noargs, x)
+        Ax = matvec_noargs(x)
         u = b - Ax
         beta = linalg.vector_norm(u)
         u = u / np.where(beta > 0, beta, 1.0)
 
-        (v,) = vecmat_noargs(u)
+        v = vecmat_noargs(u)
         alpha = linalg.vector_norm(v)
         v = v / np.where(alpha > 0, alpha, 1)
         v = np.where(beta == 0, np.zeros_like(v), v)
@@ -203,16 +205,16 @@ def lsmr(
         state = tree.tree_map(np.asarray, state)
         return state, normb
 
-    def make_step(matvec, normb: float, damp: float) -> Callable:
+    def make_step(matvec, vecmat, normb: float, damp: float) -> Callable:
         def step(state: State) -> State:
             # Perform the next step of the bidiagonalization
 
-            Av, A_t = func.vjp(matvec, state.v)
+            Av = matvec(state.v)
             u = Av - state.alpha * state.u
             beta = linalg.vector_norm(u)
 
             u = u / np.where(beta > 0, beta, 1.0)
-            v = A_t(u)[0] - beta * state.v
+            v = vecmat(u) - beta * state.v
             alpha = linalg.vector_norm(v)
             v = v / np.where(alpha > 0, alpha, 1)
 
@@ -424,11 +426,13 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
-        def vecmat_noargs(z):
-            return vecmat(z, *vecmat_args)
+        def vecmat_noargs(v):
+            return vecmat(v, *vecmat_args)
 
-        def matvec_noargs(z):
-            return func.vjp(vecmat_noargs, rhs)[1](z)[0]
+        def matvec_noargs(w):
+            matvec = func.linear_transpose(vecmat_noargs, rhs)
+            (Aw,) = matvec(w)
+            return Aw
 
         # RHS gradient
         x0_rev = np.zeros_like(rhs)  # lacking a better guess
@@ -436,7 +440,7 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
 
         # Compute \xi from dmu_db via a pseudo-inverse-
         # This only works for tall matrices.
-        xi = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, 0.0)[0]
+        xi, _ = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, 0.0)
         Ax_minus_b = matvec_noargs(x) - rhs
 
         # Compute the parameter gradient
@@ -458,20 +462,22 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         damp = cache["damp"]
         vecmat_args = cache["vecmat_args"]
 
-        def vecmat_noargs(z):
-            return vecmat(z, *vecmat_args)
+        def vecmat_noargs(v):
+            return vecmat(v, *vecmat_args)
 
-        def matvec_noargs(z):
-            return func.linear_transpose(vecmat_noargs, rhs)(z)[0]
+        def matvec_noargs(w):
+            matvec = func.linear_transpose(vecmat_noargs, rhs)
+            (Aw,) = matvec(w)
+            return Aw
 
         # RHS gradient
         x0_rev = np.zeros_like(rhs)
-        dmu_db = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)[0]
+        dmu_db, _ = lstsq_fun(matvec_noargs, dmu_dx, (), x0_rev, damp)
 
         # Compute the Lagrange multiplier of the forward pass
         #  as in, for wide matrices, we're finding a minimum norm
         #  solution subject to a constraint.
-        y = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)[0]
+        y, _ = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)
 
         # Compute the parameter gradient
 
