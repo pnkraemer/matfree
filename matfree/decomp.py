@@ -37,20 +37,30 @@ def tridiag_sym(
 ):
     r"""Construct an implementation of **tridiagonalisation**.
 
-    Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
-    It tends to be a good idea to use full reorthogonalisation.
-
-    This algorithm assumes a **symmetric matrix**.
-
-    Decompose a matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
+    Decompose a **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
+    The present implementation allocates all Lanczos vectors before running the
+    algorithm. If `reortho` is set to `"full"`, it also uses full reorthogonalisation.
+    It is usually a good idea to use full reorthogonalisation.
+    Matrix-free tridiagonalisation uses Lanczos' (1950) algorithm:
+
+    ??? note "BibTex for Lanczos (1950)"
+        ```bibtex
+        @article{lanczos1950iteration,
+            title={An iteration method for the solution of the eigenvalue problem of linear differential and integral operators},
+            author={Lanczos, Cornelius},
+            journal={Journal of research of the National Bureau of Standards},
+            volume={45},
+            number={4},
+            pages={255--282},
+            year={1950}
+        }
+        ```
 
     Setting `custom_vjp` to `True` implies using efficient, numerically stable
-    gradients of the Lanczos iteration according to what has been proposed by
-    Krämer et al. (2024).
+    gradients of the Lanczos iteration which was proposed by Krämer et al. (2024).
     These gradients are exact, so there is little reason not to use them.
-    If you use this configuration, please consider
-    citing Krämer et al. (2024; bibtex below).
+    If you use this configuration, please cite Krämer et al. (2024):
 
     ??? note "BibTex for Krämer et al. (2024)"
         ```bibtex
@@ -602,9 +612,10 @@ def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full")
     ??? note "A note about differentiability"
         Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or
         [hessenberg][matfree.decomp.hessenberg], this function's reverse-mode
-        derivatives are very efficient. Custom gradients for bidiagonalisation
-        are a work in progress, and if you need to differentiate the decompositions,
-        consider using [tridiag_sym][matfree.decomp.tridiag_sym] for the time being.
+        derivatives are not efficient. Custom gradients for bidiagonalisation
+        are a work in progress. In the meantime,
+        if you need to differentiate the decompositions, consider using
+        [tridiag_sym][matfree.decomp.tridiag_sym] instead (if possible).
 
     """
 

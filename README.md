@@ -102,9 +102,10 @@ These tutorials include, among other things:
 **Citation**
 
 Thank you for using Matfree!
-If you are using Matfree's differentiable Lanczos or Arnoldi iterations, then you
-are using the algorithms from [this paper](https://arxiv.org/abs/2405.17277).
-We would appreciate it if you cited the paper as follows:
+A dedicated paper about Matfree itself is in preparation.\
+In the meantime, if you are using Matfree's **differentiable Lanczos or Arnoldi iterations**, then you
+are using the algorithms introduced by [this paper](https://arxiv.org/abs/2405.17277).
+We would appreciate it if you cited it as follows:
 
 ```bibtex
 @article{kraemer2024gradients,
@@ -117,9 +118,9 @@ We would appreciate it if you cited the paper as follows:
 }
 ```
 
-If you are using Matfree's differentiable LSMR implementation, then you
+If you are using Matfree's **differentiable LSMR implementation**, then you
 are using the algorithm from [this paper](https://arxiv.org/abs/2510.19634).
-We would appreciate it if you cited the paper as follows:
+We would appreciate it if you cited it as follows:
 
 ```bibtex
 @article{roy2025matrix,
