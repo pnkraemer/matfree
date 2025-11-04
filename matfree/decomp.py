@@ -612,9 +612,10 @@ def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full")
     ??? note "A note about differentiability"
         Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or
         [hessenberg][matfree.decomp.hessenberg], this function's reverse-mode
-        derivatives are very efficient. Custom gradients for bidiagonalisation
-        are a work in progress, and if you need to differentiate the decompositions,
-        consider using [tridiag_sym][matfree.decomp.tridiag_sym] for the time being.
+        derivatives are not efficient. Custom gradients for bidiagonalisation
+        are a work in progress. In the meantime,
+        if you need to differentiate the decompositions, consider using
+        [tridiag_sym][matfree.decomp.tridiag_sym] instead (if possible).
 
     """
 
