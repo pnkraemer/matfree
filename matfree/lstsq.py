@@ -26,25 +26,38 @@ def lsmr(
 ):
     r"""Construct an experimental implementation of LSMR.
 
-    Follows the [implementation in SciPy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html),
+    Follows the [SciPy's implementation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html),
     but uses JAX.
+    LSMR is due to Fong and Saunders (2011):
 
+    ??? note "BibTex for Fong and Saunders (2011)"
+        ```bibtex
+        @article{fong2011lsmr,
+            title={{LSMR}: An iterative algorithm for sparse least-squares problems},
+            author={Fong, David Chin-Lung and Saunders, Michael},
+            journal={SIAM Journal on Scientific Computing},
+            volume={33},
+            number={5},
+            pages={2950--2971},
+            year={2011},
+            publisher={SIAM}
+        }
+        ```
 
     Setting `custom_vjp` to `True` implies using the low-memory
     gradients of matrix-free least squares,
     according to what has been proposed by Roy et al. (2025).
     [Here](https://arxiv.org/abs/2510.19634) is a link to the preprint.
     These gradients are exact, so there is little reason not to use them.
-    If you use this configuration, please consider
-    citing Roy et al. (2025; bibtex below).
+    If you use this configuration, please cite Roy et al. (2025):
 
     ??? note "BibTex for Roy et al. (2025)"
         ```bibtex
         @article{roy2025matrix,
-        title={Matrix-Free Least Squares Solvers: Values, Gradients, and What to Do With Them},
-        author={Roy, Hrittik and Hauberg, S{\\o}ren and Kr{\"a}mer, Nicholas},
-        journal={arXiv preprint arXiv:2510.19634},
-        year={2025}
+            title={Matrix-Free Least Squares Solvers: Values, Gradients, and What to Do With Them},
+            author={Roy, Hrittik and Hauberg, S{\\o}ren and Kr{\"a}mer, Nicholas},
+            journal={arXiv preprint arXiv:2510.19634},
+            year={2025}
         }
         ```
     """
