@@ -1,0 +1,2194 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../bounds/">
+      
+      
+        <link rel="next" href="../eig/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>matfree.decomp - matfree documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Sans:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Fira Sans";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#matfreedecomp" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="matfree documentation" class="md-header__button md-logo" aria-label="matfree documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            matfree documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              matfree.decomp
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pnkraemer/matfree" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pnkraemer/matfree
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="matfree documentation" class="md-nav__button md-logo" aria-label="matfree documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    matfree documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pnkraemer/matfree" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pnkraemer/matfree
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matfree: Matrix-free linear algebra in JAX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API documentation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API documentation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.bounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.decomp
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.decomp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#matfree.decomp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decomp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="decomp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#matfree.decomp.bidiag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bidiag
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#matfree.decomp.hessenberg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hessenberg
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#matfree.decomp.tridiag_sym" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tridiag_sym
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.eig
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../funm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.funm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../low_rank/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.low_rank
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lstsq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.lstsq
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochtrace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.stochtrace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../test_util/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    matfree.test_util
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer documentation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer documentation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Developer_documentation/1_use_matfree%27s_continuous_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Matfree's continuous integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Developer_documentation/2_contribute_to_matfree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contribute to Matfree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Developer_documentation/3_extend_matfree%27s_documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extend Matfree's documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Developer_documentation/4_understand_matfree%27s_api_policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understand Matfree's API policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/1_compute_log_determinants_with_stochastic_lanczos_quadrature/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute log-determinants with stochastic Lanczos quadrature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/2_estimate_log_determinants_of_py_tree_valued_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimate log-determinants of PyTree-valued functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/3_implement_uncertainty_quantification_for_trace_estimation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implement uncertainty quantification for trace estimation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/4_combine_trace_estimation_with_control_variates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combine trace estimation with control variates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/5_implement_vector_calculus_in_linear_complexity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implement vector calculus in linear complexity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/6_carry_out_stochastic_trace_estimation_with_minimal_memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Carry out stochastic trace estimation with minimal memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Tutorials/7_compute_matrix_functions_without_materializing_large_matrices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute matrix functions without materializing large matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#matfree.decomp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decomp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="decomp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#matfree.decomp.bidiag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bidiag
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#matfree.decomp.hessenberg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hessenberg
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#matfree.decomp.tridiag_sym" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tridiag_sym
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="matfreedecomp">matfree.decomp</h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="matfree.decomp" class="doc doc-heading">
+            <code>matfree.decomp</code>
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Matrix-free matrix decompositions.</p>
+<p>This module includes various Lanczos-decompositions of matrices
+(tri-diagonal, bi-diagonal, etc.).</p>
+<p>For stochastic Lanczos quadrature and
+matrix-function-vector products, see
+<a class="autorefs autorefs-internal" href="../funm/#matfree.funm">matfree.funm</a>.</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="matfree.decomp.bidiag" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">matfree</span><span class="o">.</span><span class="n">decomp</span><span class="o">.</span><span class="n">bidiag</span><span class="p">(</span><span class="n">num_matvecs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">materialize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reortho</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Construct an implementation of <strong>bidiagonalisation</strong>.</p>
+<p>Uses pre-allocation and full reorthogonalisation.</p>
+<p>Works for <strong>arbitrary matrices</strong>. No symmetry required.</p>
+<p>Decompose a matrix into a product of orthogonal-<strong>bidiagonal</strong>-orthogonal matrices.
+Use this algorithm for approximate <strong>singular value</strong> decompositions.</p>
+<p>Internally, Matfree uses JAX to turn matrix-vector- into vector-matrix-products.</p>
+<details class="note">
+<summary>A note about differentiability</summary>
+<p>Unlike <a class="autorefs autorefs-internal" title="matfree.decomp.tridiag_sym(num_matvecs: int, /, *, materialize: bool = True, reortho: str = 'full', custom_vjp: bool = True)" href="#matfree.decomp.tridiag_sym">tridiag_sym</a> or
+<a class="autorefs autorefs-internal" title="matfree.decomp.hessenberg(num_matvecs, /, *, reortho: str, custom_vjp: bool = True, reortho_vjp: str = 'match')" href="#matfree.decomp.hessenberg">hessenberg</a>, this function's reverse-mode
+derivatives are not efficient. Custom gradients for bidiagonalisation
+are a work in progress. In the meantime,
+if you need to differentiate the decompositions, consider using
+<a class="autorefs autorefs-internal" title="matfree.decomp.tridiag_sym(num_matvecs: int, /, *, materialize: bool = True, reortho: str = 'full', custom_vjp: bool = True)" href="#matfree.decomp.tridiag_sym">tridiag_sym</a> instead (if possible).</p>
+</details>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>matfree/decomp.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span>
+<span class="normal">622</span>
+<span class="normal">623</span>
+<span class="normal">624</span>
+<span class="normal">625</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span>
+<span class="normal">632</span>
+<span class="normal">633</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span>
+<span class="normal">637</span>
+<span class="normal">638</span>
+<span class="normal">639</span>
+<span class="normal">640</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span>
+<span class="normal">656</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span>
+<span class="normal">671</span>
+<span class="normal">672</span>
+<span class="normal">673</span>
+<span class="normal">674</span>
+<span class="normal">675</span>
+<span class="normal">676</span>
+<span class="normal">677</span>
+<span class="normal">678</span>
+<span class="normal">679</span>
+<span class="normal">680</span>
+<span class="normal">681</span>
+<span class="normal">682</span>
+<span class="normal">683</span>
+<span class="normal">684</span>
+<span class="normal">685</span>
+<span class="normal">686</span>
+<span class="normal">687</span>
+<span class="normal">688</span>
+<span class="normal">689</span>
+<span class="normal">690</span>
+<span class="normal">691</span>
+<span class="normal">692</span>
+<span class="normal">693</span>
+<span class="normal">694</span>
+<span class="normal">695</span>
+<span class="normal">696</span>
+<span class="normal">697</span>
+<span class="normal">698</span>
+<span class="normal">699</span>
+<span class="normal">700</span>
+<span class="normal">701</span>
+<span class="normal">702</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span>
+<span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span>
+<span class="normal">718</span>
+<span class="normal">719</span>
+<span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span>
+<span class="normal">723</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bidiag</span><span class="p">(</span><span class="n">num_matvecs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">materialize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reortho</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct an implementation of **bidiagonalisation**.</span>
+
+<span class="sd">    Uses pre-allocation and full reorthogonalisation.</span>
+
+<span class="sd">    Works for **arbitrary matrices**. No symmetry required.</span>
+
+<span class="sd">    Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.</span>
+<span class="sd">    Use this algorithm for approximate **singular value** decompositions.</span>
+
+<span class="sd">    Internally, Matfree uses JAX to turn matrix-vector- into vector-matrix-products.</span>
+
+<span class="sd">    ??? note &quot;A note about differentiability&quot;</span>
+<span class="sd">        Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or</span>
+<span class="sd">        [hessenberg][matfree.decomp.hessenberg], this function&#39;s reverse-mode</span>
+<span class="sd">        derivatives are not efficient. Custom gradients for bidiagonalisation</span>
+<span class="sd">        are a work in progress. In the meantime,</span>
+<span class="sd">        if you need to differentiate the decompositions, consider using</span>
+<span class="sd">        [tridiag_sym][matfree.decomp.tridiag_sym] instead (if possible).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate</span><span class="p">(</span><span class="n">Av</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">v0</span><span class="p">,</span> <span class="o">*</span><span class="n">parameters</span><span class="p">):</span>
+        <span class="c1"># Infer the size of A from v0</span>
+        <span class="p">(</span><span class="n">ncols</span><span class="p">,)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">v0</span><span class="p">)</span>
+        <span class="n">w0_like</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_shape</span><span class="p">(</span><span class="n">Av</span><span class="p">,</span> <span class="n">v0</span><span class="p">,</span> <span class="o">*</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">nrows</span><span class="p">,)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">w0_like</span><span class="p">)</span>
+
+        <span class="c1"># Complain if the shapes don&#39;t match</span>
+        <span class="n">max_num_matvecs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_matvecs</span> <span class="o">&gt;</span> <span class="n">max_num_matvecs</span> <span class="ow">or</span> <span class="n">num_matvecs</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">_error_num_matvecs</span><span class="p">(</span><span class="n">num_matvecs</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="p">),</span> <span class="n">minval</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">v0_norm</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">_normalise</span><span class="p">(</span><span class="n">v0</span><span class="p">)</span>
+        <span class="n">init_val</span> <span class="o">=</span> <span class="n">init</span><span class="p">(</span><span class="n">v0_norm</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="n">ncols</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">num_matvecs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">uk_all_T</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">vk_all</span><span class="p">,</span> <span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">vk</span><span class="p">)</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">init_val</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_DecompResult</span><span class="p">(</span>
+                <span class="n">Q_tall</span><span class="o">=</span><span class="p">(</span><span class="n">uk_all_T</span><span class="p">,</span> <span class="n">vk_all</span><span class="o">.</span><span class="n">T</span><span class="p">),</span>
+                <span class="n">J_small</span><span class="o">=</span><span class="n">J</span><span class="p">,</span>
+                <span class="n">residual</span><span class="o">=</span><span class="n">beta</span> <span class="o">*</span> <span class="n">vk</span><span class="p">,</span>
+                <span class="n">init_length_inv</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">length</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">body_fun</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">step</span><span class="p">(</span><span class="n">Av</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="o">*</span><span class="n">parameters</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">control_flow</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">num_matvecs</span><span class="p">,</span> <span class="n">body_fun</span><span class="o">=</span><span class="n">body_fun</span><span class="p">,</span> <span class="n">init_val</span><span class="o">=</span><span class="n">init_val</span>
+        <span class="p">)</span>
+        <span class="n">uk_all_T</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">vk_all</span><span class="p">,</span> <span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">vk</span><span class="p">)</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_DecompResult</span><span class="p">(</span>
+            <span class="n">Q_tall</span><span class="o">=</span><span class="p">(</span><span class="n">uk_all_T</span><span class="p">,</span> <span class="n">vk_all</span><span class="o">.</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">J_small</span><span class="o">=</span><span class="n">J</span><span class="p">,</span>
+            <span class="n">residual</span><span class="o">=</span><span class="n">beta</span> <span class="o">*</span> <span class="n">vk</span><span class="p">,</span>
+            <span class="n">init_length_inv</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">length</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">State</span><span class="p">(</span><span class="n">containers</span><span class="o">.</span><span class="n">NamedTuple</span><span class="p">):</span>
+        <span class="n">i</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="n">Us</span><span class="p">:</span> <span class="n">Array</span>
+        <span class="n">Vs</span><span class="p">:</span> <span class="n">Array</span>
+        <span class="n">alphas</span><span class="p">:</span> <span class="n">Array</span>
+        <span class="n">betas</span><span class="p">:</span> <span class="n">Array</span>
+        <span class="n">beta</span><span class="p">:</span> <span class="n">Array</span>
+        <span class="n">vk</span><span class="p">:</span> <span class="n">Array</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span><span class="n">init_vec</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="n">alphas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_matvecs</span><span class="p">,))</span>
+        <span class="n">betas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_matvecs</span><span class="p">,))</span>
+        <span class="n">Us</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_matvecs</span><span class="p">,</span> <span class="n">nrows</span><span class="p">))</span>
+        <span class="n">Vs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_matvecs</span><span class="p">,</span> <span class="n">ncols</span><span class="p">))</span>
+        <span class="n">v0</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_normalise</span><span class="p">(</span><span class="n">init_vec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">State</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Us</span><span class="p">,</span> <span class="n">Vs</span><span class="p">,</span> <span class="n">alphas</span><span class="p">,</span> <span class="n">betas</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(()),</span> <span class="n">v0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="n">Av</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="o">*</span><span class="n">parameters</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">Us</span><span class="p">,</span> <span class="n">Vs</span><span class="p">,</span> <span class="n">alphas</span><span class="p">,</span> <span class="n">betas</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">vk</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">Vs</span> <span class="o">=</span> <span class="n">Vs</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">vk</span><span class="p">)</span>
+        <span class="n">betas</span> <span class="o">=</span> <span class="n">betas</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span>
+
+        <span class="c1"># Use jax.vjp to evaluate the vector-matrix product</span>
+        <span class="n">Av_eval</span><span class="p">,</span> <span class="n">vA</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">vjp</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">Av</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">parameters</span><span class="p">),</span> <span class="n">vk</span><span class="p">)</span>
+        <span class="n">uk</span> <span class="o">=</span> <span class="n">Av_eval</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">Us</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">reortho</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+            <span class="c1"># For some reason, two reorthogonalsiation calls are needed...</span>
+            <span class="n">uk</span> <span class="o">=</span> <span class="n">uk</span> <span class="o">-</span> <span class="n">Us</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="p">(</span><span class="n">Us</span> <span class="o">@</span> <span class="n">uk</span><span class="p">)</span>
+            <span class="n">uk</span> <span class="o">=</span> <span class="n">uk</span> <span class="o">-</span> <span class="n">Us</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="p">(</span><span class="n">Us</span> <span class="o">@</span> <span class="n">uk</span><span class="p">)</span>
+
+        <span class="n">uk</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">_normalise</span><span class="p">(</span><span class="n">uk</span><span class="p">)</span>
+        <span class="n">Us</span> <span class="o">=</span> <span class="n">Us</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">uk</span><span class="p">)</span>
+        <span class="n">alphas</span> <span class="o">=</span> <span class="n">alphas</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+
+        <span class="p">(</span><span class="n">vA_eval</span><span class="p">,)</span> <span class="o">=</span> <span class="n">vA</span><span class="p">(</span><span class="n">uk</span><span class="p">)</span>
+        <span class="n">vk</span> <span class="o">=</span> <span class="n">vA_eval</span> <span class="o">-</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">vk</span>
+        <span class="k">if</span> <span class="n">reortho</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+            <span class="c1"># For some reason, two reorthogonalsiation calls are needed...</span>
+            <span class="n">vk</span> <span class="o">=</span> <span class="n">vk</span> <span class="o">-</span> <span class="n">Vs</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="p">(</span><span class="n">Vs</span> <span class="o">@</span> <span class="n">vk</span><span class="p">)</span>
+            <span class="n">vk</span> <span class="o">=</span> <span class="n">vk</span> <span class="o">-</span> <span class="n">Vs</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="p">(</span><span class="n">Vs</span> <span class="o">@</span> <span class="n">vk</span><span class="p">)</span>
+
+        <span class="n">vk</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">_normalise</span><span class="p">(</span><span class="n">vk</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">State</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Us</span><span class="p">,</span> <span class="n">Vs</span><span class="p">,</span> <span class="n">alphas</span><span class="p">,</span> <span class="n">betas</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">vk</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">uk_all</span><span class="p">,</span> <span class="n">vk_all</span><span class="p">,</span> <span class="n">alphas</span><span class="p">,</span> <span class="n">betas</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">vk</span> <span class="o">=</span> <span class="n">state</span>
+
+        <span class="k">if</span> <span class="n">materialize</span><span class="p">:</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">_todense_bidiag</span><span class="p">(</span><span class="n">alphas</span><span class="p">,</span> <span class="n">betas</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">return</span> <span class="n">uk_all</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">vk_all</span><span class="p">,</span> <span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">vk</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">uk_all</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="p">(</span><span class="n">alphas</span><span class="p">,</span> <span class="n">betas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span> <span class="n">vk_all</span><span class="p">,</span> <span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">vk</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_normalise</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vec</span> <span class="o">/</span> <span class="n">length</span><span class="p">,</span> <span class="n">length</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_todense_bidiag</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
+        <span class="n">diag</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">diagonal_matrix</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="n">offdiag</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">diagonal_matrix</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">diag</span> <span class="o">+</span> <span class="n">offdiag</span>
+
+    <span class="k">return</span> <span class="n">estimate</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="matfree.decomp.hessenberg" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">matfree</span><span class="o">.</span><span class="n">decomp</span><span class="o">.</span><span class="n">hessenberg</span><span class="p">(</span><span class="n">num_matvecs</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">reortho</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">custom_vjp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reortho_vjp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;match&#39;</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Construct a <strong>Hessenberg-factorisation</strong> via the Arnoldi iteration.</p>
+<p>Uses pre-allocation, and full reorthogonalisation if <code>reortho</code> is set to <code>"full"</code>.
+It tends to be a good idea to use full reorthogonalisation.</p>
+<p>This algorithm works for <strong>arbitrary matrices</strong>.</p>
+<p>Setting <code>custom_vjp</code> to <code>True</code> implies using efficient, numerically stable
+gradients of the Arnoldi iteration according to what has been proposed by
+Krämer et al. (2024).
+These gradients are exact, so there is little reason not to use them.
+If you use this configuration,
+please consider citing Krämer et al. (2024; bibtex below).</p>
+<details class="note">
+<summary>BibTex for Krämer et al. (2024)</summary>
+<div class="highlight"><pre><span></span><code><span class="nc">@article</span><span class="p">{</span><span class="nl">kraemer2024gradients</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="p">=</span><span class="s">{Gradients of functions of large matrices}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="p">=</span><span class="s">{Kr\&quot;amer, Nicholas and Moreno-Mu\~noz, Pablo and</span>
+<span class="s">    Roy, Hrittik and Hauberg, S{\o}ren}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">journal</span><span class="p">=</span><span class="s">{arXiv preprint arXiv:2405.17277}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="p">=</span><span class="s">{2024}</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>matfree/decomp.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">hessenberg</span><span class="p">(</span>
+    <span class="n">num_matvecs</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">reortho</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">custom_vjp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reortho_vjp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;match&quot;</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Construct a **Hessenberg-factorisation** via the Arnoldi iteration.</span>
+
+<span class="sd">    Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `&quot;full&quot;`.</span>
+<span class="sd">    It tends to be a good idea to use full reorthogonalisation.</span>
+
+<span class="sd">    This algorithm works for **arbitrary matrices**.</span>
+
+<span class="sd">    Setting `custom_vjp` to `True` implies using efficient, numerically stable</span>
+<span class="sd">    gradients of the Arnoldi iteration according to what has been proposed by</span>
+<span class="sd">    Krämer et al. (2024).</span>
+<span class="sd">    These gradients are exact, so there is little reason not to use them.</span>
+<span class="sd">    If you use this configuration,</span>
+<span class="sd">    please consider citing Krämer et al. (2024; bibtex below).</span>
+
+<span class="sd">    ??? note &quot;BibTex for Krämer et al. (2024)&quot;</span>
+<span class="sd">        ```bibtex</span>
+<span class="sd">        @article{kraemer2024gradients,</span>
+<span class="sd">            title={Gradients of functions of large matrices},</span>
+<span class="sd">            author={Kr\&quot;amer, Nicholas and Moreno-Mu\~noz, Pablo and</span>
+<span class="sd">            Roy, Hrittik and Hauberg, S{\o}ren},</span>
+<span class="sd">            journal={arXiv preprint arXiv:2405.17277},</span>
+<span class="sd">            year={2024}</span>
+<span class="sd">        }</span>
+<span class="sd">        ```</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reortho_expected</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;full&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">reortho</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reortho_expected</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Unexpected input for </span><span class="si">{</span><span class="n">reortho</span><span class="si">}</span><span class="s2">: either of </span><span class="si">{</span><span class="n">reortho_expected</span><span class="si">}</span><span class="s2"> expected.&quot;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate</span><span class="p">(</span><span class="n">matvec</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">matvec_convert</span><span class="p">,</span> <span class="n">aux_args</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">closure_convert</span><span class="p">(</span><span class="n">matvec</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_estimate</span><span class="p">(</span><span class="n">matvec_convert</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">,</span> <span class="o">*</span><span class="n">aux_args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimate</span><span class="p">(</span><span class="n">matvec_convert</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_hessenberg_forward</span><span class="p">(</span>
+            <span class="n">matvec_convert</span><span class="p">,</span> <span class="n">num_matvecs</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">,</span> <span class="n">reortho</span><span class="o">=</span><span class="n">reortho_vjp</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate_fwd</span><span class="p">(</span><span class="n">matvec_convert</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">_estimate</span><span class="p">(</span><span class="n">matvec_convert</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">outputs</span><span class="p">,</span> <span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate_bwd</span><span class="p">(</span><span class="n">matvec_convert</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">vjp_incoming</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">),</span> <span class="n">params</span> <span class="o">=</span> <span class="n">cache</span>
+        <span class="n">dQ</span><span class="p">,</span> <span class="n">dH</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">dc</span> <span class="o">=</span> <span class="n">vjp_incoming</span>
+
+        <span class="k">return</span> <span class="n">_hessenberg_adjoint</span><span class="p">(</span>
+            <span class="n">matvec_convert</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">Q</span><span class="o">=</span><span class="n">Q</span><span class="p">,</span>
+            <span class="n">H</span><span class="o">=</span><span class="n">H</span><span class="p">,</span>
+            <span class="n">r</span><span class="o">=</span><span class="n">r</span><span class="p">,</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span>
+            <span class="n">dQ</span><span class="o">=</span><span class="n">dQ</span><span class="p">,</span>
+            <span class="n">dH</span><span class="o">=</span><span class="n">dH</span><span class="p">,</span>
+            <span class="n">dr</span><span class="o">=</span><span class="n">dr</span><span class="p">,</span>
+            <span class="n">dc</span><span class="o">=</span><span class="n">dc</span><span class="p">,</span>
+            <span class="n">reortho</span><span class="o">=</span><span class="n">reortho</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">custom_vjp</span><span class="p">:</span>
+        <span class="n">_estimate</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">custom_vjp</span><span class="p">(</span><span class="n">_estimate</span><span class="p">,</span> <span class="n">nondiff_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
+        <span class="n">_estimate</span><span class="o">.</span><span class="n">defvjp</span><span class="p">(</span><span class="n">estimate_fwd</span><span class="p">,</span> <span class="n">estimate_bwd</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">return</span> <span class="n">estimate</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="matfree.decomp.tridiag_sym" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">matfree</span><span class="o">.</span><span class="n">decomp</span><span class="o">.</span><span class="n">tridiag_sym</span><span class="p">(</span><span class="n">num_matvecs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">materialize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reortho</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span><span class="p">,</span> <span class="n">custom_vjp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Construct an implementation of <strong>tridiagonalisation</strong>.</p>
+<p>Decompose a <strong>symmetric</strong> matrix into a product of orthogonal-<strong>tridiagonal</strong>-orthogonal matrices.
+Use this algorithm for approximate <strong>eigenvalue</strong> decompositions.
+The present implementation allocates all Lanczos vectors before running the
+algorithm. If <code>reortho</code> is set to <code>"full"</code>, it also uses full reorthogonalisation.
+It is usually a good idea to use full reorthogonalisation.
+Matrix-free tridiagonalisation uses Lanczos' (1950) algorithm:</p>
+<details class="note">
+<summary>BibTex for Lanczos (1950)</summary>
+<div class="highlight"><pre><span></span><code><span class="nc">@article</span><span class="p">{</span><span class="nl">lanczos1950iteration</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="p">=</span><span class="s">{An iteration method for the solution of the eigenvalue problem of linear differential and integral operators}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="p">=</span><span class="s">{Lanczos, Cornelius}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">journal</span><span class="p">=</span><span class="s">{Journal of research of the National Bureau of Standards}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">volume</span><span class="p">=</span><span class="s">{45}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">number</span><span class="p">=</span><span class="s">{4}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">pages</span><span class="p">=</span><span class="s">{255--282}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="p">=</span><span class="s">{1950}</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+<p>Setting <code>custom_vjp</code> to <code>True</code> implies using efficient, numerically stable
+gradients of the Lanczos iteration which was proposed by Krämer et al. (2024).
+These gradients are exact, so there is little reason not to use them.
+If you use this configuration, please cite Krämer et al. (2024):</p>
+<details class="note">
+<summary>BibTex for Krämer et al. (2024)</summary>
+<div class="highlight"><pre><span></span><code><span class="nc">@article</span><span class="p">{</span><span class="nl">kraemer2024gradients</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="p">=</span><span class="s">{Gradients of functions of large matrices}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="p">=</span><span class="s">{Kr{\&quot;a}mer, Nicholas and Moreno-Mu{\~n}oz, Pablo and Roy, Hrittik and Hauberg, S{\o}ren}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">journal</span><span class="p">=</span><span class="s">{Advances in Neural Information Processing Systems}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">volume</span><span class="p">=</span><span class="s">{37}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">pages</span><span class="p">=</span><span class="s">{49484--49518}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="p">=</span><span class="s">{2024}</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>num_matvecs</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The number of matrix-vector products aka the depth of the Krylov space.
+The deeper the Krylov space, the more accurate the factorisation tends to be.
+However, the computational complexity increases linearly
+with the number of matrix-vector products.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>materialize</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value of this flag indicates whether the tridiagonal matrix
+should be returned in a sparse format (which means, as a tuple of diagonas)
+or as a dense matrix.
+The dense matrix is helpful if different decompositions should be used
+interchangeably. The sparse representation requires less memory.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>reortho</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value of this parameter indicates whether to reorthogonalise the
+basis vectors during the forward pass.
+Reorthogonalisation makes the forward pass more expensive, but helps
+(significantly) with numerical stability.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;full&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>custom_vjp</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value of this flag indicates whether to use a custom vector-Jacobian
+product as proposed by Krämer et al. (2024; bibtex above).
+Generally, using a custom VJP tends to be a good idea.
+However, due to JAX's mechanics, a custom VJP precludes the use of forward-mode
+differentiation
+(<a href="https://jax.readthedocs.io/en/latest/_autosummary/jax.custom_vjp.html">see here</a>),
+so don't use a custom VJP if you need forward-mode differentiation.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="decompose">decompose</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A decomposition function that maps
+<code>(matvec, vector, *params)</code> to the decomposition.
+The decomposition is a tuple of (nested) arrays.
+The first element is the Krylov basis,
+the second element represents the tridiagonal matrix
+(how it is represented depends on the value of ``materialize''),
+the third element is
+the residual, and the fourth element is
+the (inverse of the) length of the initial vector.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>matfree/decomp.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 30</span>
+<span class="normal"> 31</span>
+<span class="normal"> 32</span>
+<span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
+<span class="normal"> 38</span>
+<span class="normal"> 39</span>
+<span class="normal"> 40</span>
+<span class="normal"> 41</span>
+<span class="normal"> 42</span>
+<span class="normal"> 43</span>
+<span class="normal"> 44</span>
+<span class="normal"> 45</span>
+<span class="normal"> 46</span>
+<span class="normal"> 47</span>
+<span class="normal"> 48</span>
+<span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">tridiag_sym</span><span class="p">(</span>
+    <span class="n">num_matvecs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">materialize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">reortho</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full&quot;</span><span class="p">,</span>
+    <span class="n">custom_vjp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Construct an implementation of **tridiagonalisation**.</span>
+
+<span class="sd">    Decompose a **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.</span>
+<span class="sd">    Use this algorithm for approximate **eigenvalue** decompositions.</span>
+<span class="sd">    The present implementation allocates all Lanczos vectors before running the</span>
+<span class="sd">    algorithm. If `reortho` is set to `&quot;full&quot;`, it also uses full reorthogonalisation.</span>
+<span class="sd">    It is usually a good idea to use full reorthogonalisation.</span>
+<span class="sd">    Matrix-free tridiagonalisation uses Lanczos&#39; (1950) algorithm:</span>
+
+<span class="sd">    ??? note &quot;BibTex for Lanczos (1950)&quot;</span>
+<span class="sd">        ```bibtex</span>
+<span class="sd">        @article{lanczos1950iteration,</span>
+<span class="sd">            title={An iteration method for the solution of the eigenvalue problem of linear differential and integral operators},</span>
+<span class="sd">            author={Lanczos, Cornelius},</span>
+<span class="sd">            journal={Journal of research of the National Bureau of Standards},</span>
+<span class="sd">            volume={45},</span>
+<span class="sd">            number={4},</span>
+<span class="sd">            pages={255--282},</span>
+<span class="sd">            year={1950}</span>
+<span class="sd">        }</span>
+<span class="sd">        ```</span>
+
+<span class="sd">    Setting `custom_vjp` to `True` implies using efficient, numerically stable</span>
+<span class="sd">    gradients of the Lanczos iteration which was proposed by Krämer et al. (2024).</span>
+<span class="sd">    These gradients are exact, so there is little reason not to use them.</span>
+<span class="sd">    If you use this configuration, please cite Krämer et al. (2024):</span>
+
+<span class="sd">    ??? note &quot;BibTex for Krämer et al. (2024)&quot;</span>
+<span class="sd">        ```bibtex</span>
+<span class="sd">        @article{kraemer2024gradients,</span>
+<span class="sd">            title={Gradients of functions of large matrices},</span>
+<span class="sd">            author={Kr{\&quot;a}mer, Nicholas and Moreno-Mu{\~n}oz, Pablo and Roy, Hrittik and Hauberg, S{\o}ren},</span>
+<span class="sd">            journal={Advances in Neural Information Processing Systems},</span>
+<span class="sd">            volume={37},</span>
+<span class="sd">            pages={49484--49518},</span>
+<span class="sd">            year={2024}</span>
+<span class="sd">        }</span>
+<span class="sd">        ```</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_matvecs</span>
+<span class="sd">        The number of matrix-vector products aka the depth of the Krylov space.</span>
+<span class="sd">        The deeper the Krylov space, the more accurate the factorisation tends to be.</span>
+<span class="sd">        However, the computational complexity increases linearly</span>
+<span class="sd">        with the number of matrix-vector products.</span>
+<span class="sd">    materialize</span>
+<span class="sd">        The value of this flag indicates whether the tridiagonal matrix</span>
+<span class="sd">        should be returned in a sparse format (which means, as a tuple of diagonas)</span>
+<span class="sd">        or as a dense matrix.</span>
+<span class="sd">        The dense matrix is helpful if different decompositions should be used</span>
+<span class="sd">        interchangeably. The sparse representation requires less memory.</span>
+<span class="sd">    reortho</span>
+<span class="sd">        The value of this parameter indicates whether to reorthogonalise the</span>
+<span class="sd">        basis vectors during the forward pass.</span>
+<span class="sd">        Reorthogonalisation makes the forward pass more expensive, but helps</span>
+<span class="sd">        (significantly) with numerical stability.</span>
+<span class="sd">    custom_vjp</span>
+<span class="sd">        The value of this flag indicates whether to use a custom vector-Jacobian</span>
+<span class="sd">        product as proposed by Krämer et al. (2024; bibtex above).</span>
+<span class="sd">        Generally, using a custom VJP tends to be a good idea.</span>
+<span class="sd">        However, due to JAX&#39;s mechanics, a custom VJP precludes the use of forward-mode</span>
+<span class="sd">        differentiation</span>
+<span class="sd">        ([see here](https://jax.readthedocs.io/en/latest/_autosummary/jax.custom_vjp.html)),</span>
+<span class="sd">        so don&#39;t use a custom VJP if you need forward-mode differentiation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    decompose</span>
+<span class="sd">        A decomposition function that maps</span>
+<span class="sd">        ``(matvec, vector, *params)`` to the decomposition.</span>
+<span class="sd">        The decomposition is a tuple of (nested) arrays.</span>
+<span class="sd">        The first element is the Krylov basis,</span>
+<span class="sd">        the second element represents the tridiagonal matrix</span>
+<span class="sd">        (how it is represented depends on the value of ``materialize&#39;&#39;),</span>
+<span class="sd">        the third element is</span>
+<span class="sd">        the residual, and the fourth element is</span>
+<span class="sd">        the (inverse of the) length of the initial vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">reortho</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_tridiag_reortho_full</span><span class="p">(</span>
+            <span class="n">num_matvecs</span><span class="p">,</span> <span class="n">custom_vjp</span><span class="o">=</span><span class="n">custom_vjp</span><span class="p">,</span> <span class="n">materialize</span><span class="o">=</span><span class="n">materialize</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">reortho</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_tridiag_reortho_none</span><span class="p">(</span>
+            <span class="n">num_matvecs</span><span class="p">,</span> <span class="n">custom_vjp</span><span class="o">=</span><span class="n">custom_vjp</span><span class="p">,</span> <span class="n">materialize</span><span class="o">=</span><span class="n">materialize</span>
+        <span class="p">)</span>
+
+    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;reortho=</span><span class="si">{</span><span class="n">reortho</span><span class="si">}</span><span class="s2"> unsupported. Choose eiter </span><span class="si">{</span><span class="s1">&#39;full&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;none&#39;</span><span class="si">}</span><span class="s2">.&quot;</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../bounds/" class="md-footer__link md-footer__link--prev" aria-label="Previous: matfree.bounds">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                matfree.bounds
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../eig/" class="md-footer__link md-footer__link--next" aria-label="Next: matfree.eig">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                matfree.eig
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2023 Nicholas Krämer
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://twitter.com/@pnkraemer" target="_blank" rel="noopener" title="pnkraemer on X" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/pnkraemer" target="_blank" rel="noopener" title="pnkraemer on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.footer"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
