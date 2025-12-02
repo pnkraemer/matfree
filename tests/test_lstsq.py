@@ -91,7 +91,8 @@ def test_value_and_grad_matches_linalg_solve_with_damping(
     expected, expected_vjp = func.vjp(lstsq_linalg_solve, matrix, rhs, damp)
     dmatrix1, drhs1, ddmp1 = expected_vjp(dsol)
 
-    def vecmat(vector, p):
+    def vecmat(vector, p_as_list):
+        [p] = p_as_list
         return p.T @ vector
 
     @func.jit
@@ -102,8 +103,8 @@ def test_value_and_grad_matches_linalg_solve_with_damping(
         sol, _ = lsmr(vecmat, a, b, damp=dmp)
         return sol
 
-    received, received_vjp = func.vjp(lstsq_matfree, rhs, matrix, damp)
-    drhs2, dmatrix2, ddmp2 = received_vjp(dsol)  # mind the order of rhs & matrix
+    received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix], damp)
+    drhs2, [dmatrix2], ddmp2 = received_vjp(dsol)  # mind the order of rhs & matrix
 
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)
