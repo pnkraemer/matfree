@@ -93,6 +93,10 @@ def logical_and(a, b, /):
     return jnp.logical_and(a, b)
 
 
+def logical_or(a, b, /):
+    return jnp.logical_or(a, b)
+
+
 def logical_not(a, /):
     return jnp.logical_not(a)
 

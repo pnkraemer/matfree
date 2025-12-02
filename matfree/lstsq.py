@@ -23,6 +23,8 @@ def lsmr(
     maxiter: int = 1_000_000,
     while_loop: Callable = control_flow.while_loop,
     custom_vjp: bool = True,
+    # if the matrix is full rank, the backward pass can be accelerated:
+    is_full_rank: bool = False,
 ):
     r"""Construct an experimental implementation of LSMR.
 
@@ -397,7 +399,7 @@ def lsmr(
         }
 
     if custom_vjp:
-        _run = _lstsq_custom_vjp(_run)
+        _run = _lstsq_custom_vjp(_run, is_full_rank=is_full_rank)
     return run
 
 
@@ -438,7 +440,7 @@ def _sym_ortho_3(a, b):
     return c, s, r
 
 
-def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
+def _lstsq_custom_vjp(lstsq_fun: Callable, *, is_full_rank: bool) -> Callable:
     def lstsq_fwd(vecmat, rhs, vecmat_args, x0, damp):
         x, stats = lstsq_fun(vecmat, rhs, vecmat_args, x0, damp)
         cache = {"x": x, "rhs": rhs, "vecmat_args": vecmat_args, "x0": x0, "damp": damp}
@@ -475,6 +477,17 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         xi, _ = lstsq_fun(vecmat_noargs, -dmu_db, (), x0, 0.0)
         Ax_minus_b = matvec_noargs(x) - rhs
 
+        # Account for rank deficiency (only applicable if damp != 0).
+        # If damp == 0 and the matrix is rank-deficient,
+        #  then the least squares problem does not have a unique solution
+        #  so it is not differentiable anyway.
+        small_value = np.finfo_eps(dmu_dx.dtype)
+        skip = np.logical_or(np.abs(damp) < small_value, is_full_rank)
+        true_fun = func.partial(_tall_rankdef_skip, matvec_noargs, vecmat_noargs)
+        false_fun = func.partial(_tall_rankdef_correct, matvec_noargs, vecmat_noargs)
+        increment = control_flow.cond(skip, true_fun, false_fun, dmu_dx, x0, damp)
+        xi = xi + increment
+
         # Compute the parameter gradient
 
         @func.grad
@@ -487,6 +500,18 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         dmu_dx0 = None  # non-differentiable argument
         dmu_ddamp = 2 * damp * xi.T @ x
         return dmu_db, dmu_dparams, dmu_dx0, dmu_ddamp
+
+    def _tall_rankdef_skip(matvec_noargs, vecmat_noargs, /, dmu_dx, x0, damp):
+        del matvec_noargs
+        del vecmat_noargs
+        del x0
+        del damp
+        return np.zeros_like(dmu_dx)
+
+    def _tall_rankdef_correct(matvec_noargs, vecmat_noargs, /, dmu_dx, x0, damp):
+        rhs_new = matvec_noargs(dmu_dx)
+        g, _ = lstsq_fun(vecmat_noargs, rhs_new, (), x0, 0.0)
+        return (g - dmu_dx) / (damp**2)
 
     def lstsq_rev_wide(vecmat, cache, dmu_dx):
         x = cache["x"]
@@ -511,6 +536,17 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         #  solution subject to a constraint.
         y, _ = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)
 
+        # Account for rank deficiency (only applicable if damp != 0).
+        # If damp == 0 and the matrix is rank-deficient,
+        #  then the least squares problem does not have a unique solution
+        #  so it is not differentiable anyway.
+        small_value = np.finfo_eps(dmu_dx.dtype)
+        skip = np.logical_or(np.abs(damp) < small_value, is_full_rank)
+        true_fun = func.partial(_wide_rankdef_skip, matvec_noargs, vecmat_noargs)
+        false_fun = func.partial(_wide_rankdef_correct, matvec_noargs, vecmat_noargs)
+        increment = control_flow.cond(skip, true_fun, false_fun, rhs, x0_rev, damp)
+        y = y + increment
+
         # Compute the parameter gradient
 
         r = -(vecmat_noargs(dmu_db) - dmu_dx)
@@ -525,6 +561,18 @@ def _lstsq_custom_vjp(lstsq_fun: Callable) -> Callable:
         dmu_dx0 = None  # non-differentiable argument
         dmu_ddamp = -2 * damp * dmu_db.T @ y
         return dmu_db, dmu_dargs, dmu_dx0, dmu_ddamp
+
+    def _wide_rankdef_skip(matvec_noargs, vecmat_noargs, /, rhs, x0_rev, damp):
+        del matvec_noargs
+        del vecmat_noargs
+        del x0_rev
+        del damp
+        return np.zeros_like(rhs)
+
+    def _wide_rankdef_correct(matvec_noargs, vecmat_noargs, /, rhs, x0_rev, damp):
+        new_rhs = vecmat_noargs(rhs)
+        corr, _ = lstsq_fun(matvec_noargs, new_rhs, (), x0_rev, 0.0)
+        return (rhs - corr) / damp**2
 
     lstsq_fun = func.custom_vjp(lstsq_fun, nondiff_argnums=(0,))
     lstsq_fun.defvjp(lstsq_fwd, lstsq_rev)  # type: ignore
