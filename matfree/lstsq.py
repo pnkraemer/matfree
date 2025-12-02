@@ -478,9 +478,6 @@ def _lstsq_custom_vjp(lstsq_fun: Callable, *, is_full_rank: bool) -> Callable:
         Ax_minus_b = matvec_noargs(x) - rhs
 
         # Account for rank deficiency (only applicable if damp != 0).
-        # If damp == 0 and the matrix is rank-deficient,
-        #  then the least squares problem does not have a unique solution
-        #  so it is not differentiable anyway.
         small_value = np.finfo_eps(dmu_dx.dtype)
         skip = np.logical_or(np.abs(damp) < small_value, is_full_rank)
         true_fun = func.partial(_tall_rankdef_skip, matvec_noargs, vecmat_noargs)
@@ -537,9 +534,6 @@ def _lstsq_custom_vjp(lstsq_fun: Callable, *, is_full_rank: bool) -> Callable:
         y, _ = lstsq_fun(matvec_noargs, x, (), x0_rev, 0.0)
 
         # Account for rank deficiency (only applicable if damp != 0).
-        # If damp == 0 and the matrix is rank-deficient,
-        #  then the least squares problem does not have a unique solution
-        #  so it is not differentiable anyway.
         small_value = np.finfo_eps(dmu_dx.dtype)
         skip = np.logical_or(np.abs(damp) < small_value, is_full_rank)
         true_fun = func.partial(_wide_rankdef_skip, matvec_noargs, vecmat_noargs)
