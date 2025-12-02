@@ -65,11 +65,18 @@ def test_value_and_grad_matches_numpy_lstsq_no_damping(
 
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 @testing.parametrize("seed", [1])
-def test_value_and_grad_matches_linalg_solve_with_damping(seed, A_shape: tuple):
+@testing.parametrize("rank_deficient", [True, False])
+def test_value_and_grad_matches_linalg_solve_with_damping(
+    seed, A_shape: tuple, rank_deficient
+):
     key = prng.prng_key(seed)
 
     key, subkey = prng.split(key, 2)
     matrix = prng.normal(subkey, shape=A_shape)
+    if rank_deficient:
+        matrix = matrix.at[:, 1].set(0.0)
+        matrix = matrix.at[1, :].set(0.0)
+
     key, subkey = prng.split(key, 2)
     rhs = prng.normal(subkey, shape=(A_shape[0],))
     key, subkey = prng.split(key, 2)
@@ -90,7 +97,9 @@ def test_value_and_grad_matches_linalg_solve_with_damping(seed, A_shape: tuple):
 
     @func.jit
     def lstsq_matfree(a, b, dmp):
-        lsmr = lstsq.lsmr(atol=1e-10, btol=1e-10, ctol=1e-10)
+        lsmr = lstsq.lsmr(
+            atol=1e-10, btol=1e-10, ctol=1e-10, is_full_rank=not rank_deficient
+        )
         sol, _ = lsmr(vecmat, a, b, damp=dmp)
         return sol
 
