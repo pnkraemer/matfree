@@ -1,4 +1,24 @@
-"""Matrix-free eigenvalue and singular-value analysis."""
+"""Matrix-free eigenvalue and singular-value analysis.
+
+Examples
+--------
+>>> import jax.random
+>>> from matfree import decomp
+>>>
+>>> M = jax.random.normal(jax.random.PRNGKey(1), shape=(10, 10))
+>>> A = M + M.T
+>>> v = jax.random.normal(jax.random.PRNGKey(2), shape=(10,))
+>>>
+>>> # Replace tridiagonalisation with bidiagonalisation and eigh with svd
+>>> # to compute a partial SVD instead of a partial eigendecomposition.
+>>> tridiag = decomp.tridiag_sym(4)
+>>> eigh_fun = eigh_partial(tridiag)
+>>> eigvals, eigvecs = eigh_fun(lambda s: A @ s, v)
+>>> print(eigvals.shape)
+(4,)
+>>> print(eigvecs.shape)
+(4, 10)
+"""
 
 from matfree.backend import func, linalg, tree
 from matfree.backend.typing import Array, Callable
