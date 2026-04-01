@@ -3,7 +3,6 @@
 Examples
 --------
 >>> import jax.random
->>> import jax.numpy as jnp
 >>> from matfree import decomp
 >>>
 >>> M = jax.random.normal(jax.random.PRNGKey(1), shape=(10, 10))
