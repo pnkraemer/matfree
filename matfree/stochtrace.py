@@ -35,6 +35,53 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     return estimate
 
 
+def estimator_loo(integrand: Callable, /, sampler: Callable) -> Callable:
+    """Construct a leave-one-out stochastic estimator.
+
+    Unlike :func:`estimator`, which vmaps an integrand over individual sample
+    vectors, this variant passes the **full** test matrix to the integrand at
+    once.  This is required for the XTrace family of algorithms, which need a
+    batch QR or Cholesky decomposition before the second matvec phase.
+
+    Parameters
+    ----------
+    integrand
+        An integrand that accepts ``(matvec, Omega, *parameters)`` where
+        ``Omega`` has shape ``(num, n)``.  The integrand is responsible for
+        averaging over the sample axis internally.
+    sampler
+        The sample function, e.g. the return-value of
+        :func:`sampler_normal`.
+
+    Returns
+    -------
+    estimate
+        A function ``estimate(matvec, key, *parameters) -> result``.
+
+    """
+
+    def estimate(matvec, key, *parameters):
+        samples = sampler(key)
+        return integrand(matvec, samples, *parameters)
+
+    return estimate
+
+
+def _diagprod(F, G):
+    # diag(F^H G): Hermitian inner product of each column pair; shape (k,)
+    return np.sum(np.conj(F) * G, axis=0)
+
+
+def _sqcolnorms(F):
+    # squared Euclidean norm of each column; shape (k,) for input (n, k)
+    return np.sum(np.abs(F) ** 2, axis=0)
+
+
+def _sqrownorms(F):
+    # squared Euclidean norm of each row; shape (m,) for input (m, k)
+    return np.sum(np.abs(F) ** 2, axis=1)
+
+
 def integrand_diagonal():
     """Construct the integrand for estimating the diagonal.
 
