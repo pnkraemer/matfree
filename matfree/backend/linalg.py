@@ -14,9 +14,9 @@ def matrix_norm(x, /, which):
 
 def abs2(x, /):
     if jnp.iscomplexobj(x):
-        return x.real ** 2 + x.imag ** 2
-    else:
-        return x ** 2
+        return x.real**2 + x.imag**2
+    return x**2
+
 
 def qr_reduced(x, /):
     return jnp.linalg.qr(x, mode="reduced")
