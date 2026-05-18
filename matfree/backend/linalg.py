@@ -100,6 +100,10 @@ def solve(A, b, /):
     return jnp.linalg.solve(A, b)
 
 
+def solve_triangular(A, b, /, trans=0):
+    return jax.scipy.linalg.solve_triangular(A, b, trans=trans)
+
+
 def cg(Av, b, /):
     return jax.scipy.sparse.linalg.cg(Av, b)
 
