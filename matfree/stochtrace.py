@@ -67,19 +67,10 @@ def estimator_loo(integrand: Callable, /, sampler: Callable) -> Callable:
     return estimate
 
 
-def _diagprod(F, G):
-    # diag(F^H G): Hermitian inner product of each column pair; shape (k,)
-    return np.sum(np.conj(F) * G, axis=0)
 
 
-def _sqcolnorms(F):
-    # squared Euclidean norm of each column; shape (k,) for input (n, k)
-    return np.sum(np.abs(F) ** 2, axis=0)
 
 
-def _sqrownorms(F):
-    # squared Euclidean norm of each row; shape (m,) for input (m, k)
-    return np.sum(np.abs(F) ** 2, axis=1)
 
 
 def integrand_diagonal():
