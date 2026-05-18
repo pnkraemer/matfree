@@ -1,6 +1,6 @@
 """Stochastic estimation of traces, diagonals, and more."""
 
-from matfree.backend import func, linalg, np, prng, tree
+from matfree.backend import control_flow, func, linalg, np, prng, tree
 from matfree.backend.typing import Callable
 
 
@@ -62,15 +62,109 @@ def estimator_loo(integrand: Callable, /, sampler: Callable) -> Callable:
 
     def estimate(matvec, key, *parameters):
         samples = sampler(key)
-        return integrand(matvec, samples, *parameters)
+        return np.mean(integrand(matvec, samples, *parameters), axis=0)
 
     return estimate
 
 
+def integrand_trace_svd(*, resphere: bool = True) -> Callable:
+    """Construct the LOO integrand for estimating the trace using the randomized SVD.
 
+    Implements the XTrace algorithm from Epperly et al (2024).
 
+    Parameters
+    ----------
+    resphere
+        If ``True`` (default), apply resphering (see Epperly (2025)),
+        which projects test vectors onto the range of the residual matrix, reducing
+        the variance of the trace estimate. Requires test vectors drawn from a
+        rotationally invariant distribution (e.g. Gaussian or sphere).
 
+    Returns
+    -------
+    integrand
+        An integrand function compatible with `estimator_loo` whose input has the signature ``(matvec, samples, *params)``
+        and whose output is a vector of trace estimates with shape ``(samples.shape[0],)``.
 
+    References
+    ----------
+    - Epperly EN, Tropp JA, Webber RJ (2024). Xtrace: Making the most of every sample in stochastic trace estimation.
+        SIAM J Matrix Anal A. 45.1: 1-23.
+        doi: [10.1137/23M1548323](https://doi.org/10.1137/23M1548323)
+        arXiv: [2301.07825](https://arxiv.org/abs/2301.07825)
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+
+    # TODO: handle case where num_samples > n (violates thin QR constraint)
+    def integrand(matvec, samples, *params):
+        Omega, unflattens = func.vmap(tree.ravel_pytree)(samples)
+        Omega = Omega.T
+        n, num_samples = Omega.shape
+
+        matmat = func.vmap(
+            lambda v, unflatten: tree.ravel_pytree(matvec(unflatten(v), *params))[0],
+            in_axes=-1,
+            out_axes=-1,
+        )
+
+        Y = matmat(Omega, unflattens)
+        Q, R = linalg.qr_reduced(Y)
+        Z = matmat(Q, unflattens)
+
+        def _trace_exact():
+            tr_B = linalg.vdot(Q, Z)
+            return np.ones((num_samples,), dtype=R.dtype) * tr_B
+
+        def _trace_estimate():
+            S = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype), trans=2)
+            S = S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
+
+            Q_H = Q.T.conj()
+            H = (
+                Q_H @ Z
+            )  # tr(H) == tr(B_hat), where B_hat = Q @ Q.H @ B is a low-rank approximation to the operator B
+            W = Q_H @ Omega
+            T = Z.T.conj() @ Omega
+            W_vd_S = linalg.vecdot(W, S, axis=0)
+            X = (
+                W - S * W_vd_S.conj()
+            )  # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
+
+            if resphere:
+                # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out samples[i, :]
+                rank_residual = n - num_samples + 1
+                # squared norm of each sample after projection to the subspace spanned by the residual
+                sqnorm_samples_projected = np.sum(linalg.abs2(Omega), axis=0) - np.sum(
+                    linalg.abs2(X), axis=0
+                )
+                sqnorm_samples_projected = np.where(
+                    sqnorm_samples_projected == 0.0, 1.0, sqnorm_samples_projected
+                )
+                residual_scale = rank_residual / sqnorm_samples_projected
+            else:
+                residual_scale = 1.0
+
+            tr_B_hat = linalg.trace(H)
+            tr_B_hat_loo = tr_B_hat - linalg.vecdot(
+                S, H @ S, axis=0
+            )  # tr(B_hat) leaving out one sample
+            tr_residual_loo = (  # Hutchinson estimate of tr(B - B_hat_{-i}) using as probe samples[i, :]
+                -linalg.vecdot(T, X, axis=0)
+                + linalg.vecdot(X, H @ X, axis=0)
+                + W_vd_S * linalg.vecdot(S, R, axis=0)
+            )
+            return tr_B_hat_loo + residual_scale * tr_residual_loo
+
+        Y_rank = np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype))
+
+        # NOTE: assumes rank(Y) == rank(B), which is almost always true
+        # for Gaussian samples and, when n is large enough, for Rademacher samples.
+        return control_flow.cond(
+            (Y_rank < num_samples) | (Y_rank == n), _trace_exact, _trace_estimate
+        )
+
+    return integrand
 
 
 def integrand_diagonal():
