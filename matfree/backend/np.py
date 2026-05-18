@@ -34,8 +34,8 @@ def asarray(obj, /):
     return jnp.asarray(obj)
 
 
-def eye(n_rows):
-    return jnp.eye(n_rows)
+def eye(n_rows, /, dtype=None):
+    return jnp.eye(n_rows, dtype=dtype)
 
 
 def ones_like(x, /):
