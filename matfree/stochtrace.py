@@ -15,8 +15,9 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
         But any other integrand works, too.
     sampler
         The sample function. Usually, either
-        [sampler_normal][matfree.stochtrace.sampler_normal] or
-        [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
+        [sampler_normal][matfree.stochtrace.sampler_normal],
+        [sampler_rademacher][matfree.stochtrace.sampler_rademacher],
+        or [sampler_sphere][matfree.stochtrace.sampler_sphere].
 
     Returns
     -------
