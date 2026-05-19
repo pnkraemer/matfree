@@ -65,16 +65,16 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
     return estimate
 
 
-def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
+def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     """Construct an integrand for estimating the trace using the XTrace algorithm (Epperly et al. 2024).
 
     Parameters
     ----------
-    resphere
-        If ``True`` (default), apply resphering (see Epperly (2025)),
-        which projects test vectors onto the range of the residual matrix, reducing
-        the variance of the trace estimate. Requires test vectors drawn from a
-        rotationally invariant distribution (e.g. Gaussian or sphere).
+    apply_resphering
+        If ``True`` (default), project test vectors onto the range of the
+        residual matrix, reducing the variance of the trace estimate.
+        Requires test vectors drawn from a rotationally invariant distribution
+        (e.g. Gaussian or sphere). See Epperly, 2025 for more details.
 
     Returns
     -------
@@ -144,7 +144,7 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
                 W - S * W_vd_S.conj()
             )  # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
 
-            if resphere:
+            if apply_resphering:
                 # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out samples[i, :]
                 rank_residual = n - num_samples + 1
                 # squared norm of each sample after projection to the subspace spanned by the residual

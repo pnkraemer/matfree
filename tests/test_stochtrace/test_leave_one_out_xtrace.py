@@ -27,9 +27,9 @@ def test_error_num_samples_more_than_dimension(n):
 
 
 # reproduces the results of the experiment "exp" from the XTrace paper
-@testing.parametrize("resphere", [True, False])
+@testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
-def test_trace_svd_fast_spectral_decay(resphere, dtype):
+def test_trace_svd_fast_spectral_decay(apply_resphering, dtype):
     """Assert that the trace of a matrix with fast spectral decay is estimated accurately."""
     rdtype = np.abs(dtype(0)).dtype
     n = 1000
@@ -41,7 +41,7 @@ def test_trace_svd_fast_spectral_decay(resphere, dtype):
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
-    integrand = stochtrace.leave_one_out_xtrace(resphere=resphere)
+    integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, d, U):
@@ -55,9 +55,9 @@ def test_trace_svd_fast_spectral_decay(resphere, dtype):
 
 
 # reproduces the results of the experiment "step" from the XTrace paper
-@testing.parametrize("resphere", [True, False])
+@testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
-def test_trace_svd_large_spectral_drop(resphere, dtype):
+def test_trace_svd_large_spectral_drop(apply_resphering, dtype):
     """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately."""
     rdtype = np.abs(dtype(0)).dtype
     n = 1000
@@ -70,7 +70,7 @@ def test_trace_svd_large_spectral_drop(resphere, dtype):
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
-    integrand = stochtrace.leave_one_out_xtrace(resphere=resphere)
+    integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, d, U):
@@ -80,7 +80,7 @@ def test_trace_svd_large_spectral_drop(resphere, dtype):
     received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
     rel_err = np.abs(received - expected) / np.abs(expected)
     mean_rel_err = np.mean(rel_err)
-    assert float(mean_rel_err) < (1e-5 if resphere else 1e-4)
+    assert float(mean_rel_err) < (1e-5 if apply_resphering else 1e-4)
 
 
 @testing.parametrize("n, rank", [(50, 10), (100, 30)])
