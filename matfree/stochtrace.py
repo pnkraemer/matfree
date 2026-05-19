@@ -97,19 +97,19 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
 
     # TODO: handle case where num_samples > n (violates thin QR constraint)
     def integrand(matvec, samples, *params):
-        Omega, unflattens = func.vmap(tree.ravel_pytree)(samples)
-        Omega = Omega.T
+        _, unflatten = tree.ravel_pytree(samples[0, :])
+        Omega = func.vmap(lambda v: tree.ravel_pytree(v)[0])(samples).T
         n, num_samples = Omega.shape
 
         matmat = func.vmap(
-            lambda v, unflatten: tree.ravel_pytree(matvec(unflatten(v), *params))[0],
+            lambda v: tree.ravel_pytree(matvec(unflatten(v), *params))[0],
             in_axes=-1,
             out_axes=-1,
         )
 
-        Y = matmat(Omega, unflattens)
+        Y = matmat(Omega)
         Q, R = linalg.qr_reduced(Y)
-        Z = matmat(Q, unflattens)
+        Z = matmat(Q)
 
         def _trace_exact():
             tr_B = linalg.vdot(Q, Z)
