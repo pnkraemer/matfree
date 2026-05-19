@@ -38,25 +38,23 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
 def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callable:
     """Construct a leave-one-out stochastic estimator.
 
-    Unlike :func:`estimator`, which vmaps an integrand over individual sample
-    vectors, this variant passes the **full** test matrix to the integrand at
-    once.  This is required for the XTrace family of algorithms, which need a
-    batch QR or Cholesky decomposition before the second matvec phase.
-
     Parameters
     ----------
     integrand
-        An integrand that accepts ``(matvec, Omega, *parameters)`` where
-        ``Omega`` has shape ``(num, n)``.  The integrand is responsible for
-        averaging over the sample axis internally.
+        An integrand that accepts ``(matvec, samples, *parameters)`` where
+        ``samples`` has shape ``(num, n)``. For example, the return-value of
+        [leave_one_out_xtrace][matfree.stochtrace.leave_one_out_xtrace].
     sampler
         The sample function, e.g. the return-value of
-        :func:`sampler_normal`.
+        [sampler_normal][matfree.stochtrace.sampler_normal] or
+        [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
 
     Returns
     -------
     estimate
         A function ``estimate(matvec, key, *parameters) -> result``.
+        This function can be compiled, vectorised, differentiated,
+        or looped over as the user desires.
 
     """
 
