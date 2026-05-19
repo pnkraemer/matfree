@@ -1,4 +1,4 @@
-"""Tests for integrand_trace_svd (XTrace)."""
+"""Tests for leave_one_out_xtrace."""
 
 from matfree import stochtrace, test_util
 from matfree.backend import config, func, linalg, np, prng, testing
@@ -20,7 +20,7 @@ def test_trace_svd_fast_spectral_decay(resphere, dtype):
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
-    integrand = stochtrace.integrand_trace_svd(resphere=resphere)
+    integrand = stochtrace.leave_one_out_xtrace(resphere=resphere)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, d, U):
@@ -48,7 +48,7 @@ def test_trace_svd_large_spectral_drop(resphere, dtype):
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
-    integrand = stochtrace.integrand_trace_svd(resphere=resphere)
+    integrand = stochtrace.leave_one_out_xtrace(resphere=resphere)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, d, U):
@@ -75,7 +75,7 @@ def test_trace_svd_low_rank_operator(n, rank, dtype):
         return A @ (B @ v)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=rank + 1)
-    integrand = stochtrace.integrand_trace_svd()
+    integrand = stochtrace.leave_one_out_xtrace()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     test_util.assert_allclose(estimate(matvec, key, A, B), expected)
 

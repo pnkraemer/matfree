@@ -67,10 +67,8 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
     return estimate
 
 
-def integrand_trace_svd(*, resphere: bool = True) -> Callable:
-    """Construct the LOO integrand for estimating the trace using the randomized SVD.
-
-    Implements the XTrace algorithm from Epperly et al (2024).
+def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
+    """Construct an integrand for estimating the trace using the XTrace algorithm (Epperly et al. 2024).
 
     Parameters
     ----------
@@ -83,8 +81,9 @@ def integrand_trace_svd(*, resphere: bool = True) -> Callable:
     Returns
     -------
     integrand
-        An integrand function compatible with `estimator_leave_one_out` whose input has the signature ``(matvec, samples, *params)``
-        and whose output is a vector of trace estimates with shape ``(samples.shape[0],)``.
+        An integrand function compatible with `estimator_leave_one_out` whose input
+        has the signature ``(matvec, samples, *params)`` and whose output is a vector
+        of trace estimates with shape ``(samples.shape[0],)``.
 
     References
     ----------
