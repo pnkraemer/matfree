@@ -102,4 +102,26 @@ def test_trace_svd_low_rank_operator(n, rank, dtype):
     test_util.assert_allclose(estimate(matvec, key, A, B), expected)
 
 
+def test_xtrace_pytrees_supported():
+    """Assert that the XTrace algorithm supports pytrees."""
+    n1 = 100
+    n2 = 50
+    key_mat1, key_mat2, key_est = prng.split(prng.prng_key(1), 3)
+    A = prng.normal(key_mat1, shape=(n1, n1))
+    B = prng.normal(key_mat2, shape=(n2, n2))
+
+    def matvec(v, A, B):
+        return {"fx": A @ v["fx"], "fy": B @ v["fy"]}
+
+    integrand = stochtrace.leave_one_out_xtrace()
+    sampler = stochtrace.sampler_normal(
+        {"fx": np.ones(n1), "fy": np.ones(n2)}, num=n1 + n2 - 1
+    )
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+
+    received = estimate(matvec, key_est, A, B)
+    expected = linalg.trace(A) + linalg.trace(B)
+    assert np.allclose(received, expected, rtol=1e-2)
+
+
 config.update("jax_enable_x64", False)

@@ -101,29 +101,29 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     """
 
     def integrand(matvec, samples, *params):
-        _, unflatten = tree.ravel_pytree(samples[0, :])
-        Omega = func.vmap(lambda v: tree.ravel_pytree(v)[0])(samples).T
+        Omega, unflattens = func.vmap(tree.ravel_pytree)(samples)
+        Omega = Omega.T
         n, num_samples = Omega.shape
 
         if num_samples > n:
             raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
 
-        def matvec_flat(v):
+        def matvec_flat(v, unflatten):
             return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
 
         if num_samples == n:
             # It's faster and more accurate to compute the trace exactly and deterministically
             # when num_samples == n
             Omega = np.eye(n, dtype=Omega.dtype)
-            return func.vmap(lambda v, i: matvec_flat(v)[i], in_axes=-1)(
-                Omega, np.arange(n)
-            )
+            return func.vmap(
+                lambda v, unflatten, i: matvec_flat(v, unflatten)[i], in_axes=-1
+            )(Omega, unflattens, np.arange(n))
 
         matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
 
-        Y = matmat(Omega)
+        Y = matmat(Omega, unflattens)
         Q, R = linalg.qr_reduced(Y)
-        Z = matmat(Q)
+        Z = matmat(Q, unflattens)
 
         def _trace_exact():
             tr_B = linalg.vdot(Q, Z)
