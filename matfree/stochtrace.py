@@ -85,6 +85,13 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
         has the signature ``(matvec, samples, *params)`` and whose output is a vector
         of trace estimates with shape ``(samples.shape[0],)``.
 
+    Notes
+    -----
+    The number of samples must be less than or equal to the dimension of the operator.
+    Additionally, the algorithm assumes that the samples are unique. For low-dimensional
+    operators, samples generated from `sampler_rademacher` may violate this assumption, and
+    it is recommended to use a different sampler instead.
+
     References
     ----------
     - Epperly EN, Tropp JA, Webber RJ (2024). Xtrace: Making the most of every sample in stochastic trace estimation.
@@ -166,11 +173,7 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
 
         Y_rank = np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype))
 
-        # NOTE: assumes rank(Y) == rank(B), which is almost always true
-        # for Gaussian samples and, when n is large enough, for Rademacher samples.
-        return control_flow.cond(
-            (Y_rank < num_samples) | (Y_rank == n), _trace_exact, _trace_estimate
-        )
+        return control_flow.cond(Y_rank < num_samples, _trace_exact, _trace_estimate)
 
     return integrand
 
