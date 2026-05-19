@@ -173,6 +173,11 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
 
         Y_rank = np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype))
 
+        # NOTE: If Y_rank < num_samples, then Y is rank-deficient because either:
+        # 1. rank(B) < num_samples, and/or
+        # 2. the samples are not unique.
+        # This check assumes samples are unique, which can be violated for low n and Rademacher samples.
+        # If rank(B) < num_samples, then B_hat=B_hat_{-i}=B, so the residual is zero and tr(B_hat)=tr(B).
         return control_flow.cond(Y_rank < num_samples, _trace_exact, _trace_estimate)
 
     return integrand
