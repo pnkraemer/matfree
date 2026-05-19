@@ -95,17 +95,26 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
         arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
     """
 
-    # TODO: handle case where num_samples > n (violates thin QR constraint)
     def integrand(matvec, samples, *params):
         _, unflatten = tree.ravel_pytree(samples[0, :])
         Omega = func.vmap(lambda v: tree.ravel_pytree(v)[0])(samples).T
         n, num_samples = Omega.shape
 
-        matmat = func.vmap(
-            lambda v: tree.ravel_pytree(matvec(unflatten(v), *params))[0],
-            in_axes=-1,
-            out_axes=-1,
-        )
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        if num_samples == n:
+            # It's faster and more accurate to compute the trace exactly and deterministically
+            # when num_samples == n
+            Omega = np.eye(n, dtype=Omega.dtype)
+            return func.vmap(lambda v, i: matvec_flat(v)[i], in_axes=-1)(
+                Omega, np.arange(n)
+            )
+
+        matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
 
         Y = matmat(Omega)
         Q, R = linalg.qr_reduced(Y)
@@ -276,3 +285,9 @@ def _sampler_from_jax_random(sampler, *args_like, num):
         return func.vmap(unflatten)(samples)
 
     return sample
+
+
+def _error_num_samples(num, maxval, minval):
+    msg1 = f"Number of samples num={num} exceeds the acceptable range. "
+    msg2 = f"Expected: {minval} <= num <= {maxval}."
+    return msg1 + msg2

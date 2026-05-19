@@ -6,6 +6,26 @@ from matfree.backend import config, func, linalg, np, prng, testing
 config.update("jax_enable_x64", True)
 
 
+@testing.parametrize("n", [10, 20])
+def test_error_num_samples_more_than_dimension(n):
+    """Assert that a ValueError is raised when the number of samples is greater than the dimension of the matrix."""
+    key = prng.prng_key(1)
+    A = np.eye(n)
+
+    def matvec(v, A):
+        return A @ v
+
+    integrand = stochtrace.leave_one_out_xtrace()
+
+    sampler = stochtrace.sampler_normal(np.ones(n), num=n + 1)
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+    with testing.raises(
+        ValueError,
+        match=f"Number of samples num={n + 1} exceeds the acceptable range. Expected: 1 <= num <= {n}.",
+    ):
+        estimate(matvec, key, A)
+
+
 @testing.parametrize("resphere", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_trace_svd_fast_spectral_decay(resphere, dtype):
