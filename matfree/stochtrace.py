@@ -125,7 +125,7 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
             )  # tr(H) == tr(B_hat), where B_hat = Q @ Q.H @ B is a low-rank approximation to the operator B
             W = Q_H @ Omega
             T = Z.T.conj() @ Omega
-            W_vd_S = linalg.vecdot(W, S, axis=0)
+            W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
             X = (
                 W - S * W_vd_S.conj()
             )  # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
@@ -145,13 +145,13 @@ def leave_one_out_xtrace(*, resphere: bool = True) -> Callable:
                 residual_scale = 1.0
 
             tr_B_hat = linalg.trace(H)
-            tr_B_hat_loo = tr_B_hat - linalg.vecdot(
-                S, H @ S, axis=0
+            tr_B_hat_loo = tr_B_hat - func.vmap(linalg.vdot, in_axes=1)(
+                S, H @ S
             )  # tr(B_hat) leaving out one sample
             tr_residual_loo = (  # Hutchinson estimate of tr(B - B_hat_{-i}) using as probe samples[i, :]
-                -linalg.vecdot(T, X, axis=0)
-                + linalg.vecdot(X, H @ X, axis=0)
-                + W_vd_S * linalg.vecdot(S, R, axis=0)
+                -func.vmap(linalg.vdot, in_axes=1)(T, X)
+                + func.vmap(linalg.vdot, in_axes=1)(X, H @ X)
+                + W_vd_S * func.vmap(linalg.vdot, in_axes=1)(S, R)
             )
             return tr_B_hat_loo + residual_scale * tr_residual_loo
 

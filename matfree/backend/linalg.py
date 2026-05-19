@@ -58,10 +58,6 @@ def inner(x1, x2, /):
     return jnp.inner(x1, x2)
 
 
-def vecdot(x1, x2, /, axis=-1):
-    return jnp.vecdot(x1, x2, axis=axis)
-
-
 def vdot(x1, x2):
     return jnp.vdot(x1, x2)
 
