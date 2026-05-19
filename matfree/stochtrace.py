@@ -115,9 +115,10 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
             # It's faster and more accurate to compute the trace exactly and deterministically
             # when num_samples == n
             Omega = np.eye(n, dtype=Omega.dtype)
-            return func.vmap(
+            B_diag = func.vmap(
                 lambda v, unflatten, i: matvec_flat(v, unflatten)[i], in_axes=-1
             )(Omega, unflattens, np.arange(n))
+            return np.ones((num_samples,), dtype=B_diag.dtype) * np.sum(B_diag)
 
         matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
 

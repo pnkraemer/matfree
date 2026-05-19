@@ -102,6 +102,24 @@ def test_trace_svd_low_rank_operator(n, rank, dtype):
     test_util.assert_allclose(estimate(matvec, key, A, B), expected)
 
 
+@testing.parametrize("n", [10, 20])
+@testing.parametrize("dtype", [float, complex])
+def test_xtrace_exact_when_num_samples_equals_dimension(n, dtype):
+    """Assert that the XTrace algorithm computes the trace exactly when the
+    number of samples equals the dimension of the matrix."""
+    key = prng.prng_key(1)
+    A = np.tril(np.ones((n, n), dtype=dtype))
+    expected = linalg.trace(A)
+
+    def matvec(v, A):
+        return A @ v
+
+    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=n)
+    integrand = stochtrace.leave_one_out_xtrace()
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+    test_util.assert_allclose(estimate(matvec, key, A), expected)
+
+
 def test_xtrace_pytrees_supported():
     """Assert that the XTrace algorithm supports pytrees."""
     n1 = 100
