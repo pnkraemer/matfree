@@ -26,6 +26,7 @@ def test_error_num_samples_more_than_dimension(n):
         estimate(matvec, key, A)
 
 
+# reproduces the results of the experiment "exp" from the XTrace paper
 @testing.parametrize("resphere", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_trace_svd_fast_spectral_decay(resphere, dtype):
@@ -53,6 +54,7 @@ def test_trace_svd_fast_spectral_decay(resphere, dtype):
     assert float(mean_rel_err) < 1e-5
 
 
+# reproduces the results of the experiment "step" from the XTrace paper
 @testing.parametrize("resphere", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_trace_svd_large_spectral_drop(resphere, dtype):
