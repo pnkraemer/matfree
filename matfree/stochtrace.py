@@ -35,7 +35,7 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     return estimate
 
 
-def estimator_loo(integrand: Callable, /, sampler: Callable) -> Callable:
+def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callable:
     """Construct a leave-one-out stochastic estimator.
 
     Unlike :func:`estimator`, which vmaps an integrand over individual sample
@@ -83,7 +83,7 @@ def integrand_trace_svd(*, resphere: bool = True) -> Callable:
     Returns
     -------
     integrand
-        An integrand function compatible with `estimator_loo` whose input has the signature ``(matvec, samples, *params)``
+        An integrand function compatible with `estimator_leave_one_out` whose input has the signature ``(matvec, samples, *params)``
         and whose output is a vector of trace estimates with shape ``(samples.shape[0],)``.
 
     References
