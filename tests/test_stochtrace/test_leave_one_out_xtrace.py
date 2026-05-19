@@ -7,7 +7,7 @@ config.update("jax_enable_x64", True)
 
 
 @testing.parametrize("n", [10, 20])
-def test_error_num_samples_more_than_dimension(n):
+def test_xtrace_error_num_samples_more_than_dimension(n):
     """Assert that a ValueError is raised when the number of samples is greater than the dimension of the matrix."""
     key = prng.prng_key(1)
     A = np.eye(n)
@@ -29,7 +29,7 @@ def test_error_num_samples_more_than_dimension(n):
 # reproduces the results of the experiment "exp" from the XTrace paper
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
-def test_trace_svd_fast_spectral_decay(apply_resphering, dtype):
+def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
     """Assert that the trace of a matrix with fast spectral decay is estimated accurately."""
     rdtype = np.abs(dtype(0)).dtype
     n = 1000
@@ -57,7 +57,7 @@ def test_trace_svd_fast_spectral_decay(apply_resphering, dtype):
 # reproduces the results of the experiment "step" from the XTrace paper
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
-def test_trace_svd_large_spectral_drop(apply_resphering, dtype):
+def test_xtrace_large_spectral_drop(apply_resphering, dtype):
     """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately."""
     rdtype = np.abs(dtype(0)).dtype
     n = 1000
@@ -85,7 +85,7 @@ def test_trace_svd_large_spectral_drop(apply_resphering, dtype):
 
 @testing.parametrize("n, rank", [(50, 10), (100, 30)])
 @testing.parametrize("dtype", [float, complex])
-def test_trace_svd_low_rank_operator(n, rank, dtype):
+def test_xtrace_low_rank_operator(n, rank, dtype):
     """Assert that the trace of an already-low-rank operator is computed exactly."""
     key = prng.prng_key(5)
     key_mat1, key_mat2, key = prng.split(key, 3)
