@@ -22,10 +22,12 @@ def test_trace_svd_fast_spectral_decay(resphere, dtype):
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
     integrand = stochtrace.integrand_trace_svd(resphere=resphere)
     estimate = stochtrace.estimator_loo(integrand, sampler)
-    matvec = lambda v: U @ (d * (U.T.conj() @ v))
+
+    def matvec(v, d, U):
+        return U @ (d * (U.T.conj() @ v))
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
     rel_err = np.abs(received - expected) / np.abs(expected)
     mean_rel_err = np.mean(rel_err)
     assert float(mean_rel_err) < 1e-5
@@ -48,10 +50,12 @@ def test_trace_svd_large_spectral_drop(resphere, dtype):
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
     integrand = stochtrace.integrand_trace_svd(resphere=resphere)
     estimate = stochtrace.estimator_loo(integrand, sampler)
-    matvec = lambda v: U @ (d * (U.T.conj() @ v))
+
+    def matvec(v, d, U):
+        return U @ (d * (U.T.conj() @ v))
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
     rel_err = np.abs(received - expected) / np.abs(expected)
     mean_rel_err = np.mean(rel_err)
     assert float(mean_rel_err) < (1e-5 if resphere else 1e-4)
@@ -67,13 +71,13 @@ def test_trace_svd_low_rank_operator(n, rank, dtype):
     B = prng.normal(key_mat2, shape=(rank, n), dtype=dtype)
     expected = linalg.trace(A @ B)
 
-    def matvec(v):
+    def matvec(v, A, B):
         return A @ (B @ v)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=rank + 1)
     integrand = stochtrace.integrand_trace_svd()
     estimate = stochtrace.estimator_loo(integrand, sampler)
-    test_util.assert_allclose(estimate(matvec, key), expected)
+    test_util.assert_allclose(estimate(matvec, key, A, B), expected)
 
 
 config.update("jax_enable_x64", False)
