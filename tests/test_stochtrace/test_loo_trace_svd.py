@@ -1,79 +1,79 @@
 """Tests for integrand_trace_svd (XTrace)."""
 
-import jax
-import jax.numpy as jnp
-import pytest
-from matfree import stochtrace
+from matfree import stochtrace, test_util
+from matfree.backend import config, func, linalg, np, prng, testing
+
+config.update("jax_enable_x64", True)
 
 
-jax.config.update("jax_enable_x64", True)
-
-
-@pytest.mark.parametrize("resphere", [True, False])
-@pytest.mark.parametrize("dtype", [jnp.float64, jnp.complex128])
+@testing.parametrize("resphere", [True, False])
+@testing.parametrize("dtype", [float, complex])
 def test_trace_svd_fast_spectral_decay(resphere, dtype):
     """Assert that the trace of a matrix with fast spectral decay is estimated accurately."""
-    rdtype = dtype(0).real.dtype
+    rdtype = np.abs(dtype(0)).dtype
     n = 1000
     num_rep = 10
-    key = jax.random.PRNGKey(1)
-    key_mat, key = jax.random.split(key)
-    U = jnp.linalg.qr(jax.random.normal(key_mat, (n, n), dtype=dtype))[0]
-    d = 0.7 ** jnp.arange(n, dtype=rdtype)
-    expected = jnp.sum(d).astype(dtype)
+    key = prng.prng_key(1)
+    key_mat, key = prng.split(key)
+    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
+    d = 0.7 ** np.arange(n).astype(rdtype)
+    expected = np.sum(d).astype(dtype)
 
-    sampler = stochtrace.sampler_normal(jnp.ones(n, dtype=dtype), num=35)
+    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
     integrand = stochtrace.integrand_trace_svd(resphere=resphere)
     estimate = stochtrace.estimator_loo(integrand, sampler)
     matvec = lambda v: U @ (d * (U.T.conj() @ v))
 
-    key_ests = jax.random.split(key, num_rep)
-    received = jax.vmap(lambda key: estimate(matvec, key))(key_ests)
-    rel_err = jnp.abs(received - expected) / jnp.abs(expected)
-    mean_rel_err = jnp.mean(rel_err)
+    key_ests = prng.split(key, num_rep)
+    received = func.vmap(lambda key: estimate(matvec, key))(key_ests)
+    rel_err = np.abs(received - expected) / np.abs(expected)
+    mean_rel_err = np.mean(rel_err)
     assert float(mean_rel_err) < 1e-5
 
 
-@pytest.mark.parametrize("resphere", [True, False])
-@pytest.mark.parametrize("dtype", [jnp.float64, jnp.complex128])
+@testing.parametrize("resphere", [True, False])
+@testing.parametrize("dtype", [float, complex])
 def test_trace_svd_large_spectral_drop(resphere, dtype):
     """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately."""
-    rdtype = dtype(0).real.dtype
+    rdtype = np.abs(dtype(0)).dtype
     n = 1000
     m = 50
     num_rep = 10
-    key = jax.random.PRNGKey(4)
-    key_mat, key = jax.random.split(key)
-    U = jnp.linalg.qr(jax.random.normal(key_mat, (n, n), dtype=dtype))[0]
-    d = jnp.concatenate([jnp.ones(m, dtype=rdtype), jnp.full(n-m, 1e-3, dtype=rdtype)])
-    expected = jnp.sum(d).astype(dtype)
+    key = prng.prng_key(4)
+    key_mat, key = prng.split(key)
+    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
+    d = np.concatenate([np.ones(m, dtype=rdtype), np.ones(n - m, dtype=rdtype) * 1e-3])
+    expected = np.sum(d).astype(dtype)
 
-    sampler = stochtrace.sampler_normal(jnp.ones(n, dtype=dtype), num=m + 10)
+    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
     integrand = stochtrace.integrand_trace_svd(resphere=resphere)
     estimate = stochtrace.estimator_loo(integrand, sampler)
     matvec = lambda v: U @ (d * (U.T.conj() @ v))
 
-    key_ests = jax.random.split(key, num_rep)
-    received = jax.vmap(lambda key: estimate(matvec, key))(key_ests)
-    rel_err = jnp.abs(received - expected) / jnp.abs(expected)
-    mean_rel_err = jnp.mean(rel_err)
+    key_ests = prng.split(key, num_rep)
+    received = func.vmap(lambda key: estimate(matvec, key))(key_ests)
+    rel_err = np.abs(received - expected) / np.abs(expected)
+    mean_rel_err = np.mean(rel_err)
     assert float(mean_rel_err) < (1e-5 if resphere else 1e-4)
 
 
-@pytest.mark.parametrize("n, rank", [(50, 10), (100, 30)])
-@pytest.mark.parametrize("dtype", [jnp.float64, jnp.complex128])
+@testing.parametrize("n, rank", [(50, 10), (100, 30)])
+@testing.parametrize("dtype", [float, complex])
 def test_trace_svd_low_rank_operator(n, rank, dtype):
     """Assert that the trace of an already-low-rank operator is computed exactly."""
-    key = jax.random.PRNGKey(5)
-    key_mat1, key_mat2, key = jax.random.split(key, 3)
-    A = jax.random.normal(key_mat1, (n, rank), dtype=dtype)
-    B = jax.random.normal(key_mat2, (rank, n), dtype=dtype)
-    expected = jnp.trace(A @ B)
+    key = prng.prng_key(5)
+    key_mat1, key_mat2, key = prng.split(key, 3)
+    A = prng.normal(key_mat1, shape=(n, rank), dtype=dtype)
+    B = prng.normal(key_mat2, shape=(rank, n), dtype=dtype)
+    expected = linalg.trace(A @ B)
 
     def matvec(v):
         return A @ (B @ v)
 
-    sampler = stochtrace.sampler_normal(jnp.ones(n, dtype=dtype), num=rank + 1)
+    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=rank + 1)
     integrand = stochtrace.integrand_trace_svd()
     estimate = stochtrace.estimator_loo(integrand, sampler)
-    assert jnp.allclose(estimate(matvec, key), expected)
+    test_util.assert_allclose(estimate(matvec, key), expected)
+
+
+config.update("jax_enable_x64", False)
