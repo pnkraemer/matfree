@@ -127,6 +127,10 @@ def std(x, /, axis=None):
     return jnp.std(x, axis)
 
 
+def cov(x, /, rowvar=True, ddof=None):
+    return jnp.cov(x, rowvar=rowvar, ddof=ddof)
+
+
 def sum(x, /, axis=None):  # noqa: A001
     return jnp.sum(x, axis)
 

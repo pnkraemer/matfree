@@ -18,7 +18,7 @@ def test_sampler_sphere(n, dtype):
         assert not np.allclose(x.imag, 0)
     # Verify moments
     assert np.allclose(np.mean(x, axis=0), 0, atol=1e-2)
-    assert np.allclose(np.cov(x, axis=0), np.eye(n, dtype=dtype), atol=1e-2)
+    assert np.allclose(np.cov(x, rowvar=False, ddof=0), np.eye(n, dtype=dtype), atol=1e-2)
     
     # Verify determinism (same key)
     x_again = sampler(key1)
