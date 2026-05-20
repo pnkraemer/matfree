@@ -141,11 +141,13 @@ def sampler_rademacher(*args_like, num):
 def sampler_sphere(*args_like, num):
     """Construct a function that samples from a unit sphere scaled to have identity covariance."""
     x_flat, unflatten = tree.ravel_pytree(*args_like)
+    dtype = x_flat.dtype
+    rdtype = dtype.type(0).real.dtype
     n = x_flat.shape[0]
-    sqrtn = np.sqrt(n)
+    sqrtn = np.sqrt(n).astype(rdtype)
 
     def sample(key):
-        samples = prng.normal(key, shape=(num, n), dtype=x_flat.dtype)
+        samples = prng.normal(key, shape=(num, n), dtype=dtype)
         return func.vmap(lambda x: unflatten(x * (sqrtn / linalg.vector_norm(x))))(
             samples
         )
