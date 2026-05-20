@@ -140,7 +140,17 @@ def sampler_rademacher(*args_like, num):
 
 def sampler_sphere(*args_like, num):
     """Construct a function that samples from a unit sphere scaled to have identity covariance."""
-    return _sampler_from_jax_random(_random_sphere, *args_like, num=num)
+    x_flat, unflatten = tree.ravel_pytree(*args_like)
+    n = x_flat.shape[0]
+    sqrtn = np.sqrt(n)
+
+    def sample(key):
+        samples = prng.normal(key, shape=(num, n), dtype=x_flat.dtype)
+        return func.vmap(lambda x: unflatten(x * (sqrtn / linalg.vector_norm(x))))(
+            samples
+        )
+
+    return sample
 
 
 def _sampler_from_jax_random(sampler, *args_like, num):
@@ -151,10 +161,3 @@ def _sampler_from_jax_random(sampler, *args_like, num):
         return func.vmap(unflatten)(samples)
 
     return sample
-
-
-def _random_sphere(key, shape=(), dtype=None):
-    """Sample from a scaled sphere with the API of the samplers in jax.random."""
-    x = prng.normal(key, shape=shape, dtype=dtype)
-    sqrtn = np.sqrt(x.shape[-1])
-    return func.vmap(lambda v: v * (sqrtn / linalg.vector_norm(v)))(x)
