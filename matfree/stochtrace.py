@@ -153,8 +153,8 @@ def _sampler_from_jax_random(sampler, *args_like, num):
     return sample
 
 
-# sampler from the scaled sphere with the API of samplers in jax.random
 def _random_sphere(key, shape=(), dtype=None):
+    """Sample from a scaled sphere with the API of the samplers in jax.random."""
     x = prng.normal(key, shape=shape, dtype=dtype)
     sqrtn = np.sqrt(x.shape[-1])
     return func.vmap(lambda v: v * (sqrtn / linalg.vector_norm(v)))(x)
