@@ -215,7 +215,7 @@ Starting with a basic version of an algorithm is fine, but eventually, Matfree a
 - Should the algorithm support real and complex arithmetic? If so, parametrise the tests with corresponding dtypes. Use the existing tests for stochastic trace estimation for inspiration.
 - Should the algorithm work for general linear operators, e.g. functions that linearly map dictionaries to dictionaries such as Jacobians of neural networks? If so, cover this case in a test as well. See the tests and code for partial SVDs for inspiration.
 
-If any of the current code does not fulfil these goals, reach out by opening an issue.
+If any of the current code does not fulfill these goals, reach out by opening an issue.
 
 ## Extend Matfree's documentation
 
