@@ -14,9 +14,7 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
         [integrand_trace][matfree.stochtrace.integrand_trace].
         But any other integrand works, too.
     sampler
-        The sample function. Usually, either
-        [sampler_normal][matfree.stochtrace.sampler_normal] or
-        [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
+        The sample function. See below for recommendations.
 
     Returns
     -------
@@ -25,6 +23,18 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
         This function can be compiled, vectorised, differentiated,
         or looped over as the user desires.
 
+    Notes
+    -----
+    The statistical efficiency of the estimator for a given sampler depends on properties
+    of the operator, but we can provide some general advice. For an `n`-dimensional operator (see references):
+    - If the operator is real-valued and `n > O(100)`, use [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
+    - If the operator is real-valued and `n < O(100)`, use [sampler_rademacher][matfree.stochtrace.sampler_rademacher] if the operator is known to be diagonal-dominant or [sampler_sphere][matfree.stochtrace.sampler_sphere] otherwise.
+    - If the operator is complex-valued, use [sampler_sphere][matfree.stochtrace.sampler_sphere] with a complex dtype.
+
+    References
+    ----------
+    - Epperly, E. (2023). [Stochastic trace estimation](https://www.ethanepperly.com/index.php/2023/01/26/stochastic-trace-estimation/).
+    - Epperly, E. (2024). [Don't use Gaussians in stochastic trace estimation](https://www.ethanepperly.com/index.php/2024/01/28/dont-use-gaussians-in-stochastic-trace-estimation/).
     """
 
     def estimate(matvecs, key, *parameters):
@@ -135,6 +145,23 @@ def sampler_normal(*args_like, num):
 def sampler_rademacher(*args_like, num):
     """Construct a function that samples from a Rademacher distribution."""
     return _sampler_from_jax_random(prng.rademacher, *args_like, num=num)
+
+
+def sampler_sphere(*args_like, num):
+    """Construct a function that samples from a unit sphere scaled to have identity covariance."""
+    x_flat, unflatten = tree.ravel_pytree(*args_like)
+    dtype = x_flat.dtype
+    rdtype = dtype.type(0).real.dtype
+    n = x_flat.shape[0]
+    sqrtn = np.sqrt(n).astype(rdtype)
+
+    def sample(key):
+        samples = prng.normal(key, shape=(num, n), dtype=dtype)
+        return func.vmap(lambda x: unflatten(x * (sqrtn / linalg.vector_norm(x))))(
+            samples
+        )
+
+    return sample
 
 
 def _sampler_from_jax_random(sampler, *args_like, num):

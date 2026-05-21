@@ -34,8 +34,8 @@ def asarray(obj, /):
     return jnp.asarray(obj)
 
 
-def eye(n_rows):
-    return jnp.eye(n_rows)
+def eye(n_rows, /, dtype=None):
+    return jnp.eye(n_rows, dtype=dtype)
 
 
 def ones_like(x, /):
@@ -125,6 +125,10 @@ def mean(x, /, axis=None):
 
 def std(x, /, axis=None):
     return jnp.std(x, axis)
+
+
+def cov(x, /, rowvar=True, ddof=None):
+    return jnp.cov(x, rowvar=rowvar, ddof=ddof)
 
 
 def sum(x, /, axis=None):  # noqa: A001
