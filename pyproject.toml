@@ -31,6 +31,7 @@ cpu = [
 test =[
     "pytest",
     "pytest-cases",
+    "pytest-xdist",
 ]
 format-and-lint =[
     "matfree[test]",
@@ -144,7 +145,7 @@ convention = "numpy"
 
 
 [tool.pytest.ini_options]
-addopts = "-v"
+addopts = "-v -Werror"
 testpaths = [
     "tests"
 ]

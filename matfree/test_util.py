@@ -59,7 +59,7 @@ def assert_columns_orthonormal(Q, /):
     assert_allclose(eye_like, ref)
 
 
-def assert_allclose(a, b, /):
+def assert_allclose(a, b, /, atol=None, rtol=None):
     """Assert that two arrays are close.
 
     This function uses a different default tolerance to
@@ -68,9 +68,13 @@ def assert_allclose(a, b, /):
     """
     a = np.asarray(a)
     b = np.asarray(b)
+
     tol = 10 * np.sqrt(np.finfo_eps(np.dtype(a)))
 
     # For double precision sqrt(eps) is very tight...
     if tol < 1e-6:
         tol *= 10
-    assert np.allclose(a, b, atol=tol, rtol=tol)
+
+    rtol = rtol if rtol is not None else tol
+    atol = atol if atol is not None else tol
+    assert np.allclose(a, b, atol=atol, rtol=atol)

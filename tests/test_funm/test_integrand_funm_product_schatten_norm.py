@@ -18,7 +18,10 @@ def make_A(nrows, ncols, num_significant_singular_vals):
 @testing.parametrize("num_significant_singular_vals", [30])
 @testing.parametrize("num_matvecs", [20])
 @testing.parametrize("power", [1, 2, 3])
-def test_schatten_norm(nrows, ncols, num_significant_singular_vals, num_matvecs, power):
+@testing.parametrize("seed", [1, 2, 3])
+def test_schatten_norm(
+    nrows, ncols, num_significant_singular_vals, num_matvecs, power, seed
+):
     """Assert that the Schatten norm is accurate."""
     A = make_A(nrows, ncols, num_significant_singular_vals)
     _, s, _ = linalg.svd(A, full_matrices=False)
@@ -26,13 +29,16 @@ def test_schatten_norm(nrows, ncols, num_significant_singular_vals, num_matvecs,
 
     _, ncols = np.shape(A)
     args_like = np.ones((ncols,), dtype=float)
-    sampler = stochtrace.sampler_rademacher(args_like, num=500)
+    sampler = stochtrace.sampler_rademacher(args_like, num=5_000)
     bidiag = decomp.bidiag(num_matvecs)
     integrand = funm.integrand_funm_product_schatten_norm(power, bidiag)
     estimate = stochtrace.estimator(integrand, sampler)
 
-    key = prng.prng_key(1)
+    key = prng.prng_key(seed)
     received = estimate(lambda v: A @ v, key)
 
-    print_if_assert_fails = ("error", np.abs(received - expected), "target:", expected)
+    # Should be < 1 (the closer to 1, the tighter the test)
+    print_if_assert_fails = np.abs(received - expected) / (
+        0.01 * (1 + np.abs(expected))
+    )
     assert np.allclose(received, expected, atol=0.01, rtol=0.01), print_if_assert_fails
