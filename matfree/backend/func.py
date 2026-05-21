@@ -34,8 +34,8 @@ def linearize(func, /, *primals):
     return jax.linearize(func, *primals)
 
 
-def jacfwd(fun, /, argnums=0):
-    return jax.jacfwd(fun, argnums)
+def jacfwd(fun, /, *, argnums=0, holomorphic=False):
+    return jax.jacfwd(fun, argnums, holomorphic=holomorphic)
 
 
 def vjp(func, *primals, has_aux=False):

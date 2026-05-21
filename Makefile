@@ -2,7 +2,7 @@ format-and-lint:
 	pre-commit run --all-files
 
 test:
-	pytest
+	pytest -n auto
 	python -m doctest README.md
 	python -m doctest matfree/*.py
 	python tutorials/1_log_determinants.py
