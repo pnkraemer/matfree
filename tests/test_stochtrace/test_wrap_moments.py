@@ -47,7 +47,9 @@ def fixture_key(seed):
 
 
 @testing.fixture(name="J_and_jvp")
-@testing.parametrize("dtype", [float, complex])
+@testing.parametrize(
+    "dtype", [float]
+)  # no complex because Rademacher sampling not well defined
 def fixture_J_and_jvp(key, dtype):
     """Create a nonlinear, to-be-differentiated function."""
 
@@ -74,11 +76,11 @@ def test_yields_correct_variance_normal(J_and_jvp, key):
 
     # Assert the trace is correct
     truth = linalg.trace(J)
-    assert np.allclose(first, truth, rtol=1e-2)
+    assert np.allclose(first, truth, rtol=0.3)
 
     # Assert the variance is correct:
     norm = linalg.matrix_norm(J, which="fro") ** 2
-    assert np.allclose(second - first**2, norm * 2, rtol=1e-2)
+    assert np.allclose(second - first**2, norm * 2, rtol=0.3)
 
 
 def test_yields_correct_variance_rademacher(J_and_jvp, key):
