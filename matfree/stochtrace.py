@@ -142,11 +142,6 @@ def sampler_normal(*args_like, num):
     return _sampler_from_jax_random(prng.normal, *args_like, num=num)
 
 
-def sampler_rademacher(*args_like, num):
-    """Construct a function that samples from a Rademacher distribution."""
-    return _sampler_from_jax_random(prng.rademacher, *args_like, num=num)
-
-
 def sampler_signs(*args_like, num):
     """Construct a function that samples signs uniformly.
 
