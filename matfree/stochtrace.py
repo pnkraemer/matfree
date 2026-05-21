@@ -147,6 +147,14 @@ def sampler_rademacher(*args_like, num):
     return _sampler_from_jax_random(prng.rademacher, *args_like, num=num)
 
 
+def sampler_signs(*args_like, num):
+    """Construct a function that samples signs uniformly.
+
+    For real dtypes, this samples from a Rademacher distribution (uniformly over `{-1, 1}`). For complex dtypes, this samples from a Steinhaus distribution on the complex unit circle.
+    """
+    return _sampler_from_jax_random(_uniform_signs, *args_like, num=num)
+
+
 def sampler_sphere(*args_like, num):
     """Construct a function that samples from a unit sphere scaled to have identity covariance."""
     x_flat, unflatten = tree.ravel_pytree(*args_like)
@@ -172,3 +180,14 @@ def _sampler_from_jax_random(sampler, *args_like, num):
         return func.vmap(unflatten)(samples)
 
     return sample
+
+
+def _steinhaus(key, shape=(), dtype=None):
+    """Sample from a Steinhaus distribution on the complex unit circle."""
+    return np.sign(prng.normal(key, shape=shape, dtype=dtype))
+
+
+def _uniform_signs(key, shape=(), dtype=None):
+    if dtype is not None and np.dtype(dtype).kind == "c":
+        return _steinhaus(key, shape=shape, dtype=dtype)
+    return prng.rademacher(key, shape=shape, dtype=dtype)
