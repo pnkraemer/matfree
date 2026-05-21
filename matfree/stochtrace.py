@@ -63,7 +63,7 @@ def integrand_trace():
         Qv = matvec(v, *parameters)
         v_flat, _unflatten = tree.ravel_pytree(v)
         Qv_flat, _unflatten = tree.ravel_pytree(Qv)
-        return linalg.inner(v_flat, Qv_flat)
+        return linalg.inner(v_flat.conj(), Qv_flat)
 
     return integrand
 
