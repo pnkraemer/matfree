@@ -26,11 +26,13 @@ def test_xtrace_error_num_samples_more_than_dimension(n):
         estimate(matvec, key, A)
 
 
-# reproduces the results of the experiment "exp" from the XTrace paper
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
-    """Assert that the trace of a matrix with fast spectral decay is estimated accurately."""
+    """Assert that the trace of a matrix with fast spectral decay is estimated accurately.
+
+    Reproduces the results of the experiment 'exp' from the XTrace paper.
+    """
     rdtype = np.abs(dtype(0)).dtype
     n = 1000
     num_rep = 10
@@ -54,11 +56,13 @@ def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
     assert float(mean_rel_err) < 1e-5
 
 
-# reproduces the results of the experiment "step" from the XTrace paper
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xtrace_large_spectral_drop(apply_resphering, dtype):
-    """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately."""
+    """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately.
+    
+    Reproduces the results of the experiment 'step' from the XTrace paper.
+    """
     rdtype = np.abs(dtype(0)).dtype
     n = 1000
     m = 50

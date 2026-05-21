@@ -135,15 +135,14 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
             S = S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
 
             Q_H = Q.T.conj()
-            H = (
-                Q_H @ Z
-            )  # tr(H) == tr(B_hat), where B_hat = Q @ Q.H @ B is a low-rank approximation to the operator B
+            # tr(H) == tr(B_hat), where B_hat = Q @ Q.H @ B is a low-rank approximation to the operator B
+            H = Q_H @ Z 
             W = Q_H @ Omega
             T = Z.T.conj() @ Omega
             W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
-            X = (
-                W - S * W_vd_S.conj()
-            )  # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
+            # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
+            X =  W - S * W_vd_S.conj()
+ 
 
             if apply_resphering:
                 # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out samples[i, :]
@@ -160,9 +159,8 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
                 residual_scale = 1.0
 
             tr_B_hat = linalg.trace(H)
-            tr_B_hat_loo = tr_B_hat - func.vmap(linalg.vdot, in_axes=1)(
-                S, H @ S
-            )  # tr(B_hat) leaving out one sample
+            # tr(B_hat) leaving out one sample
+            tr_B_hat_loo = tr_B_hat - func.vmap(linalg.vdot, in_axes=1)(S, H @ S)  
             tr_residual_loo = (  # Hutchinson estimate of tr(B - B_hat_{-i}) using as probe samples[i, :]
                 -func.vmap(linalg.vdot, in_axes=1)(T, X)
                 + func.vmap(linalg.vdot, in_axes=1)(X, H @ X)
