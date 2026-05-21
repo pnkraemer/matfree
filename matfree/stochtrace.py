@@ -51,7 +51,7 @@ def integrand_diagonal():
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree.ravel_pytree(v)
         Qv_flat, _unflatten = tree.ravel_pytree(Qv)
-        return unflatten(v_flat * Qv_flat)
+        return unflatten(v_flat.conj() * Qv_flat)
 
     return integrand
 
