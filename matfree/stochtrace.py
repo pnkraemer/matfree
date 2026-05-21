@@ -75,8 +75,8 @@ def integrand_trace_and_diagonal():
         Qv = matvec(v, *parameters)
         v_flat, unflatten = tree.ravel_pytree(v)
         Qv_flat, _unflatten = tree.ravel_pytree(Qv)
-        trace_form = linalg.inner(v_flat, Qv_flat)
-        diagonal_form = unflatten(v_flat * Qv_flat)
+        trace_form = linalg.inner(v_flat.conj(), Qv_flat)
+        diagonal_form = unflatten(v_flat.conj() * Qv_flat)
         return {"trace": trace_form, "diagonal": diagonal_form}
 
     return integrand

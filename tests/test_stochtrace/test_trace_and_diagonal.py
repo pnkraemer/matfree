@@ -22,25 +22,24 @@ def test_trace_and_diagonal(seed, dtype):
     args_like = {"params": x0}
     _, jvp = func.linearize(fun, args_like)
 
-    # Estimate the matrix function
+    # Estimate the trace and diagonal jointly
     problem = stochtrace.integrand_trace_and_diagonal()
-    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    sampler = stochtrace.sampler_normal(args_like, num=100_000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
     key, subkey = prng.split(key, num=2)
     received = estimate(jvp, subkey)
 
     # Estimate the trace
     problem = stochtrace.integrand_trace()
-    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    sampler = stochtrace.sampler_normal(args_like, num=100_000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
     expected_trace = estimate(jvp, subkey)
 
     # Estimate the diagonal
     problem = stochtrace.integrand_diagonal()
-    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    sampler = stochtrace.sampler_normal(args_like, num=100_000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
     expected_diagonal = estimate(jvp, subkey)
 
     expected = {"trace": expected_trace, "diagonal": expected_diagonal}
-
     assert tree.tree_all(tree.tree_map(np.allclose, received, expected))

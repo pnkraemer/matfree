@@ -4,7 +4,9 @@ from matfree import stochtrace
 from matfree.backend import func, linalg, np, prng, testing, tree
 
 
-def test_yields_correct_tree_structure():
+@testing.parametrize("seed", [1, 2, 3])
+@testing.parametrize("dtype", [float, complex])
+def test_yields_correct_tree_structure(seed, dtype):
     """Assert that mean and standard-deviation are estimated correctly."""
 
     def fun(x):
@@ -12,10 +14,11 @@ def test_yields_correct_tree_structure():
         fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
         return {"params": fx}
 
-    key = prng.prng_key(seed=2)
+    key = prng.prng_key(seed)
 
     # Linearise function
-    x0 = prng.uniform(key, shape=(4,))  # random lin. point
+    key, subkey = prng.split(key, num=2)
+    x0 = prng.normal(subkey, shape=(4,), dtype=dtype)
     args_like = {"params": x0}
     _, jvp = func.linearize(fun, args_like)
 
@@ -26,7 +29,8 @@ def test_yields_correct_tree_structure():
     )
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
-    received = estimate(jvp, key)
+    key, subkey = prng.split(key, num=2)
+    received = estimate(jvp, subkey)
 
     irrelevant_value = 1.1
     expected = {
@@ -36,22 +40,24 @@ def test_yields_correct_tree_structure():
 
 
 @testing.fixture(name="key")
-def fixture_key():
+@testing.parametrize("seed", [1, 2, 3])
+def fixture_key(seed):
     """Fix a pseudo-random number generator."""
-    return prng.prng_key(seed=1)
+    return prng.prng_key(seed)
 
 
 @testing.fixture(name="J_and_jvp")
-def fixture_J_and_jvp(key):
+@testing.parametrize("dtype", [float, complex])
+def fixture_J_and_jvp(key, dtype):
     """Create a nonlinear, to-be-differentiated function."""
 
     def fun(x):
         return np.sin(np.flip(np.cos(x)) + 1.0) * np.sin(x) + 1.0
 
     # Linearise function
-    x0 = prng.uniform(key, shape=(2,))  # random lin. point
+    x0 = prng.normal(key, shape=(2,), dtype=dtype)
     _, jvp = func.linearize(fun, x0)
-    J = func.jacfwd(fun)(x0)
+    J = func.jacfwd(fun, holomorphic=dtype is complex)(x0)
 
     return J, jvp, x0
 
