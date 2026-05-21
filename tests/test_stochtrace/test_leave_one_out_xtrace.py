@@ -60,7 +60,7 @@ def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
 @testing.parametrize("dtype", [float, complex])
 def test_xtrace_large_spectral_drop(apply_resphering, dtype):
     """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately.
-    
+
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
