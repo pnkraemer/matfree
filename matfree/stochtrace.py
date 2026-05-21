@@ -36,6 +36,7 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     - Epperly, E. (2023). [Stochastic trace estimation](https://www.ethanepperly.com/index.php/2023/01/26/stochastic-trace-estimation/).
     - Epperly, E. (2024). [Don't use Gaussians in stochastic trace estimation](https://www.ethanepperly.com/index.php/2024/01/28/dont-use-gaussians-in-stochastic-trace-estimation/).
     """
+
     def estimate(matvecs, key, *parameters):
         samples = sampler(key)
         Qs = func.vmap(lambda vec: integrand(matvecs, vec, *parameters))(samples)
