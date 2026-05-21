@@ -88,7 +88,7 @@ def integrand_frobeniusnorm_squared():
     def integrand(matvec, vec, *parameters):
         x = matvec(vec, *parameters)
         v_flat, _unflatten = tree.ravel_pytree(x)
-        return linalg.inner(v_flat, v_flat)
+        return linalg.inner(v_flat.conj(), v_flat)
 
     return integrand
 

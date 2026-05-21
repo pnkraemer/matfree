@@ -35,6 +35,4 @@ def test_diagonal(seed, dtype):
     def compare(a, b):
         return np.allclose(a, b, rtol=0.05, atol=0.05)
 
-    print(received)
-    print(expected)
     assert tree.tree_all(tree.tree_map(compare, received, expected))
