@@ -41,3 +41,37 @@ def test_sampler_sphere_pytrees():
     assert set(x.keys()) == {"a", "b"}
     assert x["a"].shape == (num_samples, n1)
     assert x["b"].shape == (num_samples, n2)
+
+
+@testing.parametrize("n", [5])
+@testing.parametrize("dtype", [float, complex])
+def test_sampler_signs(n, dtype):
+    """Assert that the sampler_signs samples from a Rademacher/Steinhaus distribution."""
+    num_samples = 100_000
+    key = prng.prng_key(1)
+    x_like = np.ones(n, dtype=dtype)
+    sampler = stochtrace.sampler_signs(x_like, num=num_samples)
+    x = sampler(key)
+
+    # Verify basic properties
+    assert np.allclose(np.abs(x), 1)
+    if dtype is complex:
+        assert x.dtype.kind == "c"
+        assert not np.allclose(x.imag, 0)
+    else:
+        assert x.dtype.kind != "c"
+        assert np.allclose(x.imag, 0)
+
+    # Verify moments
+    assert np.allclose(np.mean(x), 0, atol=1e-2)
+    assert np.allclose(
+        np.cov(x, rowvar=False, ddof=0), np.eye(n, dtype=dtype), atol=1e-2
+    )
+
+    # Verify determinism (same key)
+    x_again = sampler(key)
+    assert np.allclose(x, x_again)
+
+    # Verify that samples differ if the key changes
+    y = sampler(prng.prng_key(2))
+    assert not np.allclose(x, y)
