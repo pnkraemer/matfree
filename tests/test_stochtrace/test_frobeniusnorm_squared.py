@@ -27,7 +27,7 @@ def test_frobeniusnorm_squared(seed, dtype):
 
     # Estimate the matrix function
     problem = stochtrace.integrand_frobeniusnorm_squared()
-    sampler = stochtrace.sampler_rademacher(args_like, num=100_000)
+    sampler = stochtrace.sampler_signs(args_like, num=100_000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
     received = estimate(jvp, key)
 
