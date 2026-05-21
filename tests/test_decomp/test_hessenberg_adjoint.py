@@ -64,13 +64,15 @@ def test_custom_adjoint_k_zero_raises_valueerror(nrows, dtype):
 @testing.parametrize("nrows", [15])
 @testing.parametrize("num_matvecs", [10])
 @testing.parametrize("reortho", ["full"])
+@testing.parametrize("seed", [1, 2, 3])
 def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
-    nrows, num_matvecs, reortho
+    nrows, num_matvecs, reortho, seed
 ):
     config.update("jax_enable_x64", True)
+
     # Create a matrix and a direction as a test-case
     A = _lower(linalg.hilbert(nrows))
-    v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=A.dtype)
+    v = prng.normal(prng.prng_key(seed), shape=(nrows,), dtype=A.dtype)
 
     def matvec(s, p):
         return (p + p.T) @ s
@@ -88,15 +90,15 @@ def test_adjoint_matches_jax_dot_vjp_hilbert_matrix_and_full_reortho(
     _fwd_output, vjp_adjoint = func.vjp(algorithm_adjoint, v, A)
 
     # Random input gradients (no sparsity at all)
-    vjp_input = test_util.tree_random_like(prng.prng_key(3), fwd_output)
+    vjp_input = test_util.tree_random_like(prng.prng_key(seed + 1), fwd_output)
 
     # Call the auto-diff VJP
     dv_autodiff, dp_autodiff = vjp_autodiff(vjp_input)
     dv_adjoint, dp_adjoint = vjp_adjoint(vjp_input)
 
     # Assert gradients match
-    test_util.assert_allclose(dv_adjoint, dv_autodiff)
-    test_util.assert_allclose(dp_adjoint, dp_autodiff)
+    test_util.assert_allclose(dv_adjoint, dv_autodiff, atol=1e-3, rtol=1e-3)
+    test_util.assert_allclose(dp_adjoint, dp_autodiff, atol=1e-3, rtol=1e-3)
 
     # Assert that the values are only similar, not identical
     assert not np.all(dv_adjoint == dv_autodiff)

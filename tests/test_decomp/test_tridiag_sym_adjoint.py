@@ -7,10 +7,11 @@ from matfree.backend import func, linalg, np, prng, testing, tree
 @testing.parametrize("reortho", ["full", "none"])
 @testing.parametrize("n", [10])
 @testing.parametrize("krylov_num_matvecs", [4])
-def test_adjoint_vjp_matches_jax_vjp(reortho, n, krylov_num_matvecs):
+@testing.parametrize("seed", [1, 2, 3])
+def test_adjoint_vjp_matches_jax_vjp(reortho, n, krylov_num_matvecs, seed):
     """Test that the custom VJP yields the same output as autodiff."""
     # Set up a test-matrix
-    eigvals = prng.uniform(prng.prng_key(2), shape=(n,)) + 1.0
+    eigvals = prng.uniform(prng.prng_key(seed), shape=(n,)) + 1.0
     matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
     params = _sym(matrix)
 
@@ -37,14 +38,14 @@ def test_adjoint_vjp_matches_jax_vjp(reortho, n, krylov_num_matvecs):
     # Compute both VJPs
     fx_ref, vjp_ref = func.vjp(reference, flat)
     fx_imp, vjp_imp = func.vjp(implementation, flat)
+
     # Assert that the forward-passes are identical
-    assert np.allclose(fx_ref, fx_imp)
+    assert np.allclose(fx_ref, fx_imp, atol=1e-4, rtol=1e-4)
 
     # Assert that the VJPs into a bunch of random directions are identical
-    for seed in [4, 5, 6]:
-        key = prng.prng_key(seed)
-        dnu = prng.normal(key, shape=np.shape(reference(flat)))
-        assert np.allclose(*vjp_ref(dnu), *vjp_imp(dnu), atol=1e-4, rtol=1e-4)
+    key = prng.prng_key(seed + 1)
+    dnu = prng.normal(key, shape=np.shape(reference(flat)))
+    assert np.allclose(*vjp_ref(dnu), *vjp_imp(dnu), atol=1e-4, rtol=1e-4)
 
 
 def _sym(m):

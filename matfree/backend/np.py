@@ -185,6 +185,8 @@ def shape(x, /):
 
 
 def dtype(x, /):
+    if isinstance(x, jax.Array):
+        return jnp.dtype(x.dtype)
     return jnp.dtype(x)
 
 
