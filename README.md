@@ -207,6 +207,16 @@ When making a pull request, keep in mind the following (rough) guidelines:
 
 [Here is what GitHub considers important for informative pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/best-practices-for-pull-requests).
 
+**A quick unittest checklist:**
+
+Starting with a basic version of an algorithm is fine, but eventually, Matfree aims to provide robust and userfriendly code. This includes testing different variations in the tests. Common considerations include:
+
+- Is the algorithm randomised? Then, we should test different seeds (e.g. 1, 2, 3). See the existing tests for Hessenberg adjoints for inspiration.
+- Should the algorithm support real and complex arithmetic? If so, parametrise the tests with corresponding dtypes. Use the existing tests for stochastic trace estimation for inspiration.
+- Should the algorithm work for general linear operators, e.g. functions that linearly map dictionaries to dictionaries such as Jacobians of neural networks? If so, cover this case in a test as well. See the tests and code for partial SVDs for inspiration.
+
+If any of the current code does not fulfill these goals, reach out by opening an issue.
+
 ## Extend Matfree's documentation
 
 **Write a new tutorial:**
