@@ -144,7 +144,7 @@ convention = "numpy"
 
 
 [tool.pytest.ini_options]
-addopts = "-v"
+addopts = "-v -Werror"
 testpaths = [
     "tests"
 ]

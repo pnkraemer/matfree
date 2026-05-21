@@ -181,7 +181,7 @@ def shape(x, /):
 
 
 def dtype(x, /):
-    return jnp.dtype(x)
+    return jnp.dtype(x.dtype if isinstance(x, jax.Array) else x)
 
 
 # Functional implementation of constants
