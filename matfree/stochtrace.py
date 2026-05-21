@@ -27,8 +27,8 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     -----
     The statistical efficiency of the estimator for a given sampler depends on properties
     of the operator, but we can provide some general advice. For an `n`-dimensional operator (see references):
-    - If the operator is real-valued and `n > O(100)`, use [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
-    - If the operator is real-valued and `n < O(100)`, use [sampler_rademacher][matfree.stochtrace.sampler_rademacher] if the operator is known to be diagonal-dominant or [sampler_sphere][matfree.stochtrace.sampler_sphere] otherwise.
+    - If the operator is real-valued and `n > O(100)`, use [sampler_signs][matfree.stochtrace.sampler_signs].
+    - If the operator is real-valued and `n < O(100)`, use [sampler_signs][matfree.stochtrace.sampler_signs] if the operator is known to be diagonal-dominant or [sampler_sphere][matfree.stochtrace.sampler_sphere] otherwise.
     - If the operator is complex-valued, use [sampler_sphere][matfree.stochtrace.sampler_sphere] with a complex dtype.
 
     References
