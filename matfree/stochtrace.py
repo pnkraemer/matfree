@@ -111,30 +111,32 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     """
 
     def integrand(matvec, samples, *params):
-        Omega, unflattens = func.vmap(tree.ravel_pytree)(samples)
-        Omega = Omega.T
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
         n, num_samples = Omega.shape
 
         if num_samples > n:
             raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
 
-        def matvec_flat(v, unflatten):
+        def matvec_flat(v):
             return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
 
         if num_samples == n:
             # It's faster and more accurate to compute the trace exactly and deterministically
             # when num_samples == n
             Omega = np.eye(n, dtype=Omega.dtype)
-            B_diag = func.vmap(
-                lambda v, unflatten, i: matvec_flat(v, unflatten)[i], in_axes=-1
-            )(Omega, unflattens, np.arange(n))
+            B_diag = func.vmap(lambda v, i: matvec_flat(v)[i], in_axes=-1)(
+                Omega, np.arange(n)
+            )
             return np.ones((num_samples,), dtype=B_diag.dtype) * np.sum(B_diag)
 
         matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
 
-        Y = matmat(Omega, unflattens)
+        Y = matmat(Omega)
         Q, R = linalg.qr_reduced(Y)
-        Z = matmat(Q, unflattens)
+        Z = matmat(Q)
 
         def _trace_exact():
             tr_B = linalg.vdot(Q, Z)
@@ -146,13 +148,12 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
 
             Q_H = Q.T.conj()
             # tr(H) == tr(B_hat), where B_hat = Q @ Q.H @ B is a low-rank approximation to the operator B
-            H = Q_H @ Z 
+            H = Q_H @ Z
             W = Q_H @ Omega
             T = Z.T.conj() @ Omega
             W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
             # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
-            X =  W - S * W_vd_S.conj()
- 
+            X = W - S * W_vd_S.conj()
 
             if apply_resphering:
                 # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out samples[i, :]
@@ -170,7 +171,7 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
 
             tr_B_hat = linalg.trace(H)
             # tr(B_hat) leaving out one sample
-            tr_B_hat_loo = tr_B_hat - func.vmap(linalg.vdot, in_axes=1)(S, H @ S)  
+            tr_B_hat_loo = tr_B_hat - func.vmap(linalg.vdot, in_axes=1)(S, H @ S)
             tr_residual_loo = (  # Hutchinson estimate of tr(B - B_hat_{-i}) using as probe samples[i, :]
                 -func.vmap(linalg.vdot, in_axes=1)(T, X)
                 + func.vmap(linalg.vdot, in_axes=1)(X, H @ X)
