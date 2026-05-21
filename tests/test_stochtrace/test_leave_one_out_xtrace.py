@@ -1,9 +1,7 @@
 """Tests for leave_one_out_xtrace."""
 
 from matfree import stochtrace, test_util
-from matfree.backend import config, func, linalg, np, prng, testing
-
-config.update("jax_enable_x64", True)
+from matfree.backend import func, linalg, np, prng, testing
 
 
 @testing.parametrize("n", [10, 20])
@@ -147,6 +145,3 @@ def test_xtrace_pytrees_supported():
     received = estimate(matvec, key_est, A, B)
     expected = linalg.trace(A) + linalg.trace(B)
     assert np.allclose(received, expected, rtol=1e-2)
-
-
-config.update("jax_enable_x64", False)
