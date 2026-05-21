@@ -107,18 +107,21 @@ def test_xtrace_low_rank_operator(n, rank, dtype):
 
 
 @testing.parametrize("n", [10, 20])
-@testing.parametrize("dtype", [float, complex])
-def test_xtrace_exact_when_num_samples_equals_dimension(n, dtype):
+@testing.parametrize(
+    "dtype_op, dtype_sample",
+    [(float, float), (complex, complex), (complex, float), (float, complex)],
+)
+def test_xtrace_exact_when_num_samples_equals_dimension(n, dtype_op, dtype_sample):
     """Assert that the XTrace algorithm computes the trace exactly when the
     number of samples equals the dimension of the matrix."""
     key = prng.prng_key(1)
-    A = np.tril(np.ones((n, n), dtype=dtype))
+    A = np.tril(np.ones((n, n), dtype=dtype_op))
     expected = linalg.trace(A)
 
     def matvec(v, A):
         return A @ v
 
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=n)
+    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype_sample), num=n)
     integrand = stochtrace.leave_one_out_xtrace()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     test_util.assert_allclose(estimate(matvec, key, A), expected)

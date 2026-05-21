@@ -126,11 +126,8 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
         if num_samples == n:
             # It's faster and more accurate to compute the trace exactly and deterministically
             # when num_samples == n
-            Omega = np.eye(n, dtype=Omega.dtype)
-            B_diag = func.vmap(lambda v, i: matvec_flat(v)[i], in_axes=-1)(
-                Omega, np.arange(n)
-            )
-            return np.ones((num_samples,), dtype=B_diag.dtype) * np.sum(B_diag)
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            return np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(B_mat)
 
         matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
 
@@ -281,6 +278,15 @@ def integrand_wrap_moments(integrand, /, moments):
         return tree.tree_map(lambda m: x**m, moments)
 
     return integrand_wrapped
+
+
+def _materialize_operator(matvec_flat, x):
+    """Materialize the operator defined by an already-flattened matvec and a vector."""
+    # if x is real but the operator is complex, then jacfwd will error, so we perform
+    # a single matvec to find out if the result is complex
+    x = x.astype(matvec_flat(x).dtype)
+    is_complex = x.dtype.kind == "c"
+    return func.jacfwd(matvec_flat, holomorphic=is_complex)(x)
 
 
 def sampler_normal(*args_like, num):
