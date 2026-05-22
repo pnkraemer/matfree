@@ -187,6 +187,94 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     return integrand
 
 
+def leave_one_out_xnystrace(*, apply_resphering: bool = True) -> Callable:
+    """Construct an integrand for estimating the trace of a positive semi-definite operator using the XNysTrace algorithm (Epperly et al. 2024).
+
+    Parameters
+    ----------
+    apply_resphering
+        If ``True`` (default), project test vectors onto the range of the
+        residual matrix, reducing the variance of the trace estimate.
+        Requires test vectors drawn from a rotationally invariant distribution
+        (e.g. Gaussian or sphere). See Epperly, 2025 for more details.
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with `estimator_leave_one_out` whose input
+        has the signature ``(matvec, samples, *params)`` and whose output is a vector
+        of trace estimates with shape ``(samples.shape[0],)``.
+        The `matvec` must be a positive semi-definite operator. That is,
+        `vdot(v, matvec(v))` is real and non-negative for all vectors `v`,
+        and `vdot(x, matvec(y)) = vdot(matvec(x), y)` for all vectors `x` and `y`.
+
+    References
+    ----------
+    - Epperly EN, Tropp JA, Webber RJ (2024). XNystrace: Making the most of every sample in stochastic trace estimation.
+        SIAM J Matrix Anal A. 45.1: 1-23.
+        doi: [10.1137/23M1548323](https://doi.org/10.1137/23M1548323)
+        arXiv: [2301.07825](https://arxiv.org/abs/2301.07825)
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        if num_samples == n:
+            # It's faster and more accurate to compute the trace exactly and deterministically
+            # when num_samples == n
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            return (
+                np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(B_mat)
+            ).real
+
+        F, R, shift = _nystrom_shifted(matvec_flat, Omega)  # B_hat = F @ F.H
+
+        # Compute the downdate matrix Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
+        Y_Hinv = linalg.solve_triangular(R, F.T.conj()).T.conj()
+        Rinv = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype))
+        Z = Y_Hinv / func.vmap(linalg.vector_norm, in_axes=0)(Rinv)[None, :]
+
+        if apply_resphering:
+            # Efficiently form T: the R factor of a QR decomposition of Omega
+            # Assumes Omega is well-conditioned (typically true for Gaussian/sphere samples if num_samples <= n/2)
+            T = linalg.cholesky(Omega.T.conj() @ Omega).T.conj()
+            S = _qr_leave_one_out_factor(T)
+            # Omega projected onto the subspace spanned by Q_i, i.e. Q from qr(Omega_{-i}) leaving out Omega[:, i]
+            X = T - S * func.vmap(linalg.vdot, in_axes=1)(S, T)
+            # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out Omega[:, i]
+            rank_residual = n - num_samples + 1
+            # squared norm of each sample after projection to the subspace spanned by the residual
+            sqnorm_samples_projected = np.sum(linalg.abs2(Omega), axis=0) - np.sum(
+                linalg.abs2(X), axis=0
+            )
+            sqnorm_samples_projected = np.where(
+                sqnorm_samples_projected == 0.0, 1.0, sqnorm_samples_projected
+            )
+            residual_scale = rank_residual / sqnorm_samples_projected
+        else:
+            residual_scale = 1.0
+
+        # Compute the trace estimate, correcting for shift in _nystrom_shifted
+        tr_B_hat = np.sum(linalg.abs2(F)) - shift * n
+        tr_B_hat_loo = tr_B_hat - np.sum(linalg.abs2(Z), axis=0)
+        tr_residual_loo = linalg.abs2(func.vmap(linalg.vdot, in_axes=1)(Z, Omega))
+        return tr_B_hat_loo + residual_scale * tr_residual_loo
+
+    return integrand
+
+
 def _qr_leave_one_out_factor(R):
     r"""Compute the downdate factor for a QR decomposition leaving out a single column.
 
