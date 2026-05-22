@@ -149,11 +149,11 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
             W = Q_H @ Omega
             T = Z.T.conj() @ Omega
             W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
-            # samples.T projected onto the subspace spanned by Q_i, i.e. Q formed leaving out samples[i, :]
+            # Omega projected onto the subspace spanned by Q_i, i.e. Q formed leaving out Omega[:, i]
             X = W - S * W_vd_S.conj()
 
             if apply_resphering:
-                # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out samples[i, :]
+                # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out Omega[:, i]
                 rank_residual = n - num_samples + 1
                 # squared norm of each sample after projection to the subspace spanned by the residual
                 sqnorm_samples_projected = np.sum(linalg.abs2(Omega), axis=0) - np.sum(
