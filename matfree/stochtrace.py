@@ -140,8 +140,7 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
             return np.ones((num_samples,), dtype=R.dtype) * tr_B
 
         def _trace_estimate():
-            S = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype), trans=2)
-            S = S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
+            S = _qr_leave_one_out_factor(R)
 
             Q_H = Q.T.conj()
             # tr(H) == tr(B_hat), where B_hat = Q @ Q.H @ B is a low-rank approximation to the operator B
@@ -186,6 +185,27 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
         return control_flow.cond(Y_rank < num_samples, _trace_exact, _trace_estimate)
 
     return integrand
+
+
+def _qr_leave_one_out_factor(R):
+    r"""Compute the downdate factor for a QR decomposition leaving out a single column.
+
+    Given a QR decomposition \(Q R = Y\) and the QR decomposition \(Q_i R_i = Y_{-i}\),
+    where \(Y_{-i}\) is \(Y\) leaving out column \(i\),
+    the downdate factor is a matrix \(S\) such that \(Q_i Q_i^H = Q (I - s_i s_i^H) Q^H\).
+
+    Parameters
+    ----------
+    R
+        The R factor of a QR decomposition.
+
+    Returns
+    -------
+    S
+        The downdate factor.
+    """
+    S = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype), trans=2)
+    return S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
 
 
 def integrand_diagonal():
