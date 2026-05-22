@@ -208,6 +208,40 @@ def _qr_leave_one_out_factor(R):
     return S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
 
 
+def _nystrom_shifted(matvec_flat, Omega, /, symmetrize_input: bool = True):
+    """Compute shifted Nystrom approximation in an outer product form.
+
+    Parameters
+    ----------
+    matvec_flat
+        A positive semi-definite operator that maps a length `n` vector to a length `n` vector.
+    Omega
+        A matrix of shape ``(n, num_samples)``.
+    symmetrize_input
+        If ``True`` (default), internally symmetrizes before computing a Cholesky factor.
+
+    Returns
+    -------
+    nystrom_factor
+        A matrix `F` such that `F @ F.T.conj()` approximates the operator.
+    chol_upper
+    shift
+    """
+    n = Omega.shape[0]
+    Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
+    Y_norm = linalg.vector_norm(Y)
+    shift = np.finfo_eps(Y.dtype) * Y_norm / n**0.5
+    Y_shifted = Y + shift * Omega
+    H = Omega.T.conj() @ Y_shifted
+    if symmetrize_input:
+        H = (H + H.T.conj()) / 2
+    chol_upper = linalg.cholesky(H).T.conj()
+    nystrom_left = linalg.solve_triangular(
+        chol_upper, Y_shifted.T.conj(), trans=2
+    ).T.conj()
+    return nystrom_left, chol_upper, shift
+
+
 def integrand_diagonal():
     """Construct the integrand for estimating the diagonal.
 
