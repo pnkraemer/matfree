@@ -123,9 +123,9 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
         def matvec_flat(v):
             return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
 
-        if num_samples == n:
-            # It's faster and more accurate to compute the trace exactly and deterministically
-            # when num_samples == n
+        if 2 * num_samples >= n:
+            # It's faster, more accurate, and allocates less memory to compute the trace exactly
+            # and deterministically on the materialized operator when num_samples >= n/2
             B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
             return np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(B_mat)
 
