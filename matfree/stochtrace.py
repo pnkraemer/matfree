@@ -302,9 +302,10 @@ def integrand_wrap_moments(integrand, /, moments):
 
 def _materialize_operator(matvec_flat, x):
     """Materialize the operator defined by an already-flattened matvec and a vector."""
-    # if x is real but the operator is complex, then jacfwd will error, so we perform
-    # a single matvec to find out if the result is complex
-    x = x.astype(matvec_flat(x).dtype)
+    # if x is real but the operator is complex, then jacfwd will error, so we infer the
+    # dtype to find out if the operator might be complex
+    Bx_like = func.eval_shape(matvec_flat, x)
+    x = x.astype(Bx_like.dtype)
     is_complex = x.dtype.kind == "c"
     return func.jacfwd(matvec_flat, holomorphic=is_complex)(x)
 
