@@ -187,7 +187,12 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     return integrand
 
 
-def leave_one_out_xnystrace(*, apply_resphering: bool = True) -> Callable:
+def leave_one_out_xnystrace(
+    *,
+    apply_resphering: bool = True,
+    nystrom_method: str = "eigh",
+    rtol: float | None = None,
+) -> Callable:
     """Construct an integrand for estimating the trace of a positive semi-definite operator using the XNysTrace algorithm (Epperly et al. 2024).
 
     Parameters
@@ -197,6 +202,11 @@ def leave_one_out_xnystrace(*, apply_resphering: bool = True) -> Callable:
         residual matrix, reducing the variance of the trace estimate.
         Requires test vectors drawn from a rotationally invariant distribution
         (e.g. Gaussian or sphere). See Epperly, 2025 for more details.
+    nystrom_method
+        The decomposition method to use for the Nystrom approximation.
+        One of "eigh" (default) or "cholesky".
+    rtol
+        A relative tolerance used in the Nystrom approximation.
 
     Returns
     -------
@@ -239,12 +249,17 @@ def leave_one_out_xnystrace(*, apply_resphering: bool = True) -> Callable:
                 np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(B_mat)
             ).real
 
-        F, R, shift = _nystrom_shifted(matvec_flat, Omega)  # B_hat = F @ F.H
-
-        # Compute the downdate matrix Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
-        Y_Hinv = linalg.solve_triangular(R, F.T.conj()).T.conj()
-        Rinv = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype))
-        Z = Y_Hinv / func.vmap(linalg.vector_norm, in_axes=0)(Rinv)[None, :]
+        # The downdate matrix is Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
+        if nystrom_method == "cholesky":
+            F, Z, shift = _nystrom_shifted_and_downdate(
+                matvec_flat, Omega, rtol=rtol
+            )  # B_hat = F @ F.H
+        elif nystrom_method == "eigh":
+            F, Z = _nystrom_eigh_and_downdate(matvec_flat, Omega, rtol=rtol)
+            shift = 0.0
+        else:
+            msg = f"Invalid nystrom method: {nystrom_method}"
+            raise ValueError(msg)
 
         if apply_resphering:
             # Efficiently form T: the R factor of a QR decomposition of Omega
@@ -296,8 +311,10 @@ def _qr_leave_one_out_factor(R):
     return S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
 
 
-def _nystrom_shifted(matvec_flat, Omega, /, symmetrize_input: bool = True):
-    """Compute shifted Nystrom approximation in an outer product form.
+def _nystrom_shifted_and_downdate(
+    matvec_flat, Omega, /, symmetrize_input: bool = True, rtol: float | None = None
+):
+    """Compute shifted Nystrom approximation in an outer product form and compute the downdate matrix.
 
     Parameters
     ----------
@@ -307,18 +324,24 @@ def _nystrom_shifted(matvec_flat, Omega, /, symmetrize_input: bool = True):
         A matrix of shape ``(n, num_samples)``.
     symmetrize_input
         If ``True`` (default), internally symmetrizes before computing a Cholesky factor.
+    rtol
+        A relative tolerance used in computing the shift.
 
     Returns
     -------
     nystrom_factor
         A matrix `F` such that `F @ F.T.conj()` approximates the operator.
-    chol_upper
+    downdate
+        A matrix `Z` whose columns are downdate vectors for the Nystrom approximation.
     shift
+        A scalar shift used to regularize the Nystrom approximation.
     """
     n = Omega.shape[0]
     Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
     Y_norm = linalg.vector_norm(Y)
-    shift = np.finfo_eps(Y.dtype) * Y_norm / n**0.5
+    if rtol is None:
+        rtol = np.finfo_eps(Y_norm.dtype) / n**0.5
+    shift = rtol * Y_norm
     Y_shifted = Y + shift * Omega
     H = Omega.T.conj() @ Y_shifted
     if symmetrize_input:
@@ -327,7 +350,43 @@ def _nystrom_shifted(matvec_flat, Omega, /, symmetrize_input: bool = True):
     nystrom_left = linalg.solve_triangular(
         chol_upper, Y_shifted.T.conj(), trans=2
     ).T.conj()
-    return nystrom_left, chol_upper, shift
+
+    Y_Hinv = linalg.solve_triangular(chol_upper, nystrom_left.T.conj()).T.conj()
+    Id = np.eye(chol_upper.shape[0], dtype=chol_upper.dtype)
+    chol_upper_inv = linalg.solve_triangular(chol_upper, Id)
+    downdate = (
+        Y_Hinv / func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)[None, :]
+    )
+
+    return nystrom_left, downdate, shift
+
+
+def _nystrom_eigh_and_downdate(matvec_flat, Omega, /, rtol: float | None = None):
+    """Compute Nystrom approximation using eigh and compute the downdate matrix."""
+    k = Omega.shape[1]
+    Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
+    if rtol is None:
+        # select rtol using same heuristic as jax.numpy.linalg.lstsq
+        rtol = np.finfo_eps(Y.dtype) * k
+    H = Omega.T.conj() @ Y
+    eigh = linalg.eigh(H)
+    vals = eigh.eigenvalues
+    vecs = eigh.eigenvectors
+    mask = vals >= rtol * np.abs(vals[-1])
+    s = np.where(mask, vals ** (-0.5), 0.0)
+    vecs = np.where(mask, vecs, 0.0)
+    H_left_sqrt = vecs * s
+    nystrom_left = Y @ H_left_sqrt
+    leverage = np.sum(np.abs(vecs) ** 2, axis=1)
+    is_essential = leverage > 1.0 - rtol
+
+    # Compute the downdate matrix Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
+    downdate = (nystrom_left @ H_left_sqrt.T.conj()) / func.vmap(
+        linalg.vector_norm, in_axes=0
+    )(H_left_sqrt)
+    downdate = np.where(is_essential, downdate, 0.0)
+
+    return nystrom_left, downdate
 
 
 def integrand_diagonal():
