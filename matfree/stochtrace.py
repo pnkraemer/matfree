@@ -179,7 +179,9 @@ def _sampler_from_jax_random(sampler, *args_like, num):
 
 def _steinhaus(key, shape=(), dtype=None):
     """Sample from a Steinhaus distribution on the complex unit circle."""
-    return np.sign(prng.normal(key, shape=shape, dtype=dtype))
+    rdtype = np.dtype(dtype).type(0).real.dtype
+    angle = prng.uniform(key, shape=shape, dtype=rdtype) * (2 * np.pi())
+    return np.cos(angle) + 1j * np.sin(angle)
 
 
 def _uniform_signs(key, shape=(), dtype=None):
