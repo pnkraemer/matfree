@@ -311,7 +311,7 @@ def _qr_leave_one_out_factor(R):
 
 
 def nystrom_shifted_cholesky(
-    shift: float | None = None, rtol: float | None = None, symmetrize_input: bool = True,
+    shift: float | None = None, rtol: float | None = None, symmetrize_input: bool = True
 ):
     """Compute the Nystrom approximation of a shifted operator using a Cholesky decomposition.
 
@@ -371,7 +371,7 @@ def nystrom_eigh(
     eigenvalues_rtol: float | None = None, leverage_rtol: float | None = None
 ):
     """Compute the Nystrom approximation of a operator using a Hermitian eigendecomposition.
-    
+
     Parameters
     ----------
     eigenvalues_rtol
@@ -390,6 +390,7 @@ def nystrom_eigh(
         `downdate` is a matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation,
         and `correction` is a correction factor (0) to add to the trace estimate.
     """
+
     def nystrom(matvec_flat, Omega):
         k = Omega.shape[1]
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
