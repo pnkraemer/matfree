@@ -311,29 +311,30 @@ def _qr_leave_one_out_factor(R):
 
 
 def nystrom_shifted_cholesky(
-    symmetrize_input: bool = True, shift: float | None = None, rtol: float | None = None
+    shift: float | None = None, rtol: float | None = None, symmetrize_input: bool = True,
 ):
-    """Compute shifted Nystrom approximation in an outer product form and compute the downdate matrix.
+    """Compute the Nystrom approximation of a shifted operator using a Cholesky decomposition.
 
     Parameters
     ----------
-    matvec_flat
-        A positive semi-definite operator that maps a length `n` vector to a length `n` vector.
-    Omega
-        A matrix of shape ``(n, num_samples)``.
-    symmetrize_input
-        If ``True`` (default), internally symmetrizes before computing a Cholesky factor.
+    shift:
+        A small positive shift to add to the operator to ensure the resulting operator
+        is positive definite for Cholesky decomposition.
+        If not provided, the `rtol` is used to compute the shift.
     rtol
         A relative tolerance used in computing the shift.
+    symmetrize_input
+        If ``True`` (default), internally symmetrizes before computing the Cholesky factor.
 
     Returns
     -------
-    nystrom_factor
-        A matrix `F` such that `F @ F.T.conj()` approximates the operator.
-    downdate
-        A matrix `Z` whose columns are downdate vectors for the Nystrom approximation.
-    correction
-        A correction factor to add to the trace estimate to account for the shift.
+    nystrom
+        A function that computes the Nystrom approximation of a shifted operator using a Cholesky decomposition.
+        The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, correction)`,
+        where `nystrom_left` is a left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
+        such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator,
+        `downdate` is a matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation,
+        and `correction` is a correction factor to add to the trace estimate to account for the shift.
     """
 
     def nystrom(matvec_flat, Omega):
@@ -369,8 +370,26 @@ def nystrom_shifted_cholesky(
 def nystrom_eigh(
     eigenvalues_rtol: float | None = None, leverage_rtol: float | None = None
 ):
-    """Compute Nystrom approximation using eigh and compute the downdate matrix."""
+    """Compute the Nystrom approximation of a operator using a Hermitian eigendecomposition.
+    
+    Parameters
+    ----------
+    eigenvalues_rtol
+        A relative tolerance used to determine which eigenvalues are close enough to 0.
+    leverage_rtol
+        A relative tolerance used in computing the leverage scores to determine which
+        test vectors are essential.
 
+    Returns
+    -------
+    nystrom
+        A function that computes the Nystrom approximation of a operator using a Hermitian eigendecomposition.
+        The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, correction)`,
+        where `nystrom_left` is a left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
+        such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator,
+        `downdate` is a matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation,
+        and `correction` is a correction factor (0) to add to the trace estimate.
+    """
     def nystrom(matvec_flat, Omega):
         k = Omega.shape[1]
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
