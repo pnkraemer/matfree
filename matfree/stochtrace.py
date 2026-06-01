@@ -251,12 +251,11 @@ def leave_one_out_xnystrace(
 
         # The downdate matrix is Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
         if nystrom_method == "cholesky":
-            F, Z, shift = _nystrom_shifted_and_downdate(
+            F, Z, correction = nystrom_shifted_cholesky(
                 matvec_flat, Omega, rtol=rtol
             )  # B_hat = F @ F.H
         elif nystrom_method == "eigh":
-            F, Z = _nystrom_eigh_and_downdate(matvec_flat, Omega, rtol=rtol)
-            shift = 0.0
+            F, Z, correction = nystrom_eigh(matvec_flat, Omega, rtol=rtol)
         else:
             msg = f"Invalid nystrom method: {nystrom_method}"
             raise ValueError(msg)
@@ -282,7 +281,7 @@ def leave_one_out_xnystrace(
             residual_scale = 1.0
 
         # Compute the trace estimate, correcting for shift in _nystrom_shifted
-        tr_B_hat = np.sum(linalg.abs2(F)) - shift * n
+        tr_B_hat = np.sum(linalg.abs2(F)) + correction
         tr_B_hat_loo = tr_B_hat - np.sum(linalg.abs2(Z), axis=0)
         tr_residual_loo = linalg.abs2(func.vmap(linalg.vdot, in_axes=1)(Z, Omega))
         return tr_B_hat_loo + residual_scale * tr_residual_loo
@@ -311,7 +310,7 @@ def _qr_leave_one_out_factor(R):
     return S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
 
 
-def _nystrom_shifted_and_downdate(
+def nystrom_shifted_cholesky(
     matvec_flat, Omega, /, symmetrize_input: bool = True, rtol: float | None = None
 ):
     """Compute shifted Nystrom approximation in an outer product form and compute the downdate matrix.
@@ -333,8 +332,8 @@ def _nystrom_shifted_and_downdate(
         A matrix `F` such that `F @ F.T.conj()` approximates the operator.
     downdate
         A matrix `Z` whose columns are downdate vectors for the Nystrom approximation.
-    shift
-        A scalar shift used to regularize the Nystrom approximation.
+    correction
+        A correction factor to add to the trace estimate to account for the shift.
     """
     n = Omega.shape[0]
     Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
@@ -358,10 +357,10 @@ def _nystrom_shifted_and_downdate(
         Y_Hinv / func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)[None, :]
     )
 
-    return nystrom_left, downdate, shift
+    return nystrom_left, downdate, -shift * n
 
 
-def _nystrom_eigh_and_downdate(matvec_flat, Omega, /, rtol: float | None = None):
+def nystrom_eigh(matvec_flat, Omega, /, rtol: float | None = None):
     """Compute Nystrom approximation using eigh and compute the downdate matrix."""
     k = Omega.shape[1]
     Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
@@ -386,7 +385,7 @@ def _nystrom_eigh_and_downdate(matvec_flat, Omega, /, rtol: float | None = None)
     )(H_left_sqrt)
     downdate = np.where(is_essential, downdate, 0.0)
 
-    return nystrom_left, downdate
+    return nystrom_left, downdate, np.asarray(0.0).astype(vals.dtype)
 
 
 def integrand_diagonal():
