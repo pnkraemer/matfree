@@ -27,9 +27,9 @@ def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
     -----
     The statistical efficiency of the estimator for a given sampler depends on properties
     of the operator, but we can provide some general advice. For an `n`-dimensional operator (see references):
-    - If the operator is real-valued and `n > O(100)`, use [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
-    - If the operator is real-valued and `n < O(100)`, use [sampler_rademacher][matfree.stochtrace.sampler_rademacher] if the operator is known to be diagonal-dominant or [sampler_sphere][matfree.stochtrace.sampler_sphere] otherwise.
-    - If the operator is complex-valued, use [sampler_sphere][matfree.stochtrace.sampler_sphere] with a complex dtype.
+    - `n > O(100)`, use [sampler_signs][matfree.stochtrace.sampler_signs].
+    - `n < O(100)`, use [sampler_signs][matfree.stochtrace.sampler_signs] if the operator is known to be diagonal-dominant or [sampler_sphere][matfree.stochtrace.sampler_sphere] otherwise.
+    - If the operator is complex-valued, pass a complex dtype to the sampler to approximately double the efficiency.
 
     References
     ----------
@@ -142,9 +142,12 @@ def sampler_normal(*args_like, num):
     return _sampler_from_jax_random(prng.normal, *args_like, num=num)
 
 
-def sampler_rademacher(*args_like, num):
-    """Construct a function that samples from a Rademacher distribution."""
-    return _sampler_from_jax_random(prng.rademacher, *args_like, num=num)
+def sampler_signs(*args_like, num):
+    """Construct a function that samples signs uniformly.
+
+    For real dtypes, this samples from a Rademacher distribution (uniformly over `{-1, 1}`). For complex dtypes, this samples from a Steinhaus distribution on the complex unit circle.
+    """
+    return _sampler_from_jax_random(_uniform_signs, *args_like, num=num)
 
 
 def sampler_sphere(*args_like, num):
@@ -172,3 +175,16 @@ def _sampler_from_jax_random(sampler, *args_like, num):
         return func.vmap(unflatten)(samples)
 
     return sample
+
+
+def _steinhaus(key, /, shape, dtype):
+    """Sample from a Steinhaus distribution on the complex unit circle."""
+    rdtype = np.dtype(dtype).type(0).real.dtype
+    angle = prng.uniform(key, shape=shape, dtype=rdtype) * (2 * np.pi())
+    return np.cos(angle) + 1j * np.sin(angle)
+
+
+def _uniform_signs(key, /, shape, dtype):
+    if np.dtype(dtype).kind == "c":
+        return _steinhaus(key, shape=shape, dtype=dtype)
+    return prng.rademacher(key, shape=shape, dtype=dtype)

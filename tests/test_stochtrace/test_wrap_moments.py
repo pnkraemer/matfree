@@ -81,14 +81,14 @@ def test_yields_correct_variance_normal(J_and_jvp, key):
     assert np.allclose(second - first**2, norm * 2, rtol=0.3)
 
 
-def test_yields_correct_variance_rademacher(J_and_jvp, key):
+def test_yields_correct_variance_signs(J_and_jvp, key):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
     J, jvp, args_like = J_and_jvp
 
     problem = stochtrace.integrand_trace()
     problem = stochtrace.integrand_wrap_moments(problem, moments=[1, 2])
-    sampler = stochtrace.sampler_rademacher(args_like, num=5000)
+    sampler = stochtrace.sampler_signs(args_like, num=5000)
     estimate = stochtrace.estimator(problem, sampler=sampler)
     first, second = estimate(jvp, key)
 
