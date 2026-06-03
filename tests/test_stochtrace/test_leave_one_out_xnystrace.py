@@ -44,7 +44,7 @@ def test_xnystrace_fast_spectral_decay(apply_resphering, dtype):
     if apply_resphering:
         sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=num_samples)
     else:
-        sampler = stochtrace.sampler_rademacher(
+        sampler = stochtrace.sampler_signs(
             np.ones(n, dtype=dtype), num=num_samples
         )
     integrand = stochtrace.leave_one_out_xnystrace(apply_resphering=apply_resphering)
@@ -80,7 +80,7 @@ def test_xnystrace_large_spectral_drop(apply_resphering, dtype):
     if apply_resphering:
         sampler = stochtrace.sampler_sphere(np.ones(n, dtype=dtype), num=2 * m + 10)
     else:
-        sampler = stochtrace.sampler_rademacher(np.ones(n, dtype=dtype), num=2 * m + 10)
+        sampler = stochtrace.sampler_signs(np.ones(n, dtype=dtype), num=2 * m + 10)
     integrand = stochtrace.leave_one_out_xnystrace(apply_resphering=apply_resphering)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
