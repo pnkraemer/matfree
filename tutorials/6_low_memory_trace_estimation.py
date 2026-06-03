@@ -35,7 +35,7 @@ def large_matvec(v):
 
 integrand = stochtrace.integrand_trace()
 x0 = jnp.ones((nrows,))
-sampler = stochtrace.sampler_rademacher(x0, num=nsamples)
+sampler = stochtrace.sampler_signs(x0, num=nsamples)
 estimate = stochtrace.estimator(integrand, sampler)
 
 key = jax.random.PRNGKey(1)
@@ -48,7 +48,7 @@ print(trace)
 # Instead, we can loop around estimate() to do the following:
 # The below code requires nrows $\times$ 1 storage:
 
-sampler = stochtrace.sampler_rademacher(x0, num=1)
+sampler = stochtrace.sampler_signs(x0, num=1)
 estimate = stochtrace.estimator(integrand, sampler)
 estimate = functools.partial(estimate, large_matvec)
 

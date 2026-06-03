@@ -62,7 +62,7 @@ Estimate the trace of the matrix:
 ```python
 >>> # Determine the shape of the base-samples
 >>> input_like = jnp.zeros((2,), dtype=float)
->>> sampler = stochtrace.sampler_rademacher(input_like, num=10_000)
+>>> sampler = stochtrace.sampler_signs(input_like, num=10_000)
 >>>
 >>> # Set Hutchinson's method up to compute the traces
 >>> # (instead of, e.g., diagonals)
