@@ -434,9 +434,8 @@ def nystrom_eigh(
         # z=d (F L[k, :]')/norm(L[k, :])
         # Albert A. (1969), Conditions for Positive and Nonnegative Definiteness in Terms of Pseudoinverses.
         # SIAM J. Appl. Math. 17(2), 434-440. doi:10.1137/0117041
-        downdate = (nystrom_left @ H_left_sqrt.T.conj()) / func.vmap(
-            linalg.vector_norm, in_axes=0
-        )(H_left_sqrt)
+        norms = func.vmap(linalg.vector_norm, in_axes=0)(H_left_sqrt)
+        downdate = (nystrom_left @ H_left_sqrt.T.conj()) / norms
         downdate = np.where(is_essential, downdate, 0.0)
 
         return nystrom_left, downdate, np.asarray(0.0).astype(vals.dtype)
