@@ -22,6 +22,10 @@ def qr_reduced(x, /):
     return jnp.linalg.qr(x, mode="reduced")
 
 
+def qr_r(x, /):
+    return jnp.linalg.qr(x, mode="r")
+
+
 def eigh(x, /):
     return jnp.linalg.eigh(x)
 
