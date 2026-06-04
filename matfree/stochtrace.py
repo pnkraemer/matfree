@@ -270,9 +270,9 @@ def leave_one_out_xnystrace(
             # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out Omega[:, i]
             rank_residual = n - num_samples + 1
             # squared norm of each sample after projection to the subspace spanned by the residual
-            sqnorm_samples_projected = np.sum(linalg.abs2(Omega), axis=0) - np.sum(
-                linalg.abs2(X), axis=0
-            )
+            sqnorm_Omega = np.sum(linalg.abs2(Omega), axis=0)
+            sqnorm_X = np.sum(linalg.abs2(X), axis=0)
+            sqnorm_samples_projected = sqnorm_Omega - sqnorm_X 
             sqnorm_samples_projected = np.where(
                 sqnorm_samples_projected == 0.0, 1.0, sqnorm_samples_projected
             )
@@ -358,9 +358,8 @@ def nystrom_shifted_cholesky(
         Y_Hinv = linalg.solve_triangular(chol_upper, nystrom_left.T.conj()).T.conj()
         Id = np.eye(chol_upper.shape[0], dtype=chol_upper.dtype)
         chol_upper_inv = linalg.solve_triangular(chol_upper, Id)
-        downdate = (
-            Y_Hinv / func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)[None, :]
-        )
+        norms =  func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)
+        downdate =  Y_Hinv / norms[None, :]
 
         return nystrom_left, downdate, -mu * n
 
