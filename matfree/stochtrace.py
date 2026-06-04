@@ -191,6 +191,7 @@ def leave_one_out_xnystrace(
     *,
     nystrom: Callable[[Callable, Array], tuple[Array, Array, Array]] | None = None,
     apply_resphering: bool = True,
+    qr_r: Callable[[Array], Array] | None = None,
 ) -> Callable:
     """Construct an integrand for estimating the trace of a positive semi-definite operator using the XNysTrace algorithm (Epperly et al. 2024).
 
@@ -214,6 +215,9 @@ def leave_one_out_xnystrace(
         residual matrix, reducing the variance of the trace estimate.
         Requires test vectors drawn from a rotationally invariant distribution
         (e.g. Gaussian or sphere). See Epperly, 2025 for more details.
+    qr_r
+        A callable that computes the R factor of a QR decomposition, used if `apply_resphering` is `True`.
+        If not provided, `linalg.qr_r` is used.
 
     Returns
     -------
@@ -236,6 +240,12 @@ def leave_one_out_xnystrace(
     """
     if nystrom is None:
         nystrom = nystrom_eigh()
+
+    # NOTE: The paper computes R via the QR decomposition, while for efficiency, the
+    # thesis uses the upper Cholesky factor of the Gram matrix. We use the QR approach
+    # because it may be less brittle and prone to NaNs than Cholesky. 
+    if qr_r is None:
+        qr_r = linalg.qr_r
 
     def integrand(matvec, samples, *params):
         sample0 = tree.tree_map(lambda s: s[0], samples)
@@ -261,9 +271,8 @@ def leave_one_out_xnystrace(
         F, Z, shift = nystrom(matvec_flat, Omega)
 
         if apply_resphering:
-            # Efficiently form T: the R factor of a QR decomposition of Omega
-            # Assumes Omega is well-conditioned (typically true for Gaussian/sphere samples if num_samples <= n/2)
-            T = linalg.cholesky(Omega.T.conj() @ Omega).T.conj()
+            # Ensure T (the R factor) is square
+            T = qr_r(Omega)[:num_samples, :num_samples]
             S = _qr_leave_one_out_factor(T)
             # Omega projected onto the subspace spanned by Q_i, i.e. Q from qr(Omega_{-i}) leaving out Omega[:, i]
             X = T - S * func.vmap(linalg.vdot, in_axes=1)(S, T)
