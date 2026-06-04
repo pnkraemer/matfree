@@ -206,7 +206,7 @@ def leave_one_out_xnystrace(
         - `downdate`: A matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation.
             Specifically, `nystrom_left @ nystrom_left.T.conj() - np.outer(downdate[:, i], downdate[:, i].conj())` approximates the
             operator leaving out the `i`-th column of `Omega`.
-        - `correction`: A correction factor to add to the trace estimate.
+        - `shift`: The shift used (for shifted Nystrom approximations).
         Usually `nystrom` is the return value of `nystrom_shifted_cholesky` or `nystrom_eigh`.
         If not provided, `nystrom_eigh` is used.
     apply_resphering
@@ -258,7 +258,7 @@ def leave_one_out_xnystrace(
                 np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(B_mat)
             ).real
 
-        F, Z, correction = nystrom(matvec_flat, Omega)
+        F, Z, shift = nystrom(matvec_flat, Omega)
 
         if apply_resphering:
             # Efficiently form T: the R factor of a QR decomposition of Omega
@@ -281,7 +281,7 @@ def leave_one_out_xnystrace(
             residual_scale = 1.0
 
         # Compute the trace estimate, correcting for shift in _nystrom_shifted
-        tr_B_hat = np.sum(linalg.abs2(F)) + correction
+        tr_B_hat = np.sum(linalg.abs2(F)) - shift * n
         tr_B_hat_loo = tr_B_hat - np.sum(linalg.abs2(Z), axis=0)
         tr_residual_loo = linalg.abs2(func.vmap(linalg.vdot, in_axes=1)(Z, Omega))
         return tr_B_hat_loo + residual_scale * tr_residual_loo
@@ -334,7 +334,7 @@ def nystrom_shifted_cholesky(
         where `nystrom_left` is a left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
         such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator,
         `downdate` is a matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation,
-        and `correction` is a correction factor to add to the trace estimate to account for the shift.
+        and `shift` is the shift used.
     """
 
     def nystrom(matvec_flat, Omega):
@@ -362,7 +362,7 @@ def nystrom_shifted_cholesky(
             Y_Hinv / func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)[None, :]
         )
 
-        return nystrom_left, downdate, -mu * n
+        return nystrom_left, downdate, mu
 
     return nystrom
 
@@ -384,11 +384,11 @@ def nystrom_eigh(
     -------
     nystrom
         A function that computes the Nystrom approximation of a operator using a Hermitian eigendecomposition.
-        The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, correction)`,
+        The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, shift)`,
         where `nystrom_left` is a left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
         such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator,
         `downdate` is a matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation,
-        and `correction` is a correction factor (0) to add to the trace estimate.
+        and `shift=0` is the shift used (for common API).
     """
 
     def nystrom(matvec_flat, Omega):
