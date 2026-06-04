@@ -355,8 +355,8 @@ def nystrom_shifted_cholesky(
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
         Y_norm = linalg.vector_norm(Y)
         if shift is None:
-            shift_rtol = np.finfo_eps(Y_norm.dtype) / n**0.5 if rtol is None else rtol
-            mu = shift_rtol * Y_norm
+            shift_rtol = np.finfo_eps(Y_norm.dtype) if rtol is None else rtol
+            mu = shift_rtol * Y_norm / n**0.5
         else:
             mu = shift
         Y_shifted = Y + mu * Omega
