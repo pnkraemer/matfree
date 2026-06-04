@@ -238,12 +238,16 @@ def leave_one_out_xnystrace(
     - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
         arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
     """
+    # NOTE: The paper and thesis use the shifted Nystrom approximation with a
+    # Cholesky decomposition, but empirically, this is brittle and fails for
+    # many low-rank operators. The eigh-based Nystrom approximation seems to be
+    # more robust.
     if nystrom is None:
         nystrom = nystrom_eigh()
 
     # NOTE: The paper computes R via the QR decomposition, while for efficiency, the
     # thesis uses the upper Cholesky factor of the Gram matrix. We use the QR approach
-    # because it may be less brittle and prone to NaNs than Cholesky. 
+    # because it may be less brittle and prone to NaNs than Cholesky.
     if qr_r is None:
         qr_r = linalg.qr_r
 
