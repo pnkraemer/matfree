@@ -57,7 +57,7 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
     sampler
         The sample function, e.g. the return-value of
         [sampler_normal][matfree.stochtrace.sampler_normal] or
-        [sampler_rademacher][matfree.stochtrace.sampler_rademacher].
+        [sampler_signs][matfree.stochtrace.sampler_signs].
 
     Returns
     -------
@@ -84,7 +84,7 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
         If ``True`` (default), project test vectors onto the range of the
         residual matrix, reducing the variance of the trace estimate.
         Requires test vectors drawn from a rotationally invariant distribution
-        (e.g. Gaussian or sphere). See Epperly, 2025 for more details.
+        (e.g. normal or sphere). See Epperly, 2025 for more details.
 
     Returns
     -------
@@ -97,12 +97,12 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     -----
     The number of samples must be less than or equal to the dimension of the operator.
     Additionally, the algorithm assumes that the samples are unique. For low-dimensional
-    operators, samples generated from `sampler_rademacher` may violate this assumption, and
+    operators, samples generated from `sampler_signs` may violate this assumption, and
     it is recommended to use a different sampler instead.
 
     References
     ----------
-    - Epperly EN, Tropp JA, Webber RJ (2024). Xtrace: Making the most of every sample in stochastic trace estimation.
+    - Epperly EN, Tropp JA, Webber RJ (2024). XTrace: Making the most of every sample in stochastic trace estimation.
         SIAM J Matrix Anal A. 45.1: 1-23.
         doi: [10.1137/23M1548323](https://doi.org/10.1137/23M1548323)
         arXiv: [2301.07825](https://arxiv.org/abs/2301.07825)
@@ -215,7 +215,7 @@ def leave_one_out_xnystrace(
         If ``True`` (default), project test vectors onto the range of the
         residual matrix, reducing the variance of the trace estimate.
         Requires test vectors drawn from a rotationally invariant distribution
-        (e.g. Gaussian or sphere). See Epperly, 2025 for more details.
+        (e.g. normal or sphere). See Epperly, 2025 for more details.
     qr_r
         A callable that computes the R factor of a QR decomposition, used if `apply_resphering` is `True`.
         If not provided, `linalg.qr_r` is used.
@@ -232,7 +232,7 @@ def leave_one_out_xnystrace(
 
     References
     ----------
-    - Epperly EN, Tropp JA, Webber RJ (2024). XNystrace: Making the most of every sample in stochastic trace estimation.
+    - Epperly EN, Tropp JA, Webber RJ (2024). XTrace: Making the most of every sample in stochastic trace estimation.
         SIAM J Matrix Anal A. 45.1: 1-23.
         doi: [10.1137/23M1548323](https://doi.org/10.1137/23M1548323)
         arXiv: [2301.07825](https://arxiv.org/abs/2301.07825)
@@ -329,11 +329,11 @@ def _qr_leave_one_out_factor(R):
 def nystrom_shifted_cholesky(
     shift: float | None = None, rtol: float | None = None, symmetrize_input: bool = True
 ):
-    """Compute the Nystrom approximation of a shifted operator using a Cholesky decomposition.
+    """Construct a Nystrom of a shifted operator using a Cholesky decomposition.
 
     Parameters
     ----------
-    shift:
+    shift
         A small positive shift to add to the operator to ensure the resulting operator
         is positive definite for Cholesky decomposition.
         If not provided, the `rtol` is used to compute the shift.
@@ -346,7 +346,7 @@ def nystrom_shifted_cholesky(
     -------
     nystrom
         A function that computes the Nystrom approximation of a shifted operator using a Cholesky decomposition.
-        The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, correction)`,
+        The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, shift)`,
         where `nystrom_left` is a left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
         such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator,
         `downdate` is a matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation,
@@ -571,8 +571,8 @@ def integrand_wrap_moments(integrand, /, moments):
 
 def _materialize_operator(matvec_flat, x):
     """Materialize the operator defined by an already-flattened matvec and a vector."""
-    # if x is real but the operator is complex, then jacfwd will error, so we infer the
-    # dtype to find out if the operator might be complex
+    # if the operator is complex, holomorphic=True is needed, which requires complex input —
+    # cast x to the operator's output dtype first
     Bx_like = func.eval_shape(matvec_flat, x)
     x = x.astype(Bx_like.dtype)
     is_complex = x.dtype.kind == "c"
