@@ -367,7 +367,7 @@ def nystrom_shifted_cholesky(
 
         # Compute left-square-root of inv(H)
         if symmetrize_input:
-            H = (H + H.T.conj()) / 2
+            H = _symmetrize(H)
         H_cholu = linalg.cholesky(H).T.conj()
         Id = np.eye(H_cholu.shape[0], dtype=H_cholu.dtype)
         H_inv_left_sqrt = linalg.solve_triangular(H_cholu, Id)
@@ -386,7 +386,9 @@ def nystrom_shifted_cholesky(
 
 
 def nystrom_eigh(
-    eigenvalues_rtol: float | None = None, leverage_rtol: float | None = None
+    eigenvalues_rtol: float | None = None,
+    leverage_rtol: float | None = None,
+    symmetrize_input: bool = True,
 ):
     """Compute the Nystrom approximation of a operator using a Hermitian eigendecomposition.
 
@@ -397,6 +399,8 @@ def nystrom_eigh(
     leverage_rtol
         A relative tolerance used in computing the leverage scores to determine which
         test vectors are essential.
+    symmetrize_input
+        If ``True`` (default), internally symmetrizes before computing the eigendecomposition.
 
     Returns
     -------
@@ -420,6 +424,8 @@ def nystrom_eigh(
         H = Omega.T.conj() @ Y
 
         # Compute left-square-root of pinv(H)
+        if symmetrize_input:
+            H = _symmetrize(H)
         eigh = linalg.eigh(H)
         vals = eigh.eigenvalues
         vecs = eigh.eigenvectors
@@ -464,6 +470,11 @@ def nystrom_eigh(
         return nystrom_left, downdate, np.asarray(0.0).astype(vals.dtype)
 
     return nystrom
+
+
+def _symmetrize(x):
+    r"""Symmetrize a matrix by computing \((x + x^H) / 2\)."""
+    return (x + x.T.conj()) / 2
 
 
 def integrand_diagonal():
