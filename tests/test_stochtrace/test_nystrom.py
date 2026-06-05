@@ -29,7 +29,7 @@ def sample_psd_matrix(key, n: int, rank: int, dtype):
 def fixture_nystrom(factory):
     """Create a nystrom with consistent settings for LOO downdate testing."""
     if factory is stochtrace.nystrom_shifted_cholesky:
-        # choose intentionally large shift since we want to test the shift-based approximation
+        # Choose a large shift since we want to test the shift-based approximation.
         return factory(shift=1.0)
     return factory()
 
@@ -72,16 +72,14 @@ def test_nystrom_eigh_kwargs_customizable(n, rank, num_samples, dtype):
     key = prng.prng_key(1)
     key_mat, key_omega = prng.split(key)
     A = sample_psd_matrix(key_mat, n, rank, dtype)
-    Omega = prng.normal(
-        key_omega, shape=(n, num_samples - num_duplicated_cols), dtype=dtype
-    )
+    num_unique_cols = num_samples - num_duplicated_cols
+    Omega = prng.normal(key_omega, shape=(n, num_unique_cols), dtype=dtype)
     Omega = np.concatenate([Omega.T, Omega[:, :num_duplicated_cols].T]).T
 
     def matvec(v):
         return A @ v
 
     nystrom = stochtrace.nystrom_eigh()
-    # we need to check that the rtols used to determine zero eigenvalues or column essentiality are respected
     F, Z, shift = nystrom(matvec, Omega)
     assert shift == 0.0
 
@@ -127,18 +125,21 @@ def test_nystrom_interpolatory_property(nystrom, dtype, n, rank, num_samples):
         return A @ v
 
     F, _, shift = nystrom(matvec, Omega)
-    test_util.assert_allclose(F @ (F.T.conj() @ Omega) - shift * Omega, A @ Omega)
+    received = F @ (F.T.conj() @ Omega) - shift * Omega
+    expected = A @ Omega
+    test_util.assert_allclose(received, expected)
 
 
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize("n, rank, num_samples", [(10, 10, 4), (20, 5, 8)])
 def test_nystrom_right_mul_invariance(nystrom, dtype, n, rank, num_samples):
-    """Assert Nystrom approximation is invariant under right multiplication of the test vectors."""
+    """Assert Nystrom approximation is invariant under right multiplication."""
     key = prng.prng_key(2)
     key_mat, key_omega, key_V = prng.split(key, 3)
     A = sample_psd_matrix(key_mat, n, rank, dtype)
     Omega = prng.normal(key_omega, shape=(n, num_samples), dtype=dtype)
-    Omega_V = Omega @ prng.normal(key_V, shape=(num_samples, num_samples), dtype=dtype)
+    V = prng.normal(key_V, shape=(num_samples, num_samples), dtype=dtype)
+    Omega_V = Omega @ V
 
     def matvec(v):
         return A @ v
@@ -151,7 +152,7 @@ def test_nystrom_right_mul_invariance(nystrom, dtype, n, rank, num_samples):
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize("n, rank", [(10, 5), (20, 8)])
 def test_nystrom_eigh_rank_min_of_num_samples_and_operator_rank(dtype, n, rank):
-    """Assert rank of Nystrom approximation is the minimum of the operator rank and number of test vectors"""
+    """Assert Nystrom rank is min(operator rank, num test vectors)."""
     key = prng.prng_key(4)
     key_mat, key_omega = prng.split(key)
     A = sample_psd_matrix(key_mat, n, rank, dtype)
@@ -264,7 +265,7 @@ def test_nystrom_eigh_low_rank_operator_loo_downdate(dtype, n, rank, num_samples
 def test_nystrom_eigh_non_essential_test_vectors_ignored(
     dtype, n, num_unique_samples, num_copies
 ):
-    """Assert nystrom_eigh is invariant to the addition of non-essential test vectors."""
+    """Assert nystrom_eigh is invariant to non-essential test vectors."""
     key = prng.prng_key(5)
     key_mat, key_omega = prng.split(key)
     A = sample_psd_matrix(key_mat, n, n, dtype)
@@ -278,9 +279,9 @@ def test_nystrom_eigh_non_essential_test_vectors_ignored(
     F, Z, shift = stochtrace.nystrom_eigh()(matvec, Omega)
 
     assert np.allclose(F @ F.T.conj(), F_unique @ F_unique.T.conj(), atol=1e-6)
-    assert np.allclose(
-        Z[:, num_copies:-num_copies], Z_unique[:, num_copies:], atol=1e-6
-    )
+    received = Z[:, num_copies:-num_copies]
+    expected = Z_unique[:, num_copies:]
+    assert np.allclose(received, expected, atol=1e-6)
     assert np.allclose(Z[:, :num_copies], 0.0)
     assert np.allclose(Z[:, -num_copies:], 0.0)
     assert np.allclose(shift, shift_unique)

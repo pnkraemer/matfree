@@ -6,7 +6,7 @@ from matfree.backend import func, linalg, np, prng, testing
 
 @testing.parametrize("n", [10, 20])
 def test_xtrace_error_num_samples_more_than_dimension(n):
-    """Assert that a ValueError is raised when the number of samples is greater than the dimension of the matrix."""
+    """Assert that num_samples greater than the dimension raises a ValueError."""
     key = prng.prng_key(1)
     A = np.eye(n)
 
@@ -17,17 +17,16 @@ def test_xtrace_error_num_samples_more_than_dimension(n):
 
     sampler = stochtrace.sampler_normal(np.ones(n), num=n + 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-    with testing.raises(
-        ValueError,
-        match=f"Number of samples num={n + 1} exceeds the acceptable range. Expected: 1 <= num <= {n}.",
-    ):
+    message = f"Number of samples num={n + 1} exceeds the acceptable range."
+    message = f"{message} Expected: 1 <= num <= {n}."
+    with testing.raises(ValueError, match=message):
         estimate(matvec, key, A)
 
 
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
-    """Assert that the trace of a matrix with fast spectral decay is estimated accurately.
+    """Assert that a trace with fast spectral decay is estimated accurately.
 
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
@@ -57,7 +56,7 @@ def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xtrace_large_spectral_drop(apply_resphering, dtype):
-    """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately.
+    """Assert that a trace with a large spectral drop is estimated accurately.
 
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
@@ -68,7 +67,9 @@ def test_xtrace_large_spectral_drop(apply_resphering, dtype):
     key = prng.prng_key(4)
     key_mat, key = prng.split(key)
     U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    d = np.concatenate([np.ones(m, dtype=rdtype), np.ones(n - m, dtype=rdtype) * 1e-3])
+    large_eigenvalues = np.ones(m, dtype=rdtype)
+    small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
+    d = np.concatenate([large_eigenvalues, small_eigenvalues])
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
@@ -112,7 +113,7 @@ def test_xtrace_low_rank_operator(n, rank, dtype):
 def test_xtrace_exact_when_num_samples_more_than_half_dimension(
     n, num_samples, dtype_op, dtype_sample
 ):
-    """Assert that the method computes the trace exactly when the number of samples is greater than half the dimension of the matrix."""
+    """Assert exact trace computation when num_samples is large."""
     key = prng.prng_key(1)
     A = np.tril(np.ones((n, n), dtype=dtype_op))
     expected = linalg.trace(A)
@@ -138,9 +139,8 @@ def test_xtrace_pytrees_supported():
         return {"fx": A @ v["fx"], "fy": B @ v["fy"]}
 
     integrand = stochtrace.leave_one_out_xtrace()
-    sampler = stochtrace.sampler_normal(
-        {"fx": np.ones(n1), "fy": np.ones(n2)}, num=n1 + n2 - 1
-    )
+    x_like = {"fx": np.ones(n1), "fy": np.ones(n2)}
+    sampler = stochtrace.sampler_normal(x_like, num=n1 + n2 - 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     received = estimate(matvec, key_est, A, B)

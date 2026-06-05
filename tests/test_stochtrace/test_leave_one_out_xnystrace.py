@@ -31,25 +31,21 @@ def test_xnystrace_kwargs_customizable():
     def qr_r_cholesky(X):
         return linalg.cholesky(X @ X.T.conj()).T.conj()
 
-    integrand = stochtrace.leave_one_out_xnystrace()
-    integrand_eigh = stochtrace.leave_one_out_xnystrace(nystrom=nystrom_eigh)
-    integrand_shifted_cholesky = stochtrace.leave_one_out_xnystrace(
-        nystrom=nystrom_shifted_cholesky
-    )
-    integrand_qr_r = stochtrace.leave_one_out_xnystrace(qr_r=qr_r)
-    integrand_qr_r_cholesky = stochtrace.leave_one_out_xnystrace(qr_r=qr_r_cholesky)
+    make_integrand = stochtrace.leave_one_out_xnystrace
+    integrand = make_integrand()
+    integrand_eigh = make_integrand(nystrom=nystrom_eigh)
+    integrand_shifted_cholesky = make_integrand(nystrom=nystrom_shifted_cholesky)
+    integrand_qr_r = make_integrand(qr_r=qr_r)
+    integrand_qr_r_cholesky = make_integrand(qr_r=qr_r_cholesky)
 
     sampler = stochtrace.sampler_normal(np.ones(n), num=num_samples)
 
-    est = stochtrace.estimator_leave_one_out(integrand, sampler)
-    est_eigh = stochtrace.estimator_leave_one_out(integrand_eigh, sampler)
-    est_shifted_cholesky = stochtrace.estimator_leave_one_out(
-        integrand_shifted_cholesky, sampler
-    )
-    est_qr_r = stochtrace.estimator_leave_one_out(integrand_qr_r, sampler)
-    est_qr_r_cholesky = stochtrace.estimator_leave_one_out(
-        integrand_qr_r_cholesky, sampler
-    )
+    make_estimator = stochtrace.estimator_leave_one_out
+    est = make_estimator(integrand, sampler)
+    est_eigh = make_estimator(integrand_eigh, sampler)
+    est_shifted_cholesky = make_estimator(integrand_shifted_cholesky, sampler)
+    est_qr_r = make_estimator(integrand_qr_r, sampler)
+    est_qr_r_cholesky = make_estimator(integrand_qr_r_cholesky, sampler)
 
     est_default = est(matvec, key, A)
     assert est_eigh(matvec, key, A) == est_default
@@ -60,7 +56,7 @@ def test_xnystrace_kwargs_customizable():
 
 @testing.parametrize("n", [10, 20])
 def test_xnystrace_error_num_samples_more_than_dimension(n):
-    """Assert that a ValueError is raised when the number of samples is greater than the dimension of the matrix."""
+    """Assert that num_samples greater than the dimension raises a ValueError."""
     key = prng.prng_key(1)
     A = np.eye(n)
 
@@ -71,17 +67,16 @@ def test_xnystrace_error_num_samples_more_than_dimension(n):
 
     sampler = stochtrace.sampler_normal(np.ones(n), num=n + 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-    with testing.raises(
-        ValueError,
-        match=f"Number of samples num={n + 1} exceeds the acceptable range. Expected: 1 <= num <= {n}.",
-    ):
+    message = f"Number of samples num={n + 1} exceeds the acceptable range."
+    message = f"{message} Expected: 1 <= num <= {n}."
+    with testing.raises(ValueError, match=message):
         estimate(matvec, key, A)
 
 
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
-    """Assert that the trace of a matrix with fast spectral decay is estimated accurately.
+    """Assert that a trace with fast spectral decay is estimated accurately.
 
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
@@ -117,7 +112,7 @@ def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
-    """Assert that the trace of a matrix with some large eigenvalues and the rest small is estimated accurately.
+    """Assert that a trace with a large spectral drop is estimated accurately.
 
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
@@ -128,7 +123,9 @@ def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
     key = prng.prng_key(4)
     key_mat, key = prng.split(key)
     U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    d = np.concatenate([np.ones(m, dtype=rdtype), np.ones(n - m, dtype=rdtype) * 1e-3])
+    large_eigenvalues = np.ones(m, dtype=rdtype)
+    small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
+    d = np.concatenate([large_eigenvalues, small_eigenvalues])
     expected = np.sum(d).astype(dtype)
 
     if apply_resphering:
@@ -158,7 +155,7 @@ def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
 def test_xnystrace_exact_when_num_samples_equals_dimension(
     n, nystrom, dtype_op, dtype_sample
 ):
-    """Assert that the method computes the trace exactly when the number of samples equals the dimension of the matrix."""
+    """Assert exact trace computation when num_samples equals the dimension."""
     key = prng.prng_key(1)
     A = prng.normal(key, shape=(n, n), dtype=dtype_op)
     A = A @ A.T.conj() + np.eye(n, dtype=dtype_op) * 1e-6
@@ -187,9 +184,8 @@ def test_xnystrace_pytrees_supported(nystrom):
         return {"fx": A @ v["fx"], "fy": B @ v["fy"]}
 
     integrand = stochtrace.leave_one_out_xnystrace(nystrom=nystrom)
-    sampler = stochtrace.sampler_normal(
-        {"fx": np.ones(n1), "fy": np.ones(n2)}, num=n1 + n2 - 1
-    )
+    x_like = {"fx": np.ones(n1), "fy": np.ones(n2)}
+    sampler = stochtrace.sampler_normal(x_like, num=n1 + n2 - 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     received = estimate(matvec, key_est, A, B)
