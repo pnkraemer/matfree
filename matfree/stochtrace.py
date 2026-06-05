@@ -364,17 +364,21 @@ def nystrom_shifted_cholesky(
             mu = shift
         Y_shifted = Y + mu * Omega
         H = Omega.T.conj() @ Y_shifted
+
+        # Compute left-square-root of inv(H)
         if symmetrize_input:
             H = (H + H.T.conj()) / 2
-        chol_upper = linalg.cholesky(H).T.conj()
-        nystrom_right = linalg.solve_triangular(chol_upper, Y_shifted.T.conj(), trans=2)
+        H_cholu = linalg.cholesky(H).T.conj()
+        Id = np.eye(H_cholu.shape[0], dtype=H_cholu.dtype)
+        H_inv_left_sqrt = linalg.solve_triangular(H_cholu, Id)
+
+        # Compute left-square-root of Nystrom approximation
+        nystrom_right = linalg.solve_triangular(H_cholu, Y_shifted.T.conj(), trans=2)
         nystrom_left = nystrom_right.T.conj()
 
-        Y_Hinv = linalg.solve_triangular(chol_upper, nystrom_right).T.conj()
-        Id = np.eye(chol_upper.shape[0], dtype=chol_upper.dtype)
-        chol_upper_inv = linalg.solve_triangular(chol_upper, Id)
-        norms = func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)
-        downdate = Y_Hinv / norms[None, :]
+        norms = func.vmap(linalg.vector_norm, in_axes=0)(H_inv_left_sqrt)
+        downdate = linalg.solve_triangular(H_cholu, nystrom_right).T.conj()
+        downdate = downdate / norms[None, :]
 
         return nystrom_left, downdate, mu
 
@@ -414,14 +418,18 @@ def nystrom_eigh(
         else:
             vals_rtol = eigenvalues_rtol
         H = Omega.T.conj() @ Y
+
+        # Compute left-square-root of pinv(H)
         eigh = linalg.eigh(H)
         vals = eigh.eigenvalues
         vecs = eigh.eigenvectors
         mask = vals >= vals_rtol * np.abs(vals[-1])
-        s = np.where(mask, vals ** (-0.5), 0.0)
+        inv_sqrt_vals = np.where(mask, vals ** (-0.5), 0.0)
         vecs = np.where(mask, vecs, 0.0)
-        H_left_sqrt = vecs * s
-        nystrom_left = Y @ H_left_sqrt
+        H_pinv_left_sqrt = vecs * inv_sqrt_vals
+
+        # Compute left-square-root of Nystrom approximation
+        nystrom_left = Y @ H_pinv_left_sqrt
 
         # Compute the leverage scores of each column
         leverage = np.sum(np.abs(vecs) ** 2, axis=1)
@@ -449,8 +457,8 @@ def nystrom_eigh(
         # z=d (F L[k, :]')/norm(L[k, :])
         # Albert A. (1969), Conditions for Positive and Nonnegative Definiteness in Terms of Pseudoinverses.
         # SIAM J. Appl. Math. 17(2), 434-440. doi:10.1137/0117041
-        norms = func.vmap(linalg.vector_norm, in_axes=0)(H_left_sqrt)
-        downdate = (nystrom_left @ H_left_sqrt.T.conj()) / norms
+        norms = func.vmap(linalg.vector_norm, in_axes=0)(H_pinv_left_sqrt)
+        downdate = (nystrom_left @ H_pinv_left_sqrt.T.conj()) / norms
         downdate = np.where(is_essential, downdate, 0.0)
 
         return nystrom_left, downdate, np.asarray(0.0).astype(vals.dtype)
