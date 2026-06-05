@@ -318,12 +318,12 @@ def _qr_leave_one_out_factor(R):
 
     Returns
     -------
-    S
+    downdate
         The downdate factor.
     """
-    S = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype), trans=2)
-    S_col_norms = func.vmap(linalg.vector_norm, in_axes=1)(S)
-    return S / S_col_norms
+    downdate = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype), trans=2)
+    col_norms = func.vmap(linalg.vector_norm, in_axes=1)(downdate)
+    return downdate / col_norms
 
 
 def nystrom_shifted_cholesky(
