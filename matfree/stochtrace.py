@@ -410,11 +410,11 @@ def nystrom_eigh(
     """
 
     def nystrom(matvec_flat, Omega):
-        k = Omega.shape[1]
+        num_samples = Omega.shape[1]
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
         # select rtol using same heuristic as jax.numpy.linalg.lstsq
         if eigenvalues_rtol is None:
-            vals_rtol = np.finfo_eps(Y.dtype) * k
+            vals_rtol = np.finfo_eps(Y.dtype) * num_samples
         else:
             vals_rtol = eigenvalues_rtol
         H = Omega.T.conj() @ Y
@@ -422,9 +422,9 @@ def nystrom_eigh(
         # Compute left-square-root of pinv(H)
         if symmetrize_input:
             H = _symmetrize(H)
-        eigh = linalg.eigh(H)
-        vals = eigh.eigenvalues
-        vecs = eigh.eigenvectors
+        H_eigh = linalg.eigh(H)
+        vals = H_eigh.eigenvalues
+        vecs = H_eigh.eigenvectors
         mask = vals >= vals_rtol * np.abs(vals[-1])
         inv_sqrt_vals = np.where(mask, vals ** (-0.5), 0.0)
         vecs = np.where(mask, vecs, 0.0)
