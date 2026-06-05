@@ -150,16 +150,20 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
             W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
             # Omega projected onto the subspace spanned by Q_i, i.e. Q formed leaving out Omega[:, i]
             X = W - S * W_vd_S.conj()
+            T_vd_X = func.vmap(linalg.vdot, in_axes=1)(T, X)
+            X_vd_HX = func.vmap(linalg.vdot, in_axes=1)(X, H @ X)
+            S_vd_R = func.vmap(linalg.vdot, in_axes=1)(S, R)
 
             if apply_resphering:
                 # residual is B - B_hat_{-i}, where B_hat_{-i} approximates B leaving out Omega[:, i]
                 rank_residual = n - num_samples + 1
                 # squared norm of each sample after projection to the subspace spanned by the residual
-                sqnorm_samples_projected = np.sum(linalg.abs2(Omega), axis=0) - np.sum(
-                    linalg.abs2(X), axis=0
-                )
+                sqnorm_Omega = np.sum(linalg.abs2(Omega), axis=0)
+                sqnorm_X = np.sum(linalg.abs2(X), axis=0)
+                sqnorm_samples_projected = sqnorm_Omega - sqnorm_X
+                has_zero_norm = sqnorm_samples_projected == 0.0
                 sqnorm_samples_projected = np.where(
-                    sqnorm_samples_projected == 0.0, 1.0, sqnorm_samples_projected
+                    has_zero_norm, 1.0, sqnorm_samples_projected
                 )
                 residual_scale = rank_residual / sqnorm_samples_projected
             else:
@@ -168,11 +172,8 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
             tr_B_hat = linalg.trace(H)
             # tr(B_hat) leaving out one sample
             tr_B_hat_loo = tr_B_hat - func.vmap(linalg.vdot, in_axes=1)(S, H @ S)
-            tr_residual_loo = (  # Hutchinson estimate of tr(B - B_hat_{-i}) using as probe samples[i, :]
-                -func.vmap(linalg.vdot, in_axes=1)(T, X)
-                + func.vmap(linalg.vdot, in_axes=1)(X, H @ X)
-                + W_vd_S * func.vmap(linalg.vdot, in_axes=1)(S, R)
-            )
+            # Hutchinson estimate of tr(B - B_hat_{-i}) using samples[i, :] as probes.
+            tr_residual_loo = -T_vd_X + X_vd_HX + S_vd_R * W_vd_S
             return tr_B_hat_loo + residual_scale * tr_residual_loo
 
         Y_rank = np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype))
@@ -268,9 +269,10 @@ def leave_one_out_xnystrace(
             # It's faster and more accurate to compute the trace exactly and deterministically
             # when num_samples == n
             B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
-            return (
-                np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(B_mat)
-            ).real
+            trace_samples = np.ones((num_samples,), dtype=B_mat.dtype) * linalg.trace(
+                B_mat
+            )
+            return trace_samples.real
 
         F, Z, shift = nystrom(matvec_flat, Omega)
 
@@ -320,7 +322,8 @@ def _qr_leave_one_out_factor(R):
         The downdate factor.
     """
     S = linalg.solve_triangular(R, np.eye(R.shape[0], dtype=R.dtype), trans=2)
-    return S / func.vmap(linalg.vector_norm, in_axes=-1)(S)
+    S_col_norms = func.vmap(linalg.vector_norm, in_axes=1)(S)
+    return S / S_col_norms
 
 
 def nystrom_shifted_cholesky(
@@ -364,11 +367,10 @@ def nystrom_shifted_cholesky(
         if symmetrize_input:
             H = (H + H.T.conj()) / 2
         chol_upper = linalg.cholesky(H).T.conj()
-        nystrom_left = linalg.solve_triangular(
-            chol_upper, Y_shifted.T.conj(), trans=2
-        ).T.conj()
+        nystrom_right = linalg.solve_triangular(chol_upper, Y_shifted.T.conj(), trans=2)
+        nystrom_left = nystrom_right.T.conj()
 
-        Y_Hinv = linalg.solve_triangular(chol_upper, nystrom_left.T.conj()).T.conj()
+        Y_Hinv = linalg.solve_triangular(chol_upper, nystrom_right).T.conj()
         Id = np.eye(chol_upper.shape[0], dtype=chol_upper.dtype)
         chol_upper_inv = linalg.solve_triangular(chol_upper, Id)
         norms = func.vmap(linalg.vector_norm, in_axes=0)(chol_upper_inv)
@@ -407,9 +409,10 @@ def nystrom_eigh(
         k = Omega.shape[1]
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
         # select rtol using same heuristic as jax.numpy.linalg.lstsq
-        vals_rtol = (
-            np.finfo_eps(Y.dtype) * k if eigenvalues_rtol is None else eigenvalues_rtol
-        )
+        if eigenvalues_rtol is None:
+            vals_rtol = np.finfo_eps(Y.dtype) * k
+        else:
+            vals_rtol = eigenvalues_rtol
         H = Omega.T.conj() @ Y
         eigh = linalg.eigh(H)
         vals = eigh.eigenvalues
@@ -422,11 +425,10 @@ def nystrom_eigh(
 
         # Compute the leverage scores of each column
         leverage = np.sum(np.abs(vecs) ** 2, axis=1)
-        _leverage_rtol = (
-            np.sqrt(np.finfo_eps(leverage.dtype))
-            if leverage_rtol is None
-            else leverage_rtol
-        )
+        if leverage_rtol is None:
+            _leverage_rtol = np.sqrt(np.finfo_eps(leverage.dtype))
+        else:
+            _leverage_rtol = leverage_rtol
         is_essential = leverage + _leverage_rtol > 1.0
 
         # Compute the downdate matrix Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
