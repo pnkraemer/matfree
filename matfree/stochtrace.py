@@ -441,24 +441,15 @@ def nystrom_eigh(
             _leverage_rtol = leverage_rtol
         is_essential = leverage + _leverage_rtol > 1.0
 
-        # Compute the downdate matrix Z s.t. B_hat_{-i} = B_hat - np.outer(Z[:, i], Z[:, i].conj())
-        # A brief sketch of the proof:
-        # Let P be a permutation matrix. Then pinv(P H P') = P pinv(H) P'.
-        # Thus, WLOG let i=k and Hk be H without row/column k.
-        # If column k of Y is non-essential (i.e. rank(H)=rank(Hk)), then B_hat_{-k}=B_hat
-        # so the downdate is Z[:, k]=0.
-        # If column k of Y is essential (i.e. rank(H)=rank(Hk)+1), then if we partition H as
-        # H=[Hk h; h' c], then its pseudoinverse is (Theorem 3; Albert, 1969)
-        # pinv(H) = [pinv(Hk) 0; 0 0] + avv',
-        # where v=pinv(H)[:, k] and a=c-h'pinv(H)h=1/pinv(H)[k,k] is the generalized Schur complement
-        # Then B_hat=Y pinv(H) Y' = Y_{-k} pinv(Hk) Y_{-k}' + a (Yv) (Yv)'
-        #                         = B_hat_{-k} + a (Yv) (Yv)'
-        # Let d=1 if column k is essential and 0 otherwise. Then
-        # B_hat_{-k} = B_hat - zz' where z=d Y pinv(H)[:, k]/sqrt(pinv(H)[k,k])
-        # If F and L are left-square root factors of B_hat and pinv(H), respectively, then
-        # z=d (F L[k, :]')/norm(L[k, :])
-        # Albert A. (1969), Conditions for Positive and Nonnegative Definiteness in Terms of Pseudoinverses.
-        # SIAM J. Appl. Math. 17(2), 434-440. doi:10.1137/0117041
+        # Compute downdate Z s.t. B_hat_{-i} = B_hat - outer(Z[:, i], Z[:, i].conj()).
+        # Since pinv(P H P') = P pinv(H) P', WLOG take i=k with Hk = H without row/col k.
+        # Non-essential k, rank(Hk) = rank(H): B_hat_{-k} = B_hat, so Z[:, k] = 0.
+        # Essential k, rank(Hk) = rank(H) - 1: by Albert (1969) Thm. 3,
+        #   pinv(H) = [pinv(Hk) 0; 0 0] + a v v'  (v = pinv(H)[:, k], a = 1/pinv(H)[k, k]).
+        # So B_hat = Y_{-k} pinv(Hk) Y_{-k}' + a (Yv)(Yv)' = B_hat_{-k} + a (Yv)(Yv)',
+        # giving Z[:, k] = sqrt(a) Yv = F L[k, :]' / norm(L[k, :])
+        # (F, L are left-sqrt factors of B_hat and pinv(H)).
+        # Albert (1969). SIAM J. Appl. Math. 17(2), 434-440. doi:10.1137/0117041
         norms = func.vmap(linalg.vector_norm, in_axes=0)(H_pinv_left_sqrt)
         downdate = (nystrom_left @ H_pinv_left_sqrt.T.conj()) / norms
         downdate = np.where(is_essential, downdate, 0.0)
