@@ -91,7 +91,7 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     integrand
         An integrand function compatible with `estimator_leave_one_out` whose input
         has the signature ``(matvec, samples, *params)`` and whose output is a vector
-        of trace estimates with shape ``(samples.shape[0],)``.
+        of trace estimates with one estimate per sample.
 
     Notes
     -----
@@ -199,18 +199,14 @@ def leave_one_out_xnystrace(
     Parameters
     ----------
     nystrom
-        An implementation of the Nystrom approximation with arguments:
-        - `matvec_flat`: A flattened version of the matvec.
-        - `Omega`: A matrix of shape ``(n, num_samples)`` containing the test vectors.
-        and returns:
-        - `nystrom_left`: A left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
-            such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator.
-        - `downdate`: A matrix of shape ``(n, num_samples)`` whose columns are downdate vectors for the Nystrom approximation.
-            Specifically, `nystrom_left @ nystrom_left.T.conj() - np.outer(downdate[:, i], downdate[:, i].conj())` approximates the
-            operator leaving out the `i`-th column of `Omega`.
-        - `shift`: The shift used (for shifted Nystrom approximations).
-        Usually `nystrom` is the return value of `nystrom_shifted_cholesky` or `nystrom_eigh`.
-        If not provided, `nystrom_eigh` is used.
+        A callable with signature ``(matvec_flat, Omega) -> (nystrom_left, downdate, shift)``,
+        where ``Omega`` has shape ``(n, num_samples)``, ``nystrom_left`` and ``downdate``
+        have shape ``(n, num_samples)``, and ``shift`` is a scalar.
+        ``nystrom_left @ nystrom_left.T.conj()`` approximates the operator (shifted by ``shift * I``),
+        and subtracting ``outer(downdate[:, i], downdate[:, i].conj())``
+        approximates it leaving out the ``i``-th column of ``Omega``.
+        Usually the return value of [`nystrom_shifted_cholesky`][matfree.stochtrace.nystrom_shifted_cholesky]
+        or [`nystrom_eigh`][matfree.stochtrace.nystrom_eigh] (default: `nystrom_eigh`).
     apply_resphering
         If ``True`` (default), project test vectors onto the range of the
         residual matrix, reducing the variance of the trace estimate.
@@ -329,7 +325,7 @@ def _qr_leave_one_out_factor(R):
 def nystrom_shifted_cholesky(
     shift: float | None = None, rtol: float | None = None, symmetrize_input: bool = True
 ):
-    """Construct a Nystrom of a shifted operator using a Cholesky decomposition.
+    """Construct a Nystrom approximation of a shifted operator using a Cholesky decomposition.
 
     Parameters
     ----------
@@ -390,7 +386,7 @@ def nystrom_eigh(
     leverage_rtol: float | None = None,
     symmetrize_input: bool = True,
 ):
-    """Compute the Nystrom approximation of a operator using a Hermitian eigendecomposition.
+    """Construct a Nystrom approximation of an operator using a Hermitian eigendecomposition.
 
     Parameters
     ----------
@@ -405,7 +401,7 @@ def nystrom_eigh(
     Returns
     -------
     nystrom
-        A function that computes the Nystrom approximation of a operator using a Hermitian eigendecomposition.
+        A function that computes the Nystrom approximation of an operator using a Hermitian eigendecomposition.
         The function has the signature `(matvec_flat, Omega) -> (nystrom_left, downdate, shift)`,
         where `nystrom_left` is a left factor of the Nystrom approximation matrix of shape ``(n, num_samples)``,
         such that `nystrom_left @ nystrom_left.T.conj()` approximates the operator,
