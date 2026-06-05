@@ -4,6 +4,27 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
+@testing.parametrize("dtype", [float, complex])
+@testing.parametrize("n, num_samples", [(10, 4), (15, 6)])
+def test_qr_leave_one_out_factor_downdate_identity(n, num_samples, dtype):
+    """Assert Q_i Q_i^H = Q (I - s_i s_i^H) Q^H for each i."""
+    key = prng.prng_key(10)
+    Y = prng.normal(key, shape=(n, num_samples), dtype=dtype)
+    Q, R = linalg.qr_reduced(Y)
+    S = stochtrace._qr_leave_one_out_factor(R)
+
+    for i in range(num_samples):
+        Y_i = np.concatenate([Y.T[:i], Y.T[i + 1 :]]).T
+        Q_i, _ = linalg.qr_reduced(Y_i)
+
+        s_i = S[:, i]
+        Id = np.eye(num_samples, dtype=dtype)
+        P_i_downdate = Q @ (Id - linalg.outer(s_i, s_i.conj())) @ Q.T.conj()
+        P_i_direct = Q_i @ Q_i.T.conj()
+
+        test_util.assert_allclose(P_i_downdate, P_i_direct)
+
+
 @testing.parametrize("n", [10, 20])
 def test_xtrace_error_num_samples_more_than_dimension(n):
     """Assert that num_samples greater than the dimension raises a ValueError."""
