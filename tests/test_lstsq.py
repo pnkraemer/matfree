@@ -109,9 +109,9 @@ def test_value_and_grad_matches_linalg_solve_with_damping(
         return sol_arr
 
     received, received_vjp = func.vjp(lstsq_matfree, [(rhs,)], [matrix], damp)
-    drhs_pytree, [dmatrix2], ddmp2 = received_vjp(
-        dsol
-    )  # mind the order of rhs & matrix
+
+    # mind the order of rhs & matrix
+    drhs_pytree, [dmatrix2], ddmp2 = received_vjp(dsol)
     [(drhs2,)] = drhs_pytree
 
     test_util.assert_allclose(received, expected)

@@ -22,7 +22,7 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     [(Q,)] = Q_pytree
 
     # Reconstruct the original matrix from the full-num_matvecs approximation
-    # Q shape is (k, n) — rows are Krylov vectors
+    # Q shape is (k, n) -- rows are Krylov vectors
     matrix_reconstructed = Q.T @ T @ Q
 
     if reortho == "full":

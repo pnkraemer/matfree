@@ -23,7 +23,7 @@ def test_decomposition_is_satisfied(nrows, num_matvecs, reortho, dtype):
     [(Q,)] = Q_pytree  # Q shape (num_matvecs, nrows)
     [(r,)] = r_pytree  # r shape (nrows,)
 
-    # Assert shapes — Q is (k, n) after convention change
+    # Assert shapes -- Q is (k, n) after convention change
     assert Q.shape == (num_matvecs, nrows)
     assert H.shape == (num_matvecs, num_matvecs)
     assert r.shape == (nrows,)

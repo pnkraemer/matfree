@@ -25,7 +25,7 @@ num_samples = 10_000
 #
 # Use `estimator_monte_carlo_mean_and_std` to get both the estimate and its
 # standard error in one call. The standard error equals
-# std(samples) / sqrt(num_samples) and serves directly as an error bar —
+# std(samples) / sqrt(num_samples) and serves directly as an error bar --
 # no need to track the sample count separately.
 
 signs = stochtrace.sampler_signs(x_like, num=num_samples)

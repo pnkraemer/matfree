@@ -115,7 +115,7 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
-    and therefore applies only to real symmetric matrices.
+    and therefore applies only to symmetric/Hermitian matrices.
     Supports complex-valued matrices if the tridiagonalisation does.
 
     Parameters
@@ -151,7 +151,7 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via the Arnoldi iteration.
 
     This algorithm uses the Arnoldi iteration
-    and therefore applies only to real square matrices.
+    and therefore applies only to square matrices.
     Supports complex-valued matrices if the Hessenberg factorisation does.
 
     Parameters
@@ -246,8 +246,8 @@ def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
 def monte_carlo_funm_product_logdet(bidiag: Callable, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
-    Here, "product" refers to $X = A^\top A$ for a real matrix $A$.
-    Works for arbitrary real rectangular matrices.
+    Here, "product" refers to $X = A^\top A$ for a  matrix $A$.
+    Works for arbitrary rectangular matrices.
     Supports complex-valued matrices if the bidiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
@@ -258,7 +258,7 @@ def monte_carlo_funm_product_logdet(bidiag: Callable, /):
 def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm.
 
-    Works for arbitrary real rectangular matrices.
+    Works for arbitrary rectangular matrices.
     Supports complex-valued matrices if the bidiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
@@ -276,7 +276,7 @@ def monte_carlo_funm_product(dense_funm, bidiag, /):
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
-    Here, "product" refers to $X = A^\top A$ for a real matrix $A$.
+    Here, "product" refers to $X = A^\top A$ for a rectangular matrix $A$.
     Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """

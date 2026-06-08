@@ -31,8 +31,8 @@ def test_bidiag_decomposition_is_satisfied(
 
     algorithm = decomp.bidiag(num_matvecs, materialize=True)
     (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, (v0,))
-    [(U,)] = U_pytree  # U shape (k, nrows) — rows are left Krylov vectors
-    (V,) = V_pytree  # V shape (k, ncols) — rows are right Krylov vectors
+    [(U,)] = U_pytree  # U shape (k, nrows) -- rows are left Krylov vectors
+    (V,) = V_pytree  # V shape (k, ncols) -- rows are right Krylov vectors
     (res,) = res_pytree  # res shape (ncols,)
 
     test_util.assert_columns_orthonormal(U.T)
