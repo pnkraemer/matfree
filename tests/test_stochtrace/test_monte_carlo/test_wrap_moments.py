@@ -23,12 +23,12 @@ def test_yields_correct_tree_structure(seed, dtype):
     _, jvp = func.linearize(fun, args_like)
 
     # Estimate the matrix function
-    problem = stochtrace.monte_carlo_diagonal()
-    problem = stochtrace.monte_carlo_wrap_moments(
-        problem, moments={"moment_1st": 1, "moment_2nd": 2}
+    integrand = stochtrace.monte_carlo_diagonal()
+    integrand = stochtrace.monte_carlo_wrap_moments(
+        integrand, moments={"moment_1st": 1, "moment_2nd": 2}
     )
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
-    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
     key, subkey = prng.split(key, num=2)
     received = estimate(jvp, subkey)
 
@@ -66,10 +66,10 @@ def test_yields_correct_variance_normal(J_and_jvp, key):
     """Assert that the estimated trace approximates the true trace accurately."""
     # Estimate the trace
     J, jvp, args_like = J_and_jvp
-    problem = stochtrace.monte_carlo_trace()
-    problem = stochtrace.monte_carlo_wrap_moments(problem, moments=[1, 2])
+    integrand = stochtrace.monte_carlo_trace()
+    integrand = stochtrace.monte_carlo_wrap_moments(integrand, moments=[1, 2])
     sampler = stochtrace.sampler_normal(args_like, num=1_000_000)
-    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
     first, second = estimate(jvp, key)
 
     # Assert the trace is correct
@@ -86,10 +86,10 @@ def test_yields_correct_variance_signs(J_and_jvp, key):
     # Estimate the trace
     J, jvp, args_like = J_and_jvp
 
-    problem = stochtrace.monte_carlo_trace()
-    problem = stochtrace.monte_carlo_wrap_moments(problem, moments=[1, 2])
+    integrand = stochtrace.monte_carlo_trace()
+    integrand = stochtrace.monte_carlo_wrap_moments(integrand, moments=[1, 2])
     sampler = stochtrace.sampler_signs(args_like, num=5000)
-    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
     first, second = estimate(jvp, key)
 
     # Assert the trace is correct

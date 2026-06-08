@@ -26,9 +26,9 @@ def test_frobeniusnorm_squared(seed, dtype):
     expected = linalg.trace(J.T.conj() @ J)
 
     # Estimate the matrix function
-    problem = stochtrace.monte_carlo_frobeniusnorm_squared()
+    integrand = stochtrace.monte_carlo_frobeniusnorm_squared()
     sampler = stochtrace.sampler_signs(args_like, num=100_000)
-    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
     received = estimate(jvp, key)
 
     assert np.allclose(expected, received, rtol=0.01)

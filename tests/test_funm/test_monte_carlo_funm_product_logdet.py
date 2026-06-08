@@ -29,8 +29,8 @@ def test_logdet_product(nrows, ncols, num_significant_singular_vals, num_matvecs
     fun = stochtrace.sampler_signs(x_like, num=400)
 
     bidiag = decomp.bidiag(num_matvecs)
-    problem = funm.monte_carlo_funm_product_logdet(bidiag)
-    estimate = stochtrace.estimator_monte_carlo(problem, fun)
+    integrand = funm.monte_carlo_funm_product_logdet(bidiag)
+    estimate = stochtrace.estimator_monte_carlo(integrand, fun)
     received = estimate(matvec, key)
 
     expected = linalg.slogdet(A.T @ A)[1]
