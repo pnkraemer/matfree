@@ -48,6 +48,7 @@ def funm_chebyshev(matfun: Callable, num_matvecs: int, matvec: Callable, /) -> C
     is contained in the interval (-1, 1)**, and that the **matrix-function
     is analytic on this interval**. If this is not the case,
     transform the matrix-vector product and the matrix-function accordingly.
+    Does not support complex-valued matrices.
     """
     nodes = _chebyshev_nodes(num_matvecs)
     fx_nodes = matfun(nodes)
@@ -114,7 +115,8 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
-    and therefore applies only to symmetric matrices.
+    and therefore applies only to real symmetric matrices.
+    Supports complex-valued matrices if the tridiagonalisation does.
 
     Parameters
     ----------
@@ -149,7 +151,8 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via the Arnoldi iteration.
 
     This algorithm uses the Arnoldi iteration
-    and therefore applies only to all square matrices.
+    and therefore applies only to real square matrices.
+    Supports complex-valued matrices if the Hessenberg factorisation does.
 
     Parameters
     ----------
@@ -183,7 +186,8 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
 def monte_carlo_funm_sym_logdet(tridiag_sym: Callable, /):
     """Construct the integrand for the log-determinant.
 
-    This function assumes a symmetric, positive definite matrix.
+    This function assumes a symmetric positive definite matrix.
+    Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
@@ -202,6 +206,7 @@ def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
+    Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
@@ -241,7 +246,9 @@ def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
 def monte_carlo_funm_product_logdet(bidiag: Callable, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
-    Here, "product" refers to $X = A^\top A$.
+    Here, "product" refers to $X = A^\top A$ for a real matrix $A$.
+    Works for arbitrary real rectangular matrices.
+    Supports complex-valued matrices if the bidiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
     dense_funm = dense_funm_product_svd(np.log)
@@ -251,6 +258,8 @@ def monte_carlo_funm_product_logdet(bidiag: Callable, /):
 def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm.
 
+    Works for arbitrary real rectangular matrices.
+    Supports complex-valued matrices if the bidiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
 
@@ -262,12 +271,13 @@ def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
     return monte_carlo_funm_product(dense_funm, bidiag)
 
 
-def monte_carlo_funm_product(dense_funm, algorithm, /):
+def monte_carlo_funm_product(dense_funm, bidiag, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
-    Here, "product" refers to $X = A^\top A$.
+    Here, "product" refers to $X = A^\top A$ for a real matrix $A$.
+    Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
 
@@ -283,7 +293,7 @@ def monte_carlo_funm_product(dense_funm, algorithm, /):
             return flat
 
         # Decompose into orthogonal-bidiag-orthogonal
-        _, B, *_ = algorithm(matvec_flat, v0_flat, *parameters)
+        _, B, *_ = bidiag(matvec_flat, v0_flat, *parameters)
 
         # Evaluate matfun
         fA = dense_funm(B)
@@ -312,6 +322,7 @@ def dense_funm_product_svd(matfun):
 def dense_funm_sym_eigh(matfun):
     """Implement dense matrix-functions via symmetric eigendecompositions.
 
+    The input dense matrix must be symmetric (real) or Hermitian (complex).
     Use it to construct one of the matrix-free matrix-function implementations,
     e.g. [matfree.funm.funm_lanczos_sym][matfree.funm.funm_lanczos_sym].
     """

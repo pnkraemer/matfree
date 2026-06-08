@@ -37,8 +37,10 @@ def tridiag_sym(
 ):
     r"""Construct an implementation of **tridiagonalisation**.
 
-    Decompose a **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
+    Decompose a real **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
+    Does not support complex-valued matrices right now.
+
     The present implementation allocates all Lanczos vectors before running the
     algorithm. If `reortho` is set to `"full"`, it also uses full reorthogonalisation.
     It is usually a good idea to use full reorthogonalisation.
@@ -361,7 +363,8 @@ def hessenberg(
     Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
     It tends to be a good idea to use full reorthogonalisation.
 
-    This algorithm works for **arbitrary matrices**.
+    This algorithm works for **arbitrary square matrices**.
+    Does not support complex-valued matrices right now.
 
     Setting `custom_vjp` to `True` implies using efficient, numerically stable
     gradients of the Arnoldi iteration according to what has been proposed by
@@ -619,7 +622,8 @@ def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full")
 
     Uses pre-allocation and full reorthogonalisation.
 
-    Works for **arbitrary matrices**. No symmetry required.
+    Works for **arbitrary real matrices** (rectangular, no symmetry required).
+    Does not support complex-valued matrices right now.
 
     Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.

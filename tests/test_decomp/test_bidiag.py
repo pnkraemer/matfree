@@ -26,14 +26,14 @@ def test_bidiag_decomposition_is_satisfied(
     v0 = prng.normal(key, shape=(ncols,))
 
     def Av(v):
-        [(x,)] = v
-        return [(A @ x,)]
+        (x,) = v  # tuple input (right-space)
+        return [(A @ x,)]  # list-of-tuple output (left-space)
 
     algorithm = decomp.bidiag(num_matvecs, materialize=True)
-    (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, [(v0,)])
+    (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, (v0,))
     [(U,)] = U_pytree  # U shape (k, nrows) — rows are left Krylov vectors
-    [(V,)] = V_pytree  # V shape (k, ncols) — rows are right Krylov vectors
-    [(res,)] = res_pytree  # res shape (ncols,)
+    (V,) = V_pytree  # V shape (k, ncols) — rows are right Krylov vectors
+    (res,) = res_pytree  # res shape (ncols,)
 
     test_util.assert_columns_orthonormal(U.T)
     test_util.assert_columns_orthonormal(V.T)
@@ -56,14 +56,14 @@ def test_bidiag_decomposition_is_satisfied_hilbert(nrows, ncols, num_matvecs):
     v0 = prng.normal(key, shape=(ncols,))
 
     def Av(v):
-        [(x,)] = v
-        return [(A @ x,)]
+        (x,) = v  # tuple input (right-space)
+        return [(A @ x,)]  # list-of-tuple output (left-space)
 
     algorithm = decomp.bidiag(num_matvecs, materialize=True, reortho="full")
-    (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, [(v0,)])
+    (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, (v0,))
     [(U,)] = U_pytree  # U shape (k, nrows)
-    [(V,)] = V_pytree  # V shape (k, ncols)
-    [(res,)] = res_pytree  # res shape (ncols,)
+    (V,) = V_pytree  # V shape (k, ncols)
+    (res,) = res_pytree  # res shape (ncols,)
 
     test_util.assert_columns_orthonormal(U.T)
     test_util.assert_columns_orthonormal(V.T)

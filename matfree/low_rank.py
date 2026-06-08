@@ -54,7 +54,13 @@ def preconditioner(cholesky: Callable, /) -> Callable:
 
 
 def cholesky_partial(mat_el: Callable, /, *, nrows: int, rank: int) -> Callable:
-    """Compute a partial Cholesky factorisation."""
+    """Compute a partial Cholesky factorisation.
+
+    The function `mat_el(i, j, *params)` must return elements of a
+    **positive definite** matrix. No pivoting is performed, so the algorithm
+    may fail silently on rank-deficient matrices; use
+    [cholesky_partial_pivot][matfree.low_rank.cholesky_partial_pivot] instead.
+    """
 
     def cholesky(*params):
         if rank > nrows:
@@ -95,7 +101,13 @@ def _cholesky_partial_body(fn: Callable, n: int, *args):
 
 
 def cholesky_partial_pivot(mat_el: Callable, /, *, nrows: int, rank: int) -> Callable:
-    """Compute a partial Cholesky factorisation with pivoting."""
+    """Compute a partial Cholesky factorisation with pivoting.
+
+    The function `mat_el(i, j, *params)` must return elements of a
+    **positive semi-definite** matrix. Pivoting improves numerical stability
+    for low-rank or near-degenerate matrices; the `"success"` flag in the
+    returned info dict indicates whether all diagonal factors were positive.
+    """
 
     def cholesky(*params):
         if rank > nrows:
