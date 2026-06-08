@@ -1,4 +1,4 @@
-"""Test estimator_leave_one_out_mean_and_std."""
+"""Test estimator_leave_one_out_mean_and_sem."""
 
 import jax.numpy as jnp
 
@@ -21,16 +21,16 @@ def test_mean_matches_estimator_leave_one_out(seed):
 
     estimate_plain = stochtrace.estimator_leave_one_out(integrand, sampler=sampler)
     mean_only = estimate_plain(matvec, key)
-    estimate = stochtrace.estimator_leave_one_out_mean_and_std(
+    estimate = stochtrace.estimator_leave_one_out_mean_and_sem(
         integrand, sampler=sampler
     )
-    mean, _std = estimate(matvec, key)
+    mean, _sem = estimate(matvec, key)
     assert np.allclose(mean, mean_only)
 
 
 @testing.parametrize("seed", [1, 2, 3])
-def test_std_error_is_nonnegative(seed):
-    """Assert that std_error is non-negative."""
+def test_sem_error_is_nonnegative(seed):
+    """Assert that sem is non-negative."""
     A = jnp.reshape(jnp.arange(25.0), (5, 5)) / 25 + jnp.eye(5)
 
     def matvec(x):
@@ -41,8 +41,8 @@ def test_std_error_is_nonnegative(seed):
     sampler = stochtrace.sampler_normal(x_like, num=5)
     integrand = stochtrace.leave_one_out_xtrace()
 
-    estimate = stochtrace.estimator_leave_one_out_mean_and_std(
+    estimate = stochtrace.estimator_leave_one_out_mean_and_sem(
         integrand, sampler=sampler
     )
-    _mean, std_error = estimate(matvec, key)
-    assert std_error >= 0.0
+    _mean, sem = estimate(matvec, key)
+    assert sem >= 0.0
