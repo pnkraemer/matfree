@@ -147,6 +147,10 @@ def nanmean(x, /, axis=None):
     return jnp.nanmean(x, axis)
 
 
+def array_max(x, /, axis=None):
+    return jnp.max(x, axis=axis)
+
+
 def elementwise_max(a, b, /):
     return jnp.maximum(a, b)
 
