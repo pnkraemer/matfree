@@ -23,22 +23,22 @@ def test_trace_and_diagonal(seed, dtype):
     _, jvp = func.linearize(fun, args_like)
 
     # Estimate the trace and diagonal jointly
-    problem = stochtrace.integrand_trace_and_diagonal()
+    problem = stochtrace.monte_carlo_trace_and_diagonal()
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
-    estimate = stochtrace.estimator(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
     key, subkey = prng.split(key, num=2)
     received = estimate(jvp, subkey)
 
     # Estimate the trace
-    problem = stochtrace.integrand_trace()
+    problem = stochtrace.monte_carlo_trace()
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
-    estimate = stochtrace.estimator(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
     expected_trace = estimate(jvp, subkey)
 
     # Estimate the diagonal
-    problem = stochtrace.integrand_diagonal()
+    problem = stochtrace.monte_carlo_diagonal()
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
-    estimate = stochtrace.estimator(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(problem, sampler=sampler)
     expected_diagonal = estimate(jvp, subkey)
 
     expected = {"trace": expected_trace, "diagonal": expected_diagonal}

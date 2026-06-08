@@ -29,8 +29,8 @@ def test_logdet_product(nrows, ncols, num_significant_singular_vals, num_matvecs
     fun = stochtrace.sampler_signs(x_like, num=400)
 
     bidiag = decomp.bidiag(num_matvecs)
-    problem = funm.integrand_funm_product_logdet(bidiag)
-    estimate = stochtrace.estimator(problem, fun)
+    problem = funm.monte_carlo_funm_product_logdet(bidiag)
+    estimate = stochtrace.estimator_monte_carlo(problem, fun)
     received = estimate(matvec, key)
 
     expected = linalg.slogdet(A.T @ A)[1]
@@ -52,7 +52,7 @@ def test_logdet_product_exact_for_full_num_matvecs_lanczos(n):
     # Set up max-num_matvecs Lanczos approximation inside SLQ for the matrix-logarithm
     num_matvecs = n - 1
     bidiag = decomp.bidiag(num_matvecs)
-    integrand = funm.integrand_funm_product_logdet(bidiag)
+    integrand = funm.monte_carlo_funm_product_logdet(bidiag)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 1

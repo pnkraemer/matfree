@@ -64,9 +64,9 @@ def divergence_matfree(vf, /, *, num):
 
     def divergence(k, x):
         _fx, jvp = jax.linearize(vf, x)
-        integrand_laplacian = stochtrace.integrand_trace()
+        integrand_laplacian = stochtrace.monte_carlo_trace()
         signs = stochtrace.sampler_signs(x, num=num)
-        estimator = stochtrace.estimator(integrand_laplacian, sampler=signs)
+        estimator = stochtrace.estimator_monte_carlo(integrand_laplacian, sampler=signs)
         return estimator(jvp, k)
 
     return divergence

@@ -24,8 +24,8 @@ sample_fun = stochtrace.sampler_signs(x_like, num=10_000)
 # First, compute the diagonal.
 
 
-problem = stochtrace.integrand_diagonal()
-estimate = stochtrace.estimator(problem, sample_fun)
+problem = stochtrace.monte_carlo_diagonal()
+estimate = stochtrace.estimator_monte_carlo(problem, sample_fun)
 diagonal_ctrl = estimate(lambda v: A @ v, jax.random.PRNGKey(1))
 
 
@@ -38,16 +38,16 @@ def matvec_ctrl(v):
     return A @ v - diagonal_ctrl * v
 
 
-problem = stochtrace.integrand_trace_and_diagonal()
-estimate = stochtrace.estimator(problem, sample_fun)
+problem = stochtrace.monte_carlo_trace_and_diagonal()
+estimate = stochtrace.estimator_monte_carlo(problem, sample_fun)
 trace_and_diagonal = estimate(matvec_ctrl, jax.random.PRNGKey(2))
 trace, diagonal = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 
 
 # We can, of course, compute it without a control variate as well.
 
-problem = stochtrace.integrand_trace_and_diagonal()
-estimate = stochtrace.estimator(problem, sample_fun)
+problem = stochtrace.monte_carlo_trace_and_diagonal()
+estimate = stochtrace.estimator_monte_carlo(problem, sample_fun)
 trace_and_diagonal = estimate(lambda v: A @ v, jax.random.PRNGKey(2))
 trace_ref, diagonal_ref = trace_and_diagonal["trace"], trace_and_diagonal["diagonal"]
 

@@ -4,14 +4,14 @@ from matfree.backend import control_flow, func, linalg, np, prng, tree
 from matfree.backend.typing import Array, Callable
 
 
-def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
+def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable:
     """Construct a stochastic trace-/diagonal-estimator.
 
     Parameters
     ----------
     integrand
         The integrand function. For example, the return-value of
-        [integrand_trace][matfree.stochtrace.integrand_trace].
+        [monte_carlo_trace][matfree.stochtrace.monte_carlo_trace].
         But any other integrand works, too.
     sampler
         The sample function. See below for recommendations.
@@ -464,7 +464,7 @@ def _symmetrize(x):
     return (x + x.T.conj()) / 2
 
 
-def integrand_diagonal():
+def monte_carlo_diagonal():
     """Construct the integrand for estimating the diagonal.
 
     When plugged into the Monte-Carlo estimator,
@@ -485,7 +485,7 @@ def integrand_diagonal():
     return integrand
 
 
-def integrand_trace():
+def monte_carlo_trace():
     """Construct the integrand for estimating the trace."""
 
     def integrand(matvec, v, *parameters):
@@ -497,7 +497,7 @@ def integrand_trace():
     return integrand
 
 
-def integrand_trace_and_diagonal():
+def monte_carlo_trace_and_diagonal():
     """Construct the integrand for estimating the trace and diagonal jointly."""
 
     def integrand(matvec, v, *parameters):
@@ -511,7 +511,7 @@ def integrand_trace_and_diagonal():
     return integrand
 
 
-def integrand_frobeniusnorm_squared():
+def monte_carlo_frobeniusnorm_squared():
     """Construct the integrand for estimating the squared Frobenius norm."""
 
     def integrand(matvec, vec, *parameters):
@@ -522,7 +522,7 @@ def integrand_frobeniusnorm_squared():
     return integrand
 
 
-def integrand_wrap_moments(integrand, /, moments):
+def monte_carlo_wrap_moments(integrand, /, moments):
     """Wrap an integrand into another integrand that computes moments.
 
     Parameters

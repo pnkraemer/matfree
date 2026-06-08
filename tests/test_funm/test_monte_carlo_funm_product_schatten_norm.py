@@ -31,8 +31,8 @@ def test_schatten_norm(
     args_like = np.ones((ncols,), dtype=float)
     sampler = stochtrace.sampler_signs(args_like, num=5_000)
     bidiag = decomp.bidiag(num_matvecs)
-    integrand = funm.integrand_funm_product_schatten_norm(power, bidiag)
-    estimate = stochtrace.estimator(integrand, sampler)
+    integrand = funm.monte_carlo_funm_product_schatten_norm(power, bidiag)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler)
 
     key = prng.prng_key(seed)
     received = estimate(lambda v: A @ v, key)

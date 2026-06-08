@@ -54,9 +54,9 @@ def make_matvec(alpha):
 matvec = make_matvec(alpha=0.1)
 num_matvecs = 3
 tridiag_sym = decomp.tridiag_sym(num_matvecs)
-integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
+integrand = funm.monte_carlo_funm_sym_logdet(tridiag_sym)
 sample_fun = stochtrace.sampler_signs(f0, num=10)
-estimator = stochtrace.estimator(integrand, sampler=sample_fun)
+estimator = stochtrace.estimator_monte_carlo(integrand, sampler=sample_fun)
 key = jax.random.PRNGKey(1)
 logdet = estimator(matvec, key)
 print(logdet)
