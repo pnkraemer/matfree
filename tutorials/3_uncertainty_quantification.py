@@ -1,7 +1,8 @@
 """Implement uncertainty quantification for trace estimation.
 
-Computing higher moments of trace-estimates can easily
-be turned into uncertainty quantification.
+The standard error returned by the mean-and-std estimator
+directly gives an error bar on the estimate without any
+manual bookkeeping of sample counts.
 """
 
 import jax
@@ -20,32 +21,25 @@ def matvec(x):
 x_like = jnp.ones((6,))
 num_samples = 10_000
 
-# ## Higher moments
+# ## Uncertainty quantification
 #
-# Trace estimation involves estimating expected values of random variables.
-# Sometimes, second and higher moments of a random variable are interesting.
+# Use `estimator_monte_carlo_mean_and_std` to get both the estimate and its
+# standard error in one call. The standard error equals
+# std(samples) / sqrt(num_samples) and serves directly as an error bar —
+# no need to track the sample count separately.
 
 signs = stochtrace.sampler_signs(x_like, num=num_samples)
 integrand = stochtrace.monte_carlo_trace()
-integrand = stochtrace.monte_carlo_wrap_moments(integrand, [1, 2])
-estimator = stochtrace.estimator_monte_carlo(integrand, sampler=signs)
-first, second = estimator(matvec, jax.random.PRNGKey(1))
+estimator = stochtrace.estimator_monte_carlo_mean_and_std(integrand, sampler=signs)
+mean, std_error = estimator(matvec, jax.random.PRNGKey(1))
 
+print(mean)
+print(std_error)
 
 # For sign-distributed (Rademacher) base-samples,
 # the variance equals twice the sum of squared off-diagonal entries.
 
-
 M = A.T @ A + jnp.eye(6)
-print(second - first**2)
-print(2 * (jnp.linalg.norm(M, ord="fro") ** 2 - jnp.linalg.norm(jnp.diag(M)) ** 2))
-
-
-# ## Uncertainty quantification
-#
-# Variance estimation leads to uncertainty quantification:
-# The variance of the estimator is equal to the variance of the random variable
-# divided by the number of samples.
-
-variance = (second - first**2) / num_samples
-print(variance)
+variance_truth = jnp.linalg.norm(M, ord="fro") ** 2 - jnp.linalg.norm(jnp.diag(M)) ** 2
+print(std_error**2 * num_samples)  # should be close to 2 * variance_truth
+print(2 * variance_truth)

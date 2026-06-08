@@ -18,7 +18,6 @@ def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable
         [monte_carlo_trace][matfree.stochtrace.monte_carlo_trace],
         [monte_carlo_diagonal][matfree.stochtrace.monte_carlo_diagonal],
         [monte_carlo_frobeniusnorm_squared][matfree.stochtrace.monte_carlo_frobeniusnorm_squared],
-        [monte_carlo_wrap_moments][matfree.stochtrace.monte_carlo_wrap_moments],
         or any of the ``monte_carlo_funm_*`` functions from [matfree.funm][matfree.funm].
     sampler
         The sample function. See below for recommendations.
@@ -52,6 +51,43 @@ def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable
     return estimate
 
 
+def estimator_monte_carlo_mean_and_std(
+    integrand: Callable, /, sampler: Callable
+) -> Callable:
+    """Construct a stochastic estimator that returns mean and standard error.
+
+    Like [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo],
+    but returns ``(mean, std_error)`` where ``std_error = std(samples) / sqrt(num_samples)``
+    is the standard error of the mean — the direct uncertainty on the estimate.
+    The number of samples is already encoded in the sampler,
+    so the caller does not need to track it separately.
+
+    Parameters
+    ----------
+    integrand
+        Any integrand compatible with
+        [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    sampler
+        The sample function. See [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo]
+        for recommendations.
+
+    Returns
+    -------
+    estimate
+        A function that returns ``(mean, std_error)``, both with the same
+        PyTree structure as the integrand output.
+    """
+
+    def estimate(matvecs, key, *parameters):
+        samples = sampler(key)
+        Qs = func.vmap(lambda vec: integrand(matvecs, vec, *parameters))(samples)
+        mean = tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
+        std_error = tree.tree_map(lambda s: np.std(s, axis=0) / np.sqrt(s.shape[0]), Qs)
+        return mean, std_error
+
+    return estimate
+
+
 def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callable:
     """Construct a leave-one-out stochastic estimator.
 
@@ -78,6 +114,41 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
     def estimate(matvec, key, *parameters):
         samples = sampler(key)
         return np.mean(integrand(matvec, samples, *parameters), axis=0)
+
+    return estimate
+
+
+def estimator_leave_one_out_mean_and_std(
+    integrand: Callable, /, sampler: Callable
+) -> Callable:
+    """Construct a LOO estimator that returns mean and standard error.
+
+    Like [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out],
+    but returns ``(mean, std_error)`` where ``std_error = std(loo_estimates) / sqrt(num_samples)``.
+    The LOO integrand produces one estimate per leave-one-out, so their
+    standard deviation is a natural uncertainty measure.
+
+    Parameters
+    ----------
+    integrand
+        Any integrand compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out].
+    sampler
+        The sample function.
+
+    Returns
+    -------
+    estimate
+        A function that returns ``(mean, std_error)``, both scalars (or arrays
+        with the same shape as a single LOO estimate).
+    """
+
+    def estimate(matvec, key, *parameters):
+        samples = sampler(key)
+        Qs = integrand(matvec, samples, *parameters)
+        mean = np.mean(Qs, axis=0)
+        std_error = np.std(Qs, axis=0) / np.sqrt(Qs.shape[0])
+        return mean, std_error
 
     return estimate
 
@@ -532,44 +603,6 @@ def monte_carlo_frobeniusnorm_squared():
         return linalg.inner(v_flat.conj(), v_flat)
 
     return integrand
-
-
-def monte_carlo_wrap_moments(integrand, /, moments):
-    """Wrap an integrand into another integrand that computes moments.
-
-    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
-
-    Parameters
-    ----------
-    integrand
-        Any integrand compatible with
-        [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
-    moments
-        Any Pytree (tuples, lists, dictionaries) whose leafs that are
-        valid inputs to ``lambda m: x**m`` for an array ``x``,
-        usually, with data-type ``float``
-        (but that depends on the wrapped integrand).
-        For example, ``moments=4``, ``moments=(1,2)``,
-        or ``moments={"a": 1, "b": 2}``.
-
-    Returns
-    -------
-    integrand
-        An integrand compatible with
-        [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo]
-        whose output has a PyTree-structure that mirrors the structure of
-        the ``moments`` argument.
-
-    """
-
-    def integrand_wrapped(vec, *parameters):
-        Qs = integrand(vec, *parameters)
-        return tree.tree_map(moment_fun, Qs)
-
-    def moment_fun(x, /):
-        return tree.tree_map(lambda m: x**m, moments)
-
-    return integrand_wrapped
 
 
 def _materialize_operator(matvec_flat, x):
