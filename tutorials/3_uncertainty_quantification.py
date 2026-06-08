@@ -25,19 +25,20 @@ num_samples = 10_000
 # Trace estimation involves estimating expected values of random variables.
 # Sometimes, second and higher moments of a random variable are interesting.
 
-normal = stochtrace.sampler_normal(x_like, num=num_samples)
+signs = stochtrace.sampler_signs(x_like, num=num_samples)
 integrand = stochtrace.integrand_trace()
 integrand = stochtrace.integrand_wrap_moments(integrand, [1, 2])
-estimator = stochtrace.estimator(integrand, sampler=normal)
+estimator = stochtrace.estimator(integrand, sampler=signs)
 first, second = estimator(matvec, jax.random.PRNGKey(1))
 
 
-# For normally-distributed base-samples,
-# we know that the variance is twice the squared Frobenius norm.
+# For sign-distributed (Rademacher) base-samples,
+# the variance equals twice the sum of squared off-diagonal entries.
 
 
+M = A.T @ A + jnp.eye(6)
 print(second - first**2)
-print(2 * jnp.linalg.norm(A.T @ A + jnp.eye(6), ord="fro") ** 2)
+print(2 * (jnp.linalg.norm(M, ord="fro") ** 2 - jnp.linalg.norm(jnp.diag(M)) ** 2))
 
 
 # ## Uncertainty quantification
