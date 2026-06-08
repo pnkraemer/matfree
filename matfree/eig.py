@@ -60,8 +60,8 @@ def svd_partial(bidiag: Callable) -> Callable:
         # Compute SVD of factorisation
         U, S, Vt = linalg.svd(B, full_matrices=False)
 
-        # Combine orthogonal transformations
-        return (u @ U).T, S, Vt @ v.T
+        # Combine orthogonal transformations (u, v are (k, n) — rows are Krylov vectors)
+        return U.T @ u, S, Vt @ v
 
     return svd
 
@@ -97,10 +97,10 @@ def eigh_partial(tridiag_sym: Callable) -> Callable:
         # Factorise the matrix
         Q, H, *_ = tridiag_sym(Av, v0)
 
-        # Compute eigh of factorisation
+        # Compute eigh of factorisation (Q is (k, n) — rows are Krylov vectors)
         vals, vecs = linalg.eigh(H)
-        vecs = Q @ vecs
-        return vals, vecs.T
+        vecs = vecs.T @ Q
+        return vals, vecs
 
     return eigh
 
@@ -136,10 +136,10 @@ def eig_partial(hessenberg: Callable) -> Callable:
         # Factorise the matrix
         Q, H, *_ = hessenberg(Av, v0)
 
-        # Compute eig of factorisation
+        # Compute eig of factorisation (Q is (k, n) — rows are Krylov vectors)
         vals, vecs = linalg.eig(H)
-        vecs = Q @ vecs
-        return vals, vecs.T
+        vecs = vecs.T @ Q
+        return vals, vecs
 
     return eig
 

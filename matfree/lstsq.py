@@ -3,9 +3,6 @@
 from matfree.backend import containers, control_flow, func, linalg, np, tree
 from matfree.backend.typing import Array, Callable
 
-# todo: make functions compatible with pytree-valued vecmats
-
-
 _LARGE_VALUE = 1e10
 """A placeholder for np.inf.
 
@@ -118,9 +115,20 @@ def lsmr(
 
         Warning: gradients wrt "x0" and "damp" are not defined.
         """
-        x_like = func.eval_shape(vecmat, b, *vecmat_args)
-        (ncols,) = x_like.shape
-        x = x0 if x0 is not None else np.zeros(ncols, dtype=b.dtype)
+        b_flat, b_unravel = tree.ravel_pytree(b)
+        x_like_tree = func.eval_shape(vecmat, b, *vecmat_args)
+        x_like_flat, x_unravel = func.eval_shape(tree.ravel_pytree, x_like_tree)
+        ncols = x_like_flat.shape[0]
+
+        def vecmat_flat(u_flat, *vargs):
+            v_flat, _ = tree.ravel_pytree(vecmat(b_unravel(u_flat), *vargs))
+            return v_flat
+
+        x0_flat = (
+            tree.ravel_pytree(x0)[0]
+            if x0 is not None
+            else np.zeros(ncols, dtype=b_flat.dtype)
+        )
 
         # Combine the lstsq_fun with a closure convert, because
         # typically, vecmat is a lambda function and if we want to
@@ -129,11 +137,12 @@ def lsmr(
         # (and return lstsq_public!), but provide lstsq_fun with the custom VJP.
         # Thereby, the function that gets the custom VJP is, from now on, only
         # called after a previous call to closure convert which 'fixes' all namespaces.
-        def vecmat_noargs(v):
-            return vecmat(v, *vecmat_args)
+        def vecmat_noargs(u_flat):
+            return vecmat_flat(u_flat, *vecmat_args)
 
-        vecmat_closure, args = func.closure_convert(vecmat_noargs, b)
-        return _run(vecmat_closure, b, args, x, damp)
+        vecmat_closure, args = func.closure_convert(vecmat_noargs, b_flat)
+        x_flat, stats_ = _run(vecmat_closure, b_flat, args, x0_flat, damp)
+        return x_unravel(x_flat), stats_
 
     def _run(vecmat, b, vecmat_args, x0, damp):
         def vecmat_noargs(v):

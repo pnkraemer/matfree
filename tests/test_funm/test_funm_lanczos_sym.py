@@ -13,7 +13,8 @@ def test_funm_lanczos_sym_matches_eigh_implementation(dense_funm, reortho, n):
     # vector, and parameters (a matrix).
 
     def matvec(x, p):
-        return p @ x
+        [(v,)] = x
+        return [(p @ v,)]
 
     def fun(x):
         return np.sin(x)
@@ -32,5 +33,5 @@ def test_funm_lanczos_sym_matches_eigh_implementation(dense_funm, reortho, n):
     dense_funm = dense_funm(fun)
     lanczos = decomp.tridiag_sym(6, materialize=True, reortho=reortho)
     matfun_vec = funm.funm_lanczos_sym(dense_funm, lanczos)
-    received = matfun_vec(matvec, v, matrix)
+    [(received,)] = matfun_vec(matvec, [(v,)], matrix)
     assert np.allclose(expected, received, atol=1e-6)
