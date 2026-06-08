@@ -1,4 +1,4 @@
-"""Test estimator_monte_carlo_mean_and_std."""
+"""Test estimator_monte_carlo_mean_and_sem."""
 
 from matfree import stochtrace
 from matfree.backend import func, linalg, np, prng, testing, tree
@@ -23,15 +23,15 @@ def test_mean_matches_estimator_monte_carlo(seed, dtype):
     key, subkey = prng.split(key, num=2)
     estimate_plain = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
     mean_only = estimate_plain(jvp, subkey)
-    estimate = stochtrace.estimator_monte_carlo_mean_and_std(integrand, sampler=sampler)
-    mean, _std = estimate(jvp, subkey)
+    estimate = stochtrace.estimator_monte_carlo_mean_and_sem(integrand, sampler=sampler)
+    mean, _sem = estimate(jvp, subkey)
     assert np.allclose(mean, mean_only)
 
 
 @testing.parametrize("seed", [1, 2, 3])
 @testing.parametrize("dtype", [float, complex])
 def test_pytree_structure(seed, dtype):
-    """Assert that mean and std_error share the integrand's pytree structure."""
+    """Assert that mean and sem share the integrand's pytree structure."""
 
     def fun(x):
         fx = np.sin(np.flip(np.cos(x["params"])) + 1.0) * np.sin(x["params"])
@@ -45,13 +45,13 @@ def test_pytree_structure(seed, dtype):
 
     integrand = stochtrace.monte_carlo_diagonal()
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
-    estimate = stochtrace.estimator_monte_carlo_mean_and_std(integrand, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo_mean_and_sem(integrand, sampler=sampler)
     key, subkey = prng.split(key, num=2)
-    mean, std_error = estimate(jvp, subkey)
+    mean, sem = estimate(jvp, subkey)
 
     expected = {"params": 1.1}
     assert tree.tree_structure(mean) == tree.tree_structure(expected)
-    assert tree.tree_structure(std_error) == tree.tree_structure(expected)
+    assert tree.tree_structure(sem) == tree.tree_structure(expected)
 
 
 @testing.fixture(name="key")
@@ -72,22 +72,22 @@ def fixture_J_and_jvp(key, dtype):
     return J, jvp, x0
 
 
-def test_std_error_magnitude_signs(J_and_jvp, key):
-    """Assert the std_error is correct for Rademacher samples.
+def test_sem_error_magnitude_signs(J_and_jvp, key):
+    """Assert the sem is correct for Rademacher samples.
 
     For Rademacher samples, Var[X] = 2*(||J||_F^2 - tr(J^2)), so
-    std_error = sqrt(Var[X] / n).
+    sem = sqrt(Var[X] / n).
     """
     J, jvp, args_like = J_and_jvp
     integrand = stochtrace.monte_carlo_trace()
     num = 5_000
     sampler = stochtrace.sampler_signs(args_like, num=num)
-    estimate = stochtrace.estimator_monte_carlo_mean_and_std(integrand, sampler=sampler)
-    mean, std_error = estimate(jvp, key)
+    estimate = stochtrace.estimator_monte_carlo_mean_and_sem(integrand, sampler=sampler)
+    mean, sem = estimate(jvp, key)
 
     truth = linalg.trace(J)
     assert np.allclose(mean, truth, rtol=0.2)
 
     variance_truth = linalg.matrix_norm(J, which="fro") ** 2 - linalg.trace(J**2)
-    std_error_truth = np.sqrt(2 * variance_truth / num)
-    assert np.allclose(std_error, std_error_truth, atol=0.3, rtol=0.3)
+    sem_truth = np.sqrt(2 * variance_truth / num)
+    assert np.allclose(sem, sem_truth, atol=0.3, rtol=0.3)

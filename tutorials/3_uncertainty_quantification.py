@@ -23,23 +23,23 @@ num_samples = 10_000
 
 # ## Uncertainty quantification
 #
-# Use `estimator_monte_carlo_mean_and_std` to get both the estimate and its
+# Use `estimator_monte_carlo_mean_and_sem` to get both the estimate and its
 # standard error in one call. The standard error equals
 # std(samples) / sqrt(num_samples) and serves directly as an error bar —
 # no need to track the sample count separately.
 
 signs = stochtrace.sampler_signs(x_like, num=num_samples)
 integrand = stochtrace.monte_carlo_trace()
-estimator = stochtrace.estimator_monte_carlo_mean_and_std(integrand, sampler=signs)
-mean, std_error = estimator(matvec, jax.random.PRNGKey(1))
+estimator = stochtrace.estimator_monte_carlo_mean_and_sem(integrand, sampler=signs)
+mean, sem = estimator(matvec, jax.random.PRNGKey(1))
 
 print(mean)
-print(std_error)
+print(sem)
 
 # For sign-distributed (Rademacher) base-samples,
 # the variance equals twice the sum of squared off-diagonal entries.
 
 M = A.T @ A + jnp.eye(6)
 variance_truth = jnp.linalg.norm(M, ord="fro") ** 2 - jnp.linalg.norm(jnp.diag(M)) ** 2
-print(std_error**2 * num_samples)  # should be close to 2 * variance_truth
+print(sem**2 * num_samples)  # should be close to 2 * variance_truth
 print(2 * variance_truth)

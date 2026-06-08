@@ -51,13 +51,13 @@ def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable
     return estimate
 
 
-def estimator_monte_carlo_mean_and_std(
+def estimator_monte_carlo_mean_and_sem(
     integrand: Callable, /, sampler: Callable
 ) -> Callable:
     """Construct a stochastic estimator that returns mean and standard error.
 
     Like [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo],
-    but returns ``(mean, std_error)`` where ``std_error = std(samples) / sqrt(num_samples)``
+    but returns ``(mean, sem)`` where ``sem = std(samples) / sqrt(num_samples)``
     is the standard error of the mean — the direct uncertainty on the estimate.
     The number of samples is already encoded in the sampler,
     so the caller does not need to track it separately.
@@ -74,7 +74,7 @@ def estimator_monte_carlo_mean_and_std(
     Returns
     -------
     estimate
-        A function that returns ``(mean, std_error)``, both with the same
+        A function that returns ``(mean, sem)``, both with the same
         PyTree structure as the integrand output.
     """
 
@@ -82,8 +82,8 @@ def estimator_monte_carlo_mean_and_std(
         samples = sampler(key)
         Qs = func.vmap(lambda vec: integrand(matvecs, vec, *parameters))(samples)
         mean = tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
-        std_error = tree.tree_map(lambda s: np.std(s, axis=0) / np.sqrt(s.shape[0]), Qs)
-        return mean, std_error
+        sem = tree.tree_map(lambda s: np.std(s, axis=0) / np.sqrt(s.shape[0]), Qs)
+        return mean, sem
 
     return estimate
 
@@ -118,13 +118,13 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
     return estimate
 
 
-def estimator_leave_one_out_mean_and_std(
+def estimator_leave_one_out_mean_and_sem(
     integrand: Callable, /, sampler: Callable
 ) -> Callable:
     """Construct a LOO estimator that returns mean and standard error.
 
     Like [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out],
-    but returns ``(mean, std_error)`` where ``std_error = std(loo_estimates) / sqrt(num_samples)``.
+    but returns ``(mean, sem)`` where ``sem = std(loo_estimates) / sqrt(num_samples)``.
     The LOO integrand produces one estimate per leave-one-out, so their
     standard deviation is a natural uncertainty measure.
 
@@ -139,7 +139,7 @@ def estimator_leave_one_out_mean_and_std(
     Returns
     -------
     estimate
-        A function that returns ``(mean, std_error)``, both scalars (or arrays
+        A function that returns ``(mean, sem)``, both scalars (or arrays
         with the same shape as a single LOO estimate).
     """
 
@@ -147,8 +147,8 @@ def estimator_leave_one_out_mean_and_std(
         samples = sampler(key)
         Qs = integrand(matvec, samples, *parameters)
         mean = np.mean(Qs, axis=0)
-        std_error = np.std(Qs, axis=0) / np.sqrt(Qs.shape[0])
-        return mean, std_error
+        sem = np.std(Qs, axis=0) / np.sqrt(Qs.shape[0])
+        return mean, sem
 
     return estimate
 
