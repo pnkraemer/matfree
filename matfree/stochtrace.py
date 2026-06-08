@@ -113,7 +113,8 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
 
     def estimate(matvec, key, *parameters):
         samples = sampler(key)
-        return np.mean(integrand(matvec, samples, *parameters), axis=0)
+        Qs = integrand(matvec, samples, *parameters)
+        return tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
 
     return estimate
 
@@ -146,8 +147,9 @@ def estimator_leave_one_out_mean_and_sem(
     def estimate(matvec, key, *parameters):
         samples = sampler(key)
         Qs = integrand(matvec, samples, *parameters)
-        mean = np.mean(Qs, axis=0)
-        sem = np.std(Qs, axis=0) / np.sqrt(Qs.shape[0])
+        n_samples = tree.tree_leaves(Qs)[0].shape[0]
+        mean = tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
+        sem = tree.tree_map(lambda s: np.std(s, axis=0) / np.sqrt(n_samples), Qs)
         return mean, sem
 
     return estimate
