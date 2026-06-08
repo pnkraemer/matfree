@@ -179,6 +179,7 @@ def monte_carlo_funm_sym_logdet(tridiag_sym: Callable, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
     ----------
@@ -196,6 +197,7 @@ def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
     ----------
@@ -235,13 +237,17 @@ def monte_carlo_funm_product_logdet(bidiag: Callable, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
     dense_funm = dense_funm_product_svd(np.log)
     return monte_carlo_funm_product(dense_funm, bidiag)
 
 
 def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
-    r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
+    r"""Construct the integrand for the $p$-th power of the Schatten-p norm.
+
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    """
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
@@ -257,6 +263,7 @@ def monte_carlo_funm_product(dense_funm, algorithm, /):
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
     Here, "product" refers to $X = A^\top A$.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
 
     def quadform(matvec, v0, *parameters):
