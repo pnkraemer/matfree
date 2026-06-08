@@ -12,8 +12,18 @@ def matrix_norm(x, /, which):
     return jnp.linalg.norm(x, ord=which)
 
 
+def abs2(x, /):
+    if jnp.iscomplexobj(x):
+        return x.real**2 + x.imag**2
+    return x**2
+
+
 def qr_reduced(x, /):
     return jnp.linalg.qr(x, mode="reduced")
+
+
+def qr_r(x, /):
+    return jnp.linalg.qr(x, mode="r")
 
 
 def eigh(x, /):
@@ -52,6 +62,10 @@ def inner(x1, x2, /):
     return jnp.inner(x1, x2)
 
 
+def vdot(x1, x2):
+    return jnp.vdot(x1, x2)
+
+
 def outer(a, b, /):
     return jnp.outer(a, b)
 
@@ -84,6 +98,10 @@ def pinv(A, /):
 
 def solve(A, b, /):
     return jnp.linalg.solve(A, b)
+
+
+def solve_triangular(A, b, /, trans=0):
+    return jax.scipy.linalg.solve_triangular(A, b, trans=trans)
 
 
 def cg(Av, b, /):
