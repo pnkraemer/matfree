@@ -21,12 +21,10 @@ def test_mean_matches_estimator_monte_carlo(seed, dtype):
     sampler = stochtrace.sampler_signs(x0, num=10_000)
 
     key, subkey = prng.split(key, num=2)
-    mean_only = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)(
-        jvp, subkey
-    )
-    mean, _std = stochtrace.estimator_monte_carlo_mean_and_std(
-        integrand, sampler=sampler
-    )(jvp, subkey)
+    estimate_plain = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
+    mean_only = estimate_plain(jvp, subkey)
+    estimate = stochtrace.estimator_monte_carlo_mean_and_std(integrand, sampler=sampler)
+    mean, _std = estimate(jvp, subkey)
     assert np.allclose(mean, mean_only)
 
 

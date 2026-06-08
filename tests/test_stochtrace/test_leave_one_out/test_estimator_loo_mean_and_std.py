@@ -19,12 +19,12 @@ def test_mean_matches_estimator_leave_one_out(seed):
     sampler = stochtrace.sampler_normal(x_like, num=4)
     integrand = stochtrace.leave_one_out_xtrace()
 
-    mean_only = stochtrace.estimator_leave_one_out(integrand, sampler=sampler)(
-        matvec, key
-    )
-    mean, _std = stochtrace.estimator_leave_one_out_mean_and_std(
+    estimate_plain = stochtrace.estimator_leave_one_out(integrand, sampler=sampler)
+    mean_only = estimate_plain(matvec, key)
+    estimate = stochtrace.estimator_leave_one_out_mean_and_std(
         integrand, sampler=sampler
-    )(matvec, key)
+    )
+    mean, _std = estimate(matvec, key)
     assert np.allclose(mean, mean_only)
 
 
@@ -41,7 +41,8 @@ def test_std_error_is_nonnegative(seed):
     sampler = stochtrace.sampler_normal(x_like, num=5)
     integrand = stochtrace.leave_one_out_xtrace()
 
-    _mean, std_error = stochtrace.estimator_leave_one_out_mean_and_std(
+    estimate = stochtrace.estimator_leave_one_out_mean_and_std(
         integrand, sampler=sampler
-    )(matvec, key)
+    )
+    _mean, std_error = estimate(matvec, key)
     assert std_error >= 0.0
