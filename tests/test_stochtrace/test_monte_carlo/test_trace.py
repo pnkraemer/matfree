@@ -25,9 +25,9 @@ def test_trace(seed, dtype):
     expected = linalg.trace(J)
 
     # Estimate the matrix function
-    problem = stochtrace.integrand_trace()
+    integrand = stochtrace.monte_carlo_trace()
     sampler = stochtrace.sampler_normal(args_like, num=100_000)
-    estimate = stochtrace.estimator(problem, sampler=sampler)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
     key, subkey = prng.split(key, num=2)
     received = estimate(jvp, key)
 

@@ -4,15 +4,22 @@ from matfree.backend import control_flow, func, linalg, np, prng, tree
 from matfree.backend.typing import Array, Callable
 
 
-def estimator(integrand: Callable, /, sampler: Callable) -> Callable:
+def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable:
     """Construct a stochastic trace-/diagonal-estimator.
 
     Parameters
     ----------
     integrand
-        The integrand function. For example, the return-value of
-        [integrand_trace][matfree.stochtrace.integrand_trace].
-        But any other integrand works, too.
+        An integrand function with signature ``integrand(matvec, vec, *parameters)``,
+        where ``vec`` is a single sample vector (contrast with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out],
+        which passes the full sample batch).
+        Use any of the ``monte_carlo_*`` constructors, e.g.
+        [monte_carlo_trace][matfree.stochtrace.monte_carlo_trace],
+        [monte_carlo_diagonal][matfree.stochtrace.monte_carlo_diagonal],
+        [monte_carlo_frobeniusnorm_squared][matfree.stochtrace.monte_carlo_frobeniusnorm_squared],
+        [monte_carlo_wrap_moments][matfree.stochtrace.monte_carlo_wrap_moments],
+        or any of the ``monte_carlo_funm_*`` functions from [matfree.funm][matfree.funm].
     sampler
         The sample function. See below for recommendations.
 
@@ -464,16 +471,12 @@ def _symmetrize(x):
     return (x + x.T.conj()) / 2
 
 
-def integrand_diagonal():
+def monte_carlo_diagonal():
     """Construct the integrand for estimating the diagonal.
 
-    When plugged into the Monte-Carlo estimator,
-    the result will be an Array or PyTree of Arrays with the
-    same tree-structure as
-    ``
-    matvec(*args_like)
-    ``
-    where ``*args_like`` is an argument of the sampler.
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    The result will be an Array or PyTree of Arrays with the same tree-structure as
+    ``matvec(*args_like)`` where ``*args_like`` is an argument of the sampler.
     """
 
     def integrand(matvec, v, *parameters):
@@ -485,8 +488,11 @@ def integrand_diagonal():
     return integrand
 
 
-def integrand_trace():
-    """Construct the integrand for estimating the trace."""
+def monte_carlo_trace():
+    """Construct the integrand for estimating the trace.
+
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    """
 
     def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
@@ -497,8 +503,11 @@ def integrand_trace():
     return integrand
 
 
-def integrand_trace_and_diagonal():
-    """Construct the integrand for estimating the trace and diagonal jointly."""
+def monte_carlo_trace_and_diagonal():
+    """Construct the integrand for estimating the trace and diagonal jointly.
+
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    """
 
     def integrand(matvec, v, *parameters):
         Qv = matvec(v, *parameters)
@@ -511,8 +520,11 @@ def integrand_trace_and_diagonal():
     return integrand
 
 
-def integrand_frobeniusnorm_squared():
-    """Construct the integrand for estimating the squared Frobenius norm."""
+def monte_carlo_frobeniusnorm_squared():
+    """Construct the integrand for estimating the squared Frobenius norm.
+
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    """
 
     def integrand(matvec, vec, *parameters):
         x = matvec(vec, *parameters)
@@ -522,13 +534,16 @@ def integrand_frobeniusnorm_squared():
     return integrand
 
 
-def integrand_wrap_moments(integrand, /, moments):
+def monte_carlo_wrap_moments(integrand, /, moments):
     """Wrap an integrand into another integrand that computes moments.
+
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
     ----------
     integrand
-        Any integrand function compatible with Hutchinson-style estimation.
+        Any integrand compatible with
+        [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     moments
         Any Pytree (tuples, lists, dictionaries) whose leafs that are
         valid inputs to ``lambda m: x**m`` for an array ``x``,
@@ -540,9 +555,10 @@ def integrand_wrap_moments(integrand, /, moments):
     Returns
     -------
     integrand
-        An integrand function compatible with Hutchinson-style estimation whose
-        output has a PyTree-structure that mirrors the structure of the ``moments``
-        argument.
+        An integrand compatible with
+        [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo]
+        whose output has a PyTree-structure that mirrors the structure of
+        the ``moments`` argument.
 
     """
 

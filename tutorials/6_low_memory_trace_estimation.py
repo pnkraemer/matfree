@@ -33,10 +33,10 @@ def large_matvec(v):
     return 1.2345 * v
 
 
-integrand = stochtrace.integrand_trace()
+integrand = stochtrace.monte_carlo_trace()
 x0 = jnp.ones((nrows,))
 sampler = stochtrace.sampler_signs(x0, num=nsamples)
-estimate = stochtrace.estimator(integrand, sampler)
+estimate = stochtrace.estimator_monte_carlo(integrand, sampler)
 
 key = jax.random.PRNGKey(1)
 trace = estimate(large_matvec, key)
@@ -49,7 +49,7 @@ print(trace)
 # The below code requires nrows $\times$ 1 storage:
 
 sampler = stochtrace.sampler_signs(x0, num=1)
-estimate = stochtrace.estimator(integrand, sampler)
+estimate = stochtrace.estimator_monte_carlo(integrand, sampler)
 estimate = functools.partial(estimate, large_matvec)
 
 key = jax.random.PRNGKey(2)

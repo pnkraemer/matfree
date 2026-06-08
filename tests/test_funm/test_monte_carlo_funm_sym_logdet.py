@@ -29,8 +29,8 @@ def test_logdet_spd(n, num_significant_eigvals, num_matvecs):
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = stochtrace.sampler_normal(args_like, num=10)
     tridiag_sym = decomp.tridiag_sym(num_matvecs, materialize=True)
-    integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
-    estimate = stochtrace.estimator(integrand, sampler)
+    integrand = funm.monte_carlo_funm_sym_logdet(tridiag_sym)
+    estimate = stochtrace.estimator_monte_carlo(integrand, sampler)
     received = estimate(matvec, key)
 
     expected = linalg.slogdet(A)[1]
@@ -50,7 +50,7 @@ def test_logdet_spd_exact_for_full_num_matvecs_lanczos(n):
     # Set up max-num_matvecs Lanczos approximation inside SLQ for the matrix-logarithm
     num_matvecs = n - 1
     tridiag_sym = decomp.tridiag_sym(num_matvecs, materialize=True)
-    integrand = funm.integrand_funm_sym_logdet(tridiag_sym)
+    integrand = funm.monte_carlo_funm_sym_logdet(tridiag_sym)
 
     # Construct a vector without that does not have expected 2-norm equal to "dim"
     x = prng.normal(prng.prng_key(seed=1), shape=(n,)) + 10

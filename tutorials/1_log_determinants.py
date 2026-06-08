@@ -28,9 +28,9 @@ x_like = jnp.ones((nrows,), dtype=float)  # use to determine shapes of vectors
 
 num_matvecs = 3
 tridiag_sym = decomp.tridiag_sym(num_matvecs)
-problem = funm.integrand_funm_sym_logdet(tridiag_sym)
+integrand = funm.monte_carlo_funm_sym_logdet(tridiag_sym)
 sampler = stochtrace.sampler_signs(x_like, num=1_000)
-estimator = stochtrace.estimator(problem, sampler=sampler)
+estimator = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
 logdet = estimator(matvec, jax.random.PRNGKey(1))
 print(logdet)
 
@@ -55,9 +55,9 @@ def matvec_half(x):
 
 num_matvecs = 3
 bidiag = decomp.bidiag(num_matvecs)
-problem = funm.integrand_funm_product_logdet(bidiag)
+integrand = funm.monte_carlo_funm_product_logdet(bidiag)
 sampler = stochtrace.sampler_signs(x_like, num=1_000)
-estimator = stochtrace.estimator(problem, sampler=sampler)
+estimator = stochtrace.estimator_monte_carlo(integrand, sampler=sampler)
 logdet = estimator(matvec_half, jax.random.PRNGKey(1))
 print(logdet)
 

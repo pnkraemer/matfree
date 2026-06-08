@@ -14,7 +14,7 @@ $$
 $$
 
 Plug these integrands into
-[matfree.stochtrace.estimator][matfree.stochtrace.estimator].
+[matfree.stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
 
 Examples
@@ -175,10 +175,11 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
     return estimate
 
 
-def integrand_funm_sym_logdet(tridiag_sym: Callable, /):
+def monte_carlo_funm_sym_logdet(tridiag_sym: Callable, /):
     """Construct the integrand for the log-determinant.
 
     This function assumes a symmetric, positive definite matrix.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
     ----------
@@ -189,13 +190,14 @@ def integrand_funm_sym_logdet(tridiag_sym: Callable, /):
 
     """
     dense_funm = dense_funm_sym_eigh(np.log)
-    return integrand_funm_sym(dense_funm, tridiag_sym)
+    return monte_carlo_funm_sym(dense_funm, tridiag_sym)
 
 
-def integrand_funm_sym(dense_funm, tridiag_sym, /):
+def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
     ----------
@@ -231,32 +233,37 @@ def integrand_funm_sym(dense_funm, tridiag_sym, /):
     return quadform
 
 
-def integrand_funm_product_logdet(bidiag: Callable, /):
+def monte_carlo_funm_product_logdet(bidiag: Callable, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
     Here, "product" refers to $X = A^\top A$.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
     dense_funm = dense_funm_product_svd(np.log)
-    return integrand_funm_product(dense_funm, bidiag)
+    return monte_carlo_funm_product(dense_funm, bidiag)
 
 
-def integrand_funm_product_schatten_norm(power, bidiag: Callable, /):
-    r"""Construct the integrand for the $p$-th power of the Schatten-p norm."""
+def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
+    r"""Construct the integrand for the $p$-th power of the Schatten-p norm.
+
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+    """
 
     def matfun(x):
         """Matrix-function for Schatten-p norms."""
         return x ** (power / 2)
 
     dense_funm = dense_funm_product_svd(matfun)
-    return integrand_funm_product(dense_funm, bidiag)
+    return monte_carlo_funm_product(dense_funm, bidiag)
 
 
-def integrand_funm_product(dense_funm, algorithm, /):
+def monte_carlo_funm_product(dense_funm, algorithm, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
     Here, "product" refers to $X = A^\top A$.
+    Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
 
     def quadform(matvec, v0, *parameters):

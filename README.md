@@ -66,10 +66,10 @@ Estimate the trace of the matrix:
 >>>
 >>> # Set Hutchinson's method up to compute the traces
 >>> # (instead of, e.g., diagonals)
->>> integrand = stochtrace.integrand_trace()
+>>> integrand = stochtrace.monte_carlo_trace()
 >>>
 >>> # Compute an estimator
->>> estimate = stochtrace.estimator(integrand, sampler)
+>>> estimate = stochtrace.estimator_monte_carlo(integrand, sampler)
 >>>
 >>> # Estimate
 >>> key = jax.random.PRNGKey(1)

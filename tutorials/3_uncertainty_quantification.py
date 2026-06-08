@@ -26,9 +26,9 @@ num_samples = 10_000
 # Sometimes, second and higher moments of a random variable are interesting.
 
 signs = stochtrace.sampler_signs(x_like, num=num_samples)
-integrand = stochtrace.integrand_trace()
-integrand = stochtrace.integrand_wrap_moments(integrand, [1, 2])
-estimator = stochtrace.estimator(integrand, sampler=signs)
+integrand = stochtrace.monte_carlo_trace()
+integrand = stochtrace.monte_carlo_wrap_moments(integrand, [1, 2])
+estimator = stochtrace.estimator_monte_carlo(integrand, sampler=signs)
 first, second = estimator(matvec, jax.random.PRNGKey(1))
 
 
