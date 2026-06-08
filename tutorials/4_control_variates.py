@@ -18,7 +18,7 @@ A = jnp.reshape(jnp.arange(1.0, 1.0 + nrows * ncols), (nrows, ncols))
 # Set up the sampler.
 
 x_like = jnp.ones((ncols,), dtype=float)
-sample_fun = stochtrace.sampler_normal(x_like, num=10_000)
+sample_fun = stochtrace.sampler_signs(x_like, num=10_000)
 
 
 # First, compute the diagonal.
