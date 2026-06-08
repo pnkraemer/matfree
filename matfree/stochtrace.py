@@ -58,7 +58,7 @@ def estimator_monte_carlo_mean_and_sem(
 
     Like [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo],
     but returns ``(mean, sem)`` where ``sem = std(samples) / sqrt(num_samples)``
-    is the standard error of the mean — the direct uncertainty on the estimate.
+    is the standard error of the mean -- the direct uncertainty on the estimate.
     The number of samples is already encoded in the sampler,
     so the caller does not need to track it separately.
 
@@ -607,7 +607,7 @@ def monte_carlo_frobeniusnorm_squared():
 
 def _materialize_operator(matvec_flat, x):
     """Materialize the operator defined by an already-flattened matvec and a vector."""
-    # if the operator is complex, holomorphic=True is needed, which requires complex input —
+    # if the operator is complex, holomorphic=True is needed, which requires complex input --
     # cast x to the operator's output dtype first
     Bx_like = func.eval_shape(matvec_flat, x)
     x = x.astype(Bx_like.dtype)

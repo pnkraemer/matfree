@@ -48,8 +48,8 @@ def funm_chebyshev(matfun: Callable, num_matvecs: int, matvec: Callable, /) -> C
     is contained in the interval (-1, 1)**, and that the **matrix-function
     is analytic on this interval**. If this is not the case,
     transform the matrix-vector product and the matrix-function accordingly.
+    Does not support complex-valued matrices.
     """
-    # Construct nodes
     nodes = _chebyshev_nodes(num_matvecs)
     fx_nodes = matfun(nodes)
 
@@ -58,38 +58,36 @@ def funm_chebyshev(matfun: Callable, num_matvecs: int, matvec: Callable, /) -> C
         poly_coefficients: tuple[Array, Array]
         poly_values: tuple[Array, Array]
 
-    def init_func(vec, *parameters):
-        # Initialize the scalar recursion
-        # (needed to compute the interpolation weights)
-        t2_n, t1_n = nodes, np.ones_like(nodes)
-        c1 = np.mean(fx_nodes * t1_n)
-        c2 = 2 * np.mean(fx_nodes * t2_n)
+    def apply(vec, *parameters):
+        vec_flat, v_unravel = tree.ravel_pytree(vec)
 
-        # Initialize the vector-valued recursion
-        # (this is where the matvec happens)
-        t2_x, t1_x = matvec(vec, *parameters), vec
-        value = c1 * t1_x + c2 * t2_x
-        return _ChebyshevState(value, (t2_n, t1_n), (t2_x, t1_x))
+        def matvec_flat(v_f, *p):
+            return tree.ravel_pytree(matvec(v_unravel(v_f), *p))[0]
 
-    def recursion_func(val: _ChebyshevState, *parameters) -> _ChebyshevState:
-        value, (t2_n, t1_n), (t2_x, t1_x) = val
+        def init_func(v, *p):
+            t2_n, t1_n = nodes, np.ones_like(nodes)
+            c1 = np.mean(fx_nodes * t1_n)
+            c2 = 2 * np.mean(fx_nodes * t2_n)
+            t2_x, t1_x = matvec_flat(v, *p), v
+            value = c1 * t1_x + c2 * t2_x
+            return _ChebyshevState(value, (t2_n, t1_n), (t2_x, t1_x))
 
-        # Apply the next scalar recursion and
-        # compute the next coefficient
-        t2_n, t1_n = 2 * nodes * t2_n - t1_n, t2_n
-        c2 = 2 * np.mean(fx_nodes * t2_n)
+        def recursion_func(val: _ChebyshevState, *p) -> _ChebyshevState:
+            value, (t2_n, t1_n), (t2_x, t1_x) = val
+            t2_n, t1_n = 2 * nodes * t2_n - t1_n, t2_n
+            c2 = 2 * np.mean(fx_nodes * t2_n)
+            t2_x, t1_x = 2 * matvec_flat(t2_x, *p) - t1_x, t2_x
+            value += c2 * t2_x
+            return _ChebyshevState(value, (t2_n, t1_n), (t2_x, t1_x))
 
-        # Apply the next matrix-vector product recursion and
-        # compute the next interpolation-value
-        t2_x, t1_x = 2 * matvec(t2_x, *parameters) - t1_x, t2_x
-        value += c2 * t2_x
-        return _ChebyshevState(value, (t2_n, t1_n), (t2_x, t1_x))
+        def extract_func(val: _ChebyshevState):
+            return val.interpolation
 
-    def extract_func(val: _ChebyshevState):
-        return val.interpolation
+        alg = (0, num_matvecs - 1), init_func, recursion_func, extract_func
+        result_flat = _funm_polyexpand(alg)(vec_flat, *parameters)
+        return v_unravel(result_flat)
 
-    alg = (0, num_matvecs - 1), init_func, recursion_func, extract_func
-    return _funm_polyexpand(alg)
+    return apply
 
 
 def _chebyshev_nodes(n, /):
@@ -117,7 +115,8 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     """Implement a matrix-function-vector product via Lanczos' tridiagonalisation.
 
     This algorithm uses Lanczos' tridiagonalisation
-    and therefore applies only to symmetric matrices.
+    and therefore applies only to symmetric/Hermitian matrices.
+    Supports complex-valued matrices if the tridiagonalisation does.
 
     Parameters
     ----------
@@ -133,13 +132,17 @@ def funm_lanczos_sym(dense_funm: Callable, tridiag_sym: Callable, /) -> Callable
     """
 
     def estimate(matvec: Callable, vec, *parameters):
-        length = linalg.vector_norm(vec)
-        vec /= length
-        Q, matrix, *_ = tridiag_sym(matvec, vec, *parameters)
+        vec_flat, v_unravel = tree.ravel_pytree(vec)
+        length = linalg.vector_norm(vec_flat)
+        vec_flat = vec_flat / length
 
+        def matvec_flat(v_f, *p):
+            return tree.ravel_pytree(matvec(v_unravel(v_f), *p))[0]
+
+        Q, matrix, *_ = tridiag_sym(matvec_flat, vec_flat, *parameters)
         funm = dense_funm(matrix)
         e1 = np.eye(len(matrix))[0, :]
-        return length * (Q @ funm @ e1)
+        return v_unravel(length * (Q.T @ (funm @ e1)))
 
     return estimate
 
@@ -148,7 +151,8 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
     """Implement a matrix-function-vector product via the Arnoldi iteration.
 
     This algorithm uses the Arnoldi iteration
-    and therefore applies only to all square matrices.
+    and therefore applies only to square matrices.
+    Supports complex-valued matrices if the Hessenberg factorisation does.
 
     Parameters
     ----------
@@ -164,13 +168,17 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
     """
 
     def estimate(matvec: Callable, vec, *parameters):
-        length = linalg.vector_norm(vec)
-        vec /= length
-        basis, matrix, *_ = hessenberg(matvec, vec, *parameters)
+        vec_flat, v_unravel = tree.ravel_pytree(vec)
+        length = linalg.vector_norm(vec_flat)
+        vec_flat = vec_flat / length
 
+        def matvec_flat(v_f, *p):
+            return tree.ravel_pytree(matvec(v_unravel(v_f), *p))[0]
+
+        basis, matrix, *_ = hessenberg(matvec_flat, vec_flat, *parameters)
         funm = dense_funm(matrix)
         e1 = np.eye(len(matrix))[0, :]
-        return length * (basis @ funm @ e1)
+        return v_unravel(length * (basis.T @ (funm @ e1)))
 
     return estimate
 
@@ -178,7 +186,8 @@ def funm_arnoldi(dense_funm: Callable, hessenberg: Callable, /) -> Callable:
 def monte_carlo_funm_sym_logdet(tridiag_sym: Callable, /):
     """Construct the integrand for the log-determinant.
 
-    This function assumes a symmetric, positive definite matrix.
+    This function assumes a symmetric positive definite matrix.
+    Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
@@ -197,6 +206,7 @@ def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
     """Construct the integrand for matrix-function-trace estimation.
 
     This function assumes a symmetric matrix.
+    Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
 
     Parameters
@@ -236,7 +246,9 @@ def monte_carlo_funm_sym(dense_funm, tridiag_sym, /):
 def monte_carlo_funm_product_logdet(bidiag: Callable, /):
     r"""Construct the integrand for the log-determinant of a matrix-product.
 
-    Here, "product" refers to $X = A^\top A$.
+    Here, "product" refers to $X = A^\top A$ for a  matrix $A$.
+    Works for arbitrary rectangular matrices.
+    Supports complex-valued matrices if the bidiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
     dense_funm = dense_funm_product_svd(np.log)
@@ -246,6 +258,8 @@ def monte_carlo_funm_product_logdet(bidiag: Callable, /):
 def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
     r"""Construct the integrand for the $p$-th power of the Schatten-p norm.
 
+    Works for arbitrary rectangular matrices.
+    Supports complex-valued matrices if the bidiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
 
@@ -257,12 +271,13 @@ def monte_carlo_funm_product_schatten_norm(power, bidiag: Callable, /):
     return monte_carlo_funm_product(dense_funm, bidiag)
 
 
-def monte_carlo_funm_product(dense_funm, algorithm, /):
+def monte_carlo_funm_product(dense_funm, bidiag, /):
     r"""Construct the integrand for matrix-function-trace estimation.
 
     Instead of the trace of a function of a matrix,
     compute the trace of a function of the product of matrices.
-    Here, "product" refers to $X = A^\top A$.
+    Here, "product" refers to $X = A^\top A$ for a rectangular matrix $A$.
+    Supports complex-valued matrices if the tridiagonalisation does.
     Use with [stochtrace.estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
     """
 
@@ -278,7 +293,7 @@ def monte_carlo_funm_product(dense_funm, algorithm, /):
             return flat
 
         # Decompose into orthogonal-bidiag-orthogonal
-        _, B, *_ = algorithm(matvec_flat, v0_flat, *parameters)
+        _, B, *_ = bidiag(matvec_flat, v0_flat, *parameters)
 
         # Evaluate matfun
         fA = dense_funm(B)
@@ -307,6 +322,7 @@ def dense_funm_product_svd(matfun):
 def dense_funm_sym_eigh(matfun):
     """Implement dense matrix-functions via symmetric eigendecompositions.
 
+    The input dense matrix must be symmetric (real) or Hermitian (complex).
     Use it to construct one of the matrix-free matrix-function implementations,
     e.g. [matfree.funm.funm_lanczos_sym][matfree.funm.funm_lanczos_sym].
     """

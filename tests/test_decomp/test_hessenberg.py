@@ -13,23 +13,29 @@ def test_decomposition_is_satisfied(nrows, num_matvecs, reortho, dtype):
     A = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=dtype)
     v = prng.normal(prng.prng_key(2), shape=(nrows,), dtype=dtype)
 
+    def matvec(s, p):
+        [(x,)] = s
+        return [(p @ x,)]
+
     # Decompose
     algorithm = decomp.hessenberg(num_matvecs, reortho=reortho)
-    Q, H, r, c = algorithm(lambda s, p: p @ s, v, A)
+    Q_pytree, H, r_pytree, c = algorithm(matvec, [(v,)], A)
+    [(Q,)] = Q_pytree  # Q shape (num_matvecs, nrows)
+    [(r,)] = r_pytree  # r shape (nrows,)
 
-    # Assert shapes
-    assert Q.shape == (nrows, num_matvecs)
+    # Assert shapes -- Q is (k, n)
+    assert Q.shape == (num_matvecs, nrows)
     assert H.shape == (num_matvecs, num_matvecs)
     assert r.shape == (nrows,)
     assert c.shape == ()
 
-    # Test the decompositions
+    # Test the decompositions: A Q.T = Q.T H + r e_k^T
     e0, ek = np.eye(num_matvecs)[[0, -1], :]
-    test_util.assert_allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0)
-    test_util.assert_allclose(Q.T.conj() @ Q - np.eye(num_matvecs), 0.0)
+    test_util.assert_allclose(A @ Q.T - Q.T @ H - linalg.outer(r, ek), 0.0)
+    test_util.assert_allclose(Q @ Q.T.conj() - np.eye(num_matvecs), 0.0)
 
     if num_matvecs > 0:
-        test_util.assert_allclose(Q @ e0, c * v)
+        test_util.assert_allclose(Q.T @ e0, c * v)
 
 
 @testing.parametrize("nrows", [10])
@@ -40,21 +46,27 @@ def test_reorthogonalisation_improves_the_estimate(nrows, num_matvecs, reortho):
     A = linalg.hilbert(nrows)
     v = prng.normal(prng.prng_key(2), shape=(nrows,))
 
+    def matvec(s, p):
+        [(x,)] = s
+        return [(p @ x,)]
+
     # Decompose
     algorithm = decomp.hessenberg(num_matvecs, reortho=reortho)
-    Q, H, r, c = algorithm(lambda s, p: p @ s, v, A)
+    Q_pytree, H, r_pytree, c = algorithm(matvec, [(v,)], A)
+    [(Q,)] = Q_pytree  # Q shape (num_matvecs, nrows)
+    [(r,)] = r_pytree  # r shape (nrows,)
 
     # Assert shapes
-    assert Q.shape == (nrows, num_matvecs)
+    assert Q.shape == (num_matvecs, nrows)
     assert H.shape == (num_matvecs, num_matvecs)
     assert r.shape == (nrows,)
     assert c.shape == ()
 
     # Test the decompositions
     e0, ek = np.eye(num_matvecs)[[0, -1], :]
-    test_util.assert_allclose(A @ Q - Q @ H - linalg.outer(r, ek), 0.0)
-    test_util.assert_allclose(Q.T @ Q - np.eye(num_matvecs), 0.0)
-    test_util.assert_allclose(Q @ e0, c * v)
+    test_util.assert_allclose(A @ Q.T - Q.T @ H - linalg.outer(r, ek), 0.0)
+    test_util.assert_allclose(Q @ Q.T - np.eye(num_matvecs), 0.0)
+    test_util.assert_allclose(Q.T @ e0, c * v)
 
 
 @testing.parametrize("reortho_wrong", [True, "full_with_sparsity", "None"])

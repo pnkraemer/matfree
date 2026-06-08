@@ -11,7 +11,8 @@ def test_funm_chebyshev(n):
     # vector, and parameters (a matrix).
 
     def matvec(x, p):
-        return p @ x
+        [(v,)] = x
+        return [(p @ v,)]
 
     def fun(x):
         return np.sin(x)
@@ -31,5 +32,5 @@ def test_funm_chebyshev(n):
     matfun_vec = funm.funm_chebyshev(fun, num_matvecs, matvec)
 
     # Compute the matrix-function vector product
-    received = matfun_vec(v, matrix)
+    [(received,)] = matfun_vec([(v,)], matrix)
     assert np.allclose(expected, received, rtol=1e-4)

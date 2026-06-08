@@ -25,15 +25,22 @@ def test_bidiag_decomposition_is_satisfied(
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
 
-    algorithm = decomp.bidiag(num_matvecs, materialize=True)
-    (U, V), B, res, ln = algorithm(lambda v: A @ v, v0)
+    def Av(v):
+        (x,) = v  # tuple input (right-space)
+        return [(A @ x,)]  # list-of-tuple output (left-space)
 
-    test_util.assert_columns_orthonormal(U)
-    test_util.assert_columns_orthonormal(V)
+    algorithm = decomp.bidiag(num_matvecs, materialize=True)
+    (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, (v0,))
+    [(U,)] = U_pytree  # U shape (k, nrows) -- rows are left Krylov vectors
+    (V,) = V_pytree  # V shape (k, ncols) -- rows are right Krylov vectors
+    (res,) = res_pytree  # res shape (ncols,)
+
+    test_util.assert_columns_orthonormal(U.T)
+    test_util.assert_columns_orthonormal(V.T)
 
     em = np.eye(num_matvecs)[:, -1]
-    test_util.assert_allclose(A @ V, U @ B)
-    test_util.assert_allclose(A.T @ U, V @ B.T + linalg.outer(res, em))
+    test_util.assert_allclose(A @ V.T - U.T @ B, 0.0)
+    test_util.assert_allclose(A.T @ U.T - V.T @ B.T - linalg.outer(res, em), 0.0)
     test_util.assert_allclose(1.0 / linalg.vector_norm(v0), ln)
 
 
@@ -48,13 +55,20 @@ def test_bidiag_decomposition_is_satisfied_hilbert(nrows, ncols, num_matvecs):
     key = prng.prng_key(1)
     v0 = prng.normal(key, shape=(ncols,))
 
-    algorithm = decomp.bidiag(num_matvecs, materialize=True, reortho="full")
-    (U, V), B, res, ln = algorithm(lambda v: A @ v, v0)
+    def Av(v):
+        (x,) = v  # tuple input (right-space)
+        return [(A @ x,)]  # list-of-tuple output (left-space)
 
-    test_util.assert_columns_orthonormal(U)
-    test_util.assert_columns_orthonormal(V)
+    algorithm = decomp.bidiag(num_matvecs, materialize=True, reortho="full")
+    (U_pytree, V_pytree), B, res_pytree, ln = algorithm(Av, (v0,))
+    [(U,)] = U_pytree  # U shape (k, nrows)
+    (V,) = V_pytree  # V shape (k, ncols)
+    (res,) = res_pytree  # res shape (ncols,)
+
+    test_util.assert_columns_orthonormal(U.T)
+    test_util.assert_columns_orthonormal(V.T)
 
     em = np.eye(num_matvecs)[:, -1]
-    test_util.assert_allclose(A @ V, U @ B)
-    test_util.assert_allclose(A.T @ U, V @ B.T + linalg.outer(res, em))
+    test_util.assert_allclose(A @ V.T - U.T @ B, 0.0)
+    test_util.assert_allclose(A.T @ U.T - V.T @ B.T - linalg.outer(res, em), 0.0)
     test_util.assert_allclose(1.0 / linalg.vector_norm(v0), ln)

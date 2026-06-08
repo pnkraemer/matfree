@@ -12,12 +12,18 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
+    def matvec(s, p):
+        [(x,)] = s
+        return [(p @ x,)]
+
     # Run Lanczos approximation
     algorithm = decomp.tridiag_sym(ndim, reortho=reortho, materialize=True)
-    Q, T, *_ = algorithm(lambda s, p: p @ s, vector, matrix)
+    Q_pytree, T, *_ = algorithm(matvec, [(vector,)], matrix)
+    [(Q,)] = Q_pytree
 
     # Reconstruct the original matrix from the full-num_matvecs approximation
-    matrix_reconstructed = Q @ T @ Q.T
+    # Q shape is (k, n) -- rows are Krylov vectors
+    matrix_reconstructed = Q.T @ T @ Q
 
     if reortho == "full":
         tols = {"atol": 1e-5, "rtol": 1e-5}
@@ -27,7 +33,7 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
     # Assert the reconstruction was "exact"
     assert np.allclose(matrix_reconstructed, matrix, **tols)
 
-    # Assert all vectors are orthogonal
+    # Assert all vectors are orthogonal (Q is square for full-rank)
     test_util.assert_columns_orthonormal(Q)
     test_util.assert_columns_orthonormal(Q.T)
 
@@ -43,10 +49,17 @@ def test_mid_rank_reconstruction_satisfies_decomposition(ndim, num_matvecs, reor
     matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
+    def matvec(s, p):
+        [(x,)] = s
+        return [(p @ x,)]
+
     # Run Lanczos approximation
     algorithm = decomp.tridiag_sym(num_matvecs, reortho=reortho, materialize=True)
-    Q, T, q, _n = algorithm(lambda s, p: p @ s, vector, matrix)
+    Q_pytree, T, q_pytree, _n = algorithm(matvec, [(vector,)], matrix)
+    [(Q,)] = Q_pytree
+    [(q,)] = q_pytree
 
-    # Verify the decomposition
+    # Verify the decomposition: A Q.T = Q.T T + q e_K^T
+    # Q shape (k, n), Q.T shape (n, k)
     e_K = np.eye(num_matvecs)[-1]
-    test_util.assert_allclose(matrix @ Q, Q @ T + linalg.outer(q, e_K))
+    test_util.assert_allclose(matrix @ Q.T - Q.T @ T - linalg.outer(q, e_K), 0.0)

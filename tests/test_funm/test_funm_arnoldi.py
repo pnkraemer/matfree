@@ -25,6 +25,11 @@ def test_funm_arnoldi_matches_schur_implementation(dense_funm, reortho, n):
     # Compute the matrix-function vector product
     arnoldi = decomp.hessenberg((n * 3) // 4, reortho=reortho)
     matfun_vec = funm.funm_arnoldi(dense_funm, arnoldi)
-    received = matfun_vec(lambda s, p: p @ s, v, matrix)
+
+    def matvec(s, p):
+        [(x,)] = s
+        return [(p @ x,)]
+
+    [(received,)] = matfun_vec(matvec, [(v,)], matrix)
 
     assert np.allclose(expected, received, rtol=1e-1, atol=1e-1)

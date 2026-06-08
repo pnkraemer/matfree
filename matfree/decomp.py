@@ -37,8 +37,10 @@ def tridiag_sym(
 ):
     r"""Construct an implementation of **tridiagonalisation**.
 
-    Decompose a **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
+    Decompose a real **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
+    Does not support complex-valued matrices.
+
     The present implementation allocates all Lanczos vectors before running the
     algorithm. If `reortho` is set to `"full"`, it also uses full reorthogonalisation.
     It is usually a good idea to use full reorthogonalisation.
@@ -104,15 +106,8 @@ def tridiag_sym(
     Returns
     -------
     decompose
-        A decomposition function that maps
-        ``(matvec, vector, *params)`` to the decomposition.
-        The decomposition is a tuple of (nested) arrays.
-        The first element is the Krylov basis,
-        the second element represents the tridiagonal matrix
-        (how it is represented depends on the value of ``materialize''),
-        the third element is
-        the residual, and the fourth element is
-        the (inverse of the) length of the initial vector.
+        A function ``(matvec, vector, *params)`` returning a four-element result
+        ``(Q_tall, J_small, residual, init_length_inv)``.
     """
     if reortho == "full":
         return _tridiag_reortho_full(
@@ -159,19 +154,27 @@ def _todense_tridiag_sym(diag, off_diag):
 
 def _tridiag_reortho_none(num_matvecs: int, /, *, custom_vjp: bool, materialize: bool):
     def estimate(matvec, vec, *params):
-        if num_matvecs < 0 or num_matvecs > len(vec):
-            msg = _error_num_matvecs(num_matvecs, maxval=len(vec), minval=0)
+        vec_flat, vec_unravel = tree.ravel_pytree(vec)
+
+        if num_matvecs < 0 or num_matvecs > len(vec_flat):
+            msg = _error_num_matvecs(num_matvecs, maxval=len(vec_flat), minval=0)
             raise ValueError(msg)
 
-        (Q, H), (q, b) = _estimate(matvec, vec, *params)
-        v = b * q
+        def matvec_flat(v_f, *p):
+            return tree.ravel_pytree(matvec(vec_unravel(v_f), *p))[0]
+
+        (Q, H), (q, b) = _estimate(matvec_flat, vec_flat, *params)
+        v_flat = b * q
 
         if materialize:
             H = _todense_tridiag_sym(*H)
 
-        length = linalg.vector_norm(vec)
+        length = linalg.vector_norm(vec_flat)
         return _DecompResult(
-            Q_tall=Q.T, J_small=H, residual=v, init_length_inv=1.0 / length
+            Q_tall=func.vmap(vec_unravel)(Q),
+            J_small=H,
+            residual=vec_unravel(v_flat),
+            init_length_inv=1.0 / length,
         )
 
     def _estimate(matvec, vec, *params):
@@ -350,17 +353,13 @@ def hessenberg(
 ):
     r"""Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
 
-    Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
-    It tends to be a good idea to use full reorthogonalisation.
-
-    This algorithm works for **arbitrary matrices**.
+    Factorise $A \approx Q H Q^\top$, where $Q$ is orthogonal and $H$ is upper Hessenberg.
+    Works for **arbitrary square matrices**. Does not support complex-valued matrices.
 
     Setting `custom_vjp` to `True` implies using efficient, numerically stable
-    gradients of the Arnoldi iteration according to what has been proposed by
-    Krämer et al. (2024).
+    gradients of the Arnoldi iteration which was proposed by Krämer et al. (2024).
     These gradients are exact, so there is little reason not to use them.
-    If you use this configuration,
-    please consider citing Krämer et al. (2024; bibtex below).
+    If you use this configuration, please cite Krämer et al. (2024):
 
     ??? note "BibTex for Krämer et al. (2024)"
         ```bibtex
@@ -379,8 +378,17 @@ def hessenberg(
         raise TypeError(msg)
 
     def estimate(matvec, v, *params):
-        matvec_convert, aux_args = func.closure_convert(matvec, v, *params)
-        return _estimate(matvec_convert, v, *params, *aux_args)
+        v_flat, v_unravel = tree.ravel_pytree(v)
+
+        def matvec_flat(v_f, *p):
+            return tree.ravel_pytree(matvec(v_unravel(v_f), *p))[0]
+
+        matvec_convert, aux_args = func.closure_convert(matvec_flat, v_flat, *params)
+        Q_flat, H, r_flat, c = _estimate(matvec_convert, v_flat, *params, *aux_args)
+        Q_tall = func.vmap(v_unravel)(Q_flat.T)
+        return _DecompResult(
+            Q_tall=Q_tall, J_small=H, residual=v_unravel(r_flat), init_length_inv=c
+        )
 
     def _estimate(matvec_convert: Callable, v, *params):
         return _hessenberg_forward(
@@ -598,16 +606,28 @@ def _extract_diag(x, offset=0):
 
 
 def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full"):
-    """Construct an implementation of **bidiagonalisation**.
+    r"""Construct an implementation of **bidiagonalisation** via the Golub-Kahan algorithm.
 
-    Uses pre-allocation and full reorthogonalisation.
+    Factorise $A \approx U B V^\top$, where $U$, $V$ are orthogonal and $B$ is bidiagonal.
+    Works for **arbitrary real matrices** (rectangular, no symmetry required).
+    Does not support complex-valued matrices.
 
-    Works for **arbitrary matrices**. No symmetry required.
-
-    Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
-
     Internally, Matfree uses JAX to turn matrix-vector- into vector-matrix-products.
+
+    ??? note "BibTex for Golub and Kahan (1965)"
+        ```bibtex
+        @article{golub1965calculating,
+            title={Calculating the singular values and pseudo-inverse of a matrix},
+            author={Golub, Gene and Kahan, William},
+            journal={Journal of the Society for Industrial and Applied Mathematics, Series B: Numerical Analysis},
+            volume={2},
+            number={2},
+            pages={205--224},
+            year={1965},
+            publisher={SIAM}
+        }
+        ```
 
     ??? note "A note about differentiability"
         Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or
@@ -620,10 +640,17 @@ def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full")
     """
 
     def estimate(Av: Callable, v0, *parameters):
-        # Infer the size of A from v0
-        (ncols,) = np.shape(v0)
-        w0_like = func.eval_shape(Av, v0, *parameters)
-        (nrows,) = np.shape(w0_like)
+        # Flatten v0 and infer the shape of the Av output
+        v0_flat, v_unravel = tree.ravel_pytree(v0)
+        ncols = v0_flat.shape[0]
+        u0_like = func.eval_shape(lambda z: Av(z, *parameters), v0)
+        u0_flat_like, u_unravel = func.eval_shape(tree.ravel_pytree, u0_like)
+        nrows = u0_flat_like.shape[0]
+
+        def Av_flat(v_f, *p):
+            result = Av(v_unravel(v_f), *p)
+            result_flat, _ = tree.ravel_pytree(result)
+            return result_flat
 
         # Complain if the shapes don't match
         max_num_matvecs = min(nrows, ncols)
@@ -631,29 +658,29 @@ def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full")
             msg = _error_num_matvecs(num_matvecs, maxval=min(nrows, ncols), minval=0)
             raise ValueError(msg)
 
-        v0_norm, length = _normalise(v0)
+        v0_norm, length = _normalise(v0_flat)
         init_val = init(v0_norm, nrows=nrows, ncols=ncols)
 
         if num_matvecs == 0:
             uk_all_T, J, vk_all, (beta, vk) = extract(init_val)
             return _DecompResult(
-                Q_tall=(uk_all_T, vk_all.T),
+                Q_tall=(func.vmap(u_unravel)(uk_all_T.T), func.vmap(v_unravel)(vk_all)),
                 J_small=J,
-                residual=beta * vk,
+                residual=v_unravel(beta * vk),
                 init_length_inv=1 / length,
             )
 
         def body_fun(_, s):
-            return step(Av, s, *parameters)
+            return step(Av_flat, s, *parameters)
 
         result = control_flow.fori_loop(
             0, num_matvecs, body_fun=body_fun, init_val=init_val
         )
         uk_all_T, J, vk_all, (beta, vk) = extract(result)
         return _DecompResult(
-            Q_tall=(uk_all_T, vk_all.T),
+            Q_tall=(func.vmap(u_unravel)(uk_all_T.T), func.vmap(v_unravel)(vk_all)),
             J_small=J,
-            residual=beta * vk,
+            residual=v_unravel(beta * vk),
             init_length_inv=1 / length,
         )
 

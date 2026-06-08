@@ -47,16 +47,19 @@ def test_value_and_grad_matches_numpy_lstsq_no_damping(
 
     def vecmat(vector, p_as_list):
         [p] = p_as_list
-        return p.T @ vector
+        [(v,)] = vector
+        return [(p.T @ v,)]
 
     @func.jit
     def lstsq_matfree(a, b):
         lsmr = lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
         sol, _ = lsmr(vecmat, a, b, x0=x0)
-        return sol
+        [(sol_arr,)] = sol
+        return sol_arr
 
-    received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix])
-    drhs2, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
+    received, received_vjp = func.vjp(lstsq_matfree, [(rhs,)], [matrix])
+    drhs_pytree, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
+    [(drhs2,)] = drhs_pytree
 
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)
@@ -93,7 +96,8 @@ def test_value_and_grad_matches_linalg_solve_with_damping(
 
     def vecmat(vector, p_as_list):
         [p] = p_as_list
-        return p.T @ vector
+        [(v,)] = vector
+        return [(p.T @ v,)]
 
     @func.jit
     def lstsq_matfree(a, b, dmp):
@@ -101,10 +105,14 @@ def test_value_and_grad_matches_linalg_solve_with_damping(
             atol=1e-10, btol=1e-10, ctol=1e-10, is_full_rank=not rank_deficient
         )
         sol, _ = lsmr(vecmat, a, b, damp=dmp)
-        return sol
+        [(sol_arr,)] = sol
+        return sol_arr
 
-    received, received_vjp = func.vjp(lstsq_matfree, rhs, [matrix], damp)
-    drhs2, [dmatrix2], ddmp2 = received_vjp(dsol)  # mind the order of rhs & matrix
+    received, received_vjp = func.vjp(lstsq_matfree, [(rhs,)], [matrix], damp)
+
+    # mind the order of rhs & matrix
+    drhs_pytree, [dmatrix2], ddmp2 = received_vjp(dsol)
+    [(drhs2,)] = drhs_pytree
 
     test_util.assert_allclose(received, expected)
     test_util.assert_allclose(drhs1, drhs2)

@@ -41,7 +41,7 @@ def test_output_shape_as_expected(nrows, num_matvecs, method):
     Us = tree.tree_leaves(Us)
 
     for U in Us:
-        assert np.shape(U) == (nrows, num_matvecs)
+        assert np.shape(U) == (num_matvecs, nrows)
 
     assert np.shape(B) == (num_matvecs, num_matvecs)
     assert np.shape(res) == (nrows,)
