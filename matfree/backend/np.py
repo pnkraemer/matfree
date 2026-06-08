@@ -147,6 +147,10 @@ def nanmean(x, /, axis=None):
     return jnp.nanmean(x, axis)
 
 
+def median(x, /, axis=None):
+    return jnp.median(x, axis=axis)
+
+
 def array_max(x, /, axis=None):
     return jnp.max(x, axis=axis)
 
