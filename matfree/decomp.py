@@ -39,7 +39,7 @@ def tridiag_sym(
 
     Decompose a real **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
-    Does not support complex-valued matrices right now.
+    Does not support complex-valued matrices.
 
     The present implementation allocates all Lanczos vectors before running the
     algorithm. If `reortho` is set to `"full"`, it also uses full reorthogonalisation.
@@ -106,15 +106,8 @@ def tridiag_sym(
     Returns
     -------
     decompose
-        A decomposition function that maps
-        ``(matvec, vector, *params)`` to the decomposition.
-        The decomposition is a tuple of (nested) arrays.
-        The first element is the Krylov basis,
-        the second element represents the tridiagonal matrix
-        (how it is represented depends on the value of ``materialize''),
-        the third element is
-        the residual, and the fourth element is
-        the (inverse of the) length of the initial vector.
+        A function ``(matvec, vector, *params)`` returning a four-element result
+        ``(Q_tall, J_small, residual, init_length_inv)``.
     """
     if reortho == "full":
         return _tridiag_reortho_full(
@@ -360,18 +353,13 @@ def hessenberg(
 ):
     r"""Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
 
-    Uses pre-allocation, and full reorthogonalisation if `reortho` is set to `"full"`.
-    It tends to be a good idea to use full reorthogonalisation.
-
-    This algorithm works for **arbitrary square matrices**.
-    Does not support complex-valued matrices right now.
+    Factorise $A \approx Q H Q^\top$, where $Q$ is orthogonal and $H$ is upper Hessenberg.
+    Works for **arbitrary square matrices**. Does not support complex-valued matrices.
 
     Setting `custom_vjp` to `True` implies using efficient, numerically stable
-    gradients of the Arnoldi iteration according to what has been proposed by
-    Krämer et al. (2024).
+    gradients of the Arnoldi iteration which was proposed by Krämer et al. (2024).
     These gradients are exact, so there is little reason not to use them.
-    If you use this configuration,
-    please consider citing Krämer et al. (2024; bibtex below).
+    If you use this configuration, please cite Krämer et al. (2024):
 
     ??? note "BibTex for Krämer et al. (2024)"
         ```bibtex
@@ -618,17 +606,28 @@ def _extract_diag(x, offset=0):
 
 
 def bidiag(num_matvecs: int, /, materialize: bool = True, reortho: str = "full"):
-    """Construct an implementation of **bidiagonalisation**.
+    r"""Construct an implementation of **bidiagonalisation** via the Golub-Kahan algorithm.
 
-    Uses pre-allocation and full reorthogonalisation.
-
+    Factorise $A \approx U B V^\top$, where $U$, $V$ are orthogonal and $B$ is bidiagonal.
     Works for **arbitrary real matrices** (rectangular, no symmetry required).
-    Does not support complex-valued matrices right now.
+    Does not support complex-valued matrices.
 
-    Decompose a matrix into a product of orthogonal-**bidiagonal**-orthogonal matrices.
     Use this algorithm for approximate **singular value** decompositions.
-
     Internally, Matfree uses JAX to turn matrix-vector- into vector-matrix-products.
+
+    ??? note "BibTex for Golub and Kahan (1965)"
+        ```bibtex
+        @article{golub1965calculating,
+            title={Calculating the singular values and pseudo-inverse of a matrix},
+            author={Golub, Gene and Kahan, William},
+            journal={Journal of the Society for Industrial and Applied Mathematics, Series B: Numerical Analysis},
+            volume={2},
+            number={2},
+            pages={205--224},
+            year={1965},
+            publisher={SIAM}
+        }
+        ```
 
     ??? note "A note about differentiability"
         Unlike [tridiag_sym][matfree.decomp.tridiag_sym] or

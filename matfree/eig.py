@@ -25,10 +25,8 @@ from matfree.backend.typing import Array, Callable
 
 
 def svd_partial(bidiag: Callable) -> Callable:
-    """Partial singular value decomposition.
+    r"""Compute a partial SVD $A \approx U \Sigma V^\top$ via bidiagonalisation.
 
-    Combines bidiagonalisation with a full SVD of the (small) bidiagonal matrix.
-    Works for arbitrary rectangular matrices.
     Supports complex-valued matrices if the bidiagonalisation does.
 
     Parameters
@@ -69,12 +67,9 @@ def svd_partial(bidiag: Callable) -> Callable:
 
 
 def eigh_partial(tridiag_sym: Callable) -> Callable:
-    """Partial eigenvalue decomposition for real symmetric matrices.
+    r"""Compute a partial eigendecomposition $A \approx V \Lambda V^\top$ for symmetric/Hermitian matrices.
 
-    Combines tridiagonalization with a decomposition
-    of the (small) tridiagonal matrix.
-    Requires a symmetric matrix.
-    Supports complex-valued matrices if the tridiagonalisation does.
+    Supports complex-valued (Hermitian) matrices if the tridiagonalisation does.
 
     Parameters
     ----------
@@ -110,11 +105,8 @@ def eigh_partial(tridiag_sym: Callable) -> Callable:
 
 
 def eig_partial(hessenberg: Callable) -> Callable:
-    """Partial eigenvalue decomposition for arbitrary real square matrices.
+    """Compute a partial eigendecomposition of an arbitrary square matrix via Hessenberg factorisation.
 
-    Combines Hessenberg factorisation with a decomposition
-    of the (small) Hessenberg matrix.
-    Requires a square matrix.
     Supports complex-valued matrices if the Hessenberg factorisation does.
 
     Parameters

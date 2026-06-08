@@ -23,10 +23,13 @@ def lsmr(
     # if the matrix is full rank, the backward pass can be accelerated:
     is_full_rank: bool = False,
 ):
-    r"""Construct an experimental implementation of LSMR.
+    r"""Construct a matrix-free implementation of LSMR.
 
-    Follows the [SciPy's implementation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html),
-    but uses JAX.
+    Minimises $\|Av - b\|_2^2 + \lambda^2 \|v\|_2^2$ over $v$,
+    where $\lambda$ = ``damp``.
+    Works for arbitrary real, rectangular matrices.
+    Does not support complex matrices.
+    Follows [SciPy's implementation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lsmr.html).
     LSMR is due to Fong and Saunders (2011):
 
     ??? note "BibTex for Fong and Saunders (2011)"
