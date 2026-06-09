@@ -268,6 +268,88 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     return integrand
 
 
+def leave_one_out_xdiag() -> Callable:
+    """Construct an integrand for estimating the diagonal using the XDiag algorithm (Epperly et al. 2024).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one diagonal
+        estimate per leave-one-out sample.
+
+    Notes
+    -----
+    The number of samples must be less than or equal to the dimension of the operator.
+
+    The sum of the diagonal estimate over all entries is an unbiased estimate of the trace but
+    generally has higher variance than the estimate produced by
+    [leave_one_out_xnystrace][matfree.stochtrace.leave_one_out_xnystrace].
+
+    References
+    ----------
+    - Epperly EN, Tropp JA, Webber RJ (2024). XTrace: Making the most of every sample in stochastic trace estimation.
+        SIAM J Matrix Anal A. 45.1: 1-23.
+        doi: [10.1137/23M1548323](https://doi.org/10.1137/23M1548323)
+        arXiv: [2301.07825](https://arxiv.org/abs/2301.07825)
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        if 2 * num_samples >= n:
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            diag_B = linalg.diagonal(B_mat)
+            return func.vmap(unflatten)(
+                np.ones((num_samples, 1), dtype=diag_B.dtype) * diag_B
+            )
+
+        matvec_flat_transpose = func.linear_transpose(matvec_flat, Omega[:, 0])
+
+        def matvec_flat_adjoint(v):
+            (result,) = matvec_flat_transpose(v.conj())
+            return result.conj()
+
+        Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
+        Q, R = linalg.qr_reduced(Y)
+        Z = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(Q)
+
+        def _diag_exact():
+            diag_B = func.vmap(linalg.vdot, in_axes=0)(Z, Q)
+            return np.ones(num_samples, dtype=diag_B.dtype) * diag_B[:, None]
+
+        def _diag_estimate():
+            S = _qr_leave_one_out_factor(R)
+            QS = Q @ S
+            S_vd_R = func.vmap(linalg.vdot, in_axes=1)(S, R)
+
+            diag_B_hat = func.vmap(linalg.vdot, in_axes=0)(Z, Q)
+            diag_B_hat_loo = diag_B_hat[:, None] - QS * (Z @ S).conj()
+            diag_residual_loo = QS * S_vd_R * Omega.conj()
+            return diag_B_hat_loo + diag_residual_loo
+
+        Y_rank = np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype))
+
+        diag_loo = control_flow.cond(Y_rank < num_samples, _diag_exact, _diag_estimate)
+        return func.vmap(unflatten)(diag_loo.T)
+
+    return integrand
+
+
 def leave_one_out_xnystrace(
     *,
     nystrom: Callable[[Callable, Array], tuple[Array, Array, Array]] | None = None,
