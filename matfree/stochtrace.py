@@ -462,6 +462,77 @@ def leave_one_out_xnystrace(
     return integrand
 
 
+def leave_one_out_xnysdiag(
+    *, nystrom: Callable[[Callable, Array], tuple[Array, Array, Array]] | None = None
+) -> Callable:
+    """Construct an integrand for estimating the diagonal of a positive semi-definite operator using the XNysDiag algorithm (Epperly et al. 2025).
+
+    Parameters
+    ----------
+    nystrom
+        A callable with signature ``(matvec_flat, Omega) -> (nystrom_left, downdate, shift)``.
+        Usually the return value of
+        [`nystrom_shifted_cholesky`][matfree.stochtrace.nystrom_shifted_cholesky]
+        or [`nystrom_eigh`][matfree.stochtrace.nystrom_eigh] (default: `nystrom_eigh`).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one diagonal
+        estimate per leave-one-out sample.
+        The `matvec` must be a positive semi-definite operator.
+
+    Notes
+    -----
+    The number of samples must be less than or equal to the dimension of the operator.
+    The output diagonal is real-valued (PSD operators have real diagonal).
+
+    The sum of the diagonal estimate over all entries equals the corresponding
+    [leave_one_out_xnystrace][matfree.stochtrace.leave_one_out_xnystrace]
+    trace estimate exactly for the same operator and samples (when ``apply_resphering=False``).
+
+    References
+    ----------
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+    if nystrom is None:
+        nystrom = nystrom_eigh()
+
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        if num_samples == n:
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            diag_B = linalg.diagonal(B_mat)
+            diag_all = np.ones((num_samples, 1), dtype=diag_B.dtype) * diag_B
+            return tree.tree_map(lambda x: x.real, func.vmap(unflatten)(diag_all))
+
+        F, Z, shift = nystrom(matvec_flat, Omega)
+        Z_vd_Omega = func.vmap(linalg.vdot, in_axes=1)(Z, Omega)
+
+        diag_B_hat = np.sum(linalg.abs2(F), axis=1) - shift
+        diag_B_hat_loo = diag_B_hat[:, None] - linalg.abs2(Z)
+        diag_res_loo = Z * Z_vd_Omega * Omega.conj()
+        diag_loo = (diag_B_hat_loo + diag_res_loo).T
+        return tree.tree_map(lambda x: x.real, func.vmap(unflatten)(diag_loo))
+
+    return integrand
+
+
 def _qr_leave_one_out_factor(R):
     r"""Compute the downdate factor for a QR decomposition leaving out a single column.
 
