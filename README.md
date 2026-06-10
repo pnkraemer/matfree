@@ -90,6 +90,7 @@ These tutorials include, among other things:
 - **Vector calculus:** Use matrix-free linear algebra to implement vector calculus.
 - **Low-memory trace estimation:** Combine Matfree's API with JAX's function transformations for low-memory stochastic trace estimation.
 - **Matrix functions:** Compute matrix exponentials and other matrix functions without materialising the matrix.
+- **Gaussian log-densities:** Differentiate GP hyperparameters using stochastic Lanczos quadrature and CG.
 
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use Matfree for!
 
