@@ -15,7 +15,7 @@ Matfree builds on [JAX](https://jax.readthedocs.io/en/latest/).
 - ⚡ Chebyshev, Lanczos, and Arnoldi-based methods for approximating **functions of large matrices**
 - ⚡ **Gradients of functions of large matrices** (like in [this paper](https://arxiv.org/abs/2405.17277)) via differentiable Lanczos and Arnoldi iterations
 - ⚡ Partial Cholesky **preconditioners** with and without pivoting
-- ⚡ And many other things
+- ⚡ And [much more](https://pnkraemer.github.io/matfree/)
 
 Everything is natively compatible with the rest of JAX:
 JIT compilation, automatic differentiation, vectorisation, and PyTrees.
@@ -60,18 +60,11 @@ Import Matfree and JAX, and set up a test problem.
 Estimate the trace of the matrix:
 
 ```python
->>> # Determine the shape of the base-samples
 >>> input_like = jnp.zeros((2,), dtype=float)
 >>> sampler = stochtrace.sampler_signs(input_like, num=10_000)
->>>
->>> # Set Hutchinson's method up to compute the traces
->>> # (instead of, e.g., diagonals)
 >>> integrand = stochtrace.monte_carlo_trace()
->>>
->>> # Compute an estimator
 >>> estimate = stochtrace.estimator_monte_carlo(integrand, sampler)
 >>>
->>> # Estimate
 >>> key = jax.random.PRNGKey(1)
 >>> trace = estimate(matvec, key)
 >>>
@@ -79,7 +72,7 @@ Estimate the trace of the matrix:
 504.0
 >>>
 >>> # for comparison:
->>> print((jnp.trace(A.T @ A)))
+>>> print(jnp.trace(A.T @ A))
 506.0
 
 ```
@@ -96,6 +89,7 @@ These tutorials include, among other things:
 - **Higher moments and UQ:** Compute means, variances, and other moments simultaneously.
 - **Vector calculus:** Use matrix-free linear algebra to implement vector calculus.
 - **Low-memory trace estimation:** Combine Matfree's API with JAX's function transformations for low-memory stochastic trace estimation.
+- **Matrix functions:** Compute matrix exponentials and other matrix functions without materialising the matrix.
 - **Gaussian log-densities:** Differentiate GP hyperparameters using stochastic Lanczos quadrature and CG.
 
 [_Let us know_](https://github.com/pnkraemer/matfree/issues) what you use Matfree for!
@@ -210,7 +204,7 @@ When making a pull request, keep in mind the following (rough) guidelines:
 
 **A quick unittest checklist:**
 
-Starting with a basic version of an algorithm is fine, but eventually, Matfree aims to provide robust and userfriendly code. This includes testing different variations in the tests. Common considerations include:
+Starting with a basic version of an algorithm is fine, but eventually, Matfree aims to provide robust and user friendly code. This includes testing different variations in the tests. Common considerations include:
 
 - Is the algorithm randomised? Then, we should test different seeds (e.g. 1, 2, 3). See the existing tests for Hessenberg adjoints for inspiration.
 - Should the algorithm support real and complex arithmetic? If so, parametrise the tests with corresponding dtypes. Use the existing tests for stochastic trace estimation for inspiration.
