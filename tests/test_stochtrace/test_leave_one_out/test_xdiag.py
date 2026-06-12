@@ -3,7 +3,6 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
-from .conftest import exp_eigvals, step_eigvals
 
 
 @testing.parametrize("n", [10, 20])
@@ -76,7 +75,7 @@ def test_xdiag_exact(matvec, params, sampler, expected):
 
 def cases_experiments_exp():
     """Eigenvalues that decay rapidly."""
-    eigvals = exp_eigvals(1_000)
+    eigvals = test_util.eigenvalues_fast_spectral_decay(1_000)
     num_samples = 35
     max_rel_err = 1e-2
     return eigvals, num_samples, max_rel_err
@@ -84,7 +83,7 @@ def cases_experiments_exp():
 
 def cases_experiments_step():
     """Eigenvalues that are flat with a sudden drop."""
-    eigvals = step_eigvals(1_000)
+    eigvals = test_util.eigenvalues_large_spectral_drop(1_000)
     num_samples = 60
     max_rel_err = 5e-2
     return eigvals, num_samples, max_rel_err

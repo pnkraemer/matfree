@@ -3,7 +3,6 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
-from .conftest import exp_eigvals, step_eigvals
 
 
 @testing.parametrize("dtype", [float, complex])
@@ -54,7 +53,7 @@ def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
-    d = exp_eigvals(1_000).astype(rdtype)
+    d = test_util.eigenvalues_fast_spectral_decay(1_000).astype(rdtype)
     n = len(d)
     num_rep = 10
     key = prng.prng_key(1)
@@ -84,7 +83,7 @@ def test_xtrace_large_spectral_drop(apply_resphering, dtype):
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
-    d = step_eigvals(1_000).astype(rdtype)
+    d = test_util.eigenvalues_large_spectral_drop(1_000).astype(rdtype)
     n = len(d)
     m = 50
     num_rep = 10

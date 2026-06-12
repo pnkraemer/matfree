@@ -3,7 +3,6 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
-from .conftest import exp_eigvals, step_eigvals
 
 
 def test_xnystrace_kwargs_customizable():
@@ -74,7 +73,7 @@ def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
-    d = exp_eigvals(1_000).astype(rdtype)
+    d = test_util.eigenvalues_fast_spectral_decay(1_000).astype(rdtype)
     n = len(d)
     num_samples = 50
     num_rep = 10
@@ -110,7 +109,7 @@ def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
-    d = step_eigvals(1_000).astype(rdtype)
+    d = test_util.eigenvalues_large_spectral_drop(1_000).astype(rdtype)
     n = len(d)
     m = 50
     num_rep = 10
