@@ -3,23 +3,25 @@
 from matfree.backend import linalg, np, prng, tree
 
 
-def symmetric_matrix_from_eigenvalues(eigvals, /):
-    """Generate a symmetric matrix with prescribed eigenvalues."""
+def hermitian_matrix_from_eigenvalues(eigvals, /, key, *, dtype=None):
+    """Generate a Hermitian matrix with prescribed real eigenvalues.
+
+    For real dtype the result is symmetric; for complex dtype it is Hermitian.
+    """
     (n,) = eigvals.shape
+    if dtype is None:
+        dtype = eigvals.dtype
+    if key is None:
+        key = prng.prng_key(0)
+    eigvals = eigvals.real
+    Q, _ = linalg.qr_reduced(prng.normal(key, shape=(n, n), dtype=dtype))
+    return (Q * eigvals) @ Q.T.conj()
 
-    # Need _some_ matrix to start with
-    A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
-    A = A / linalg.matrix_norm(A, which="fro")
-    X = A.T @ A + np.eye(n)
 
-    # QR decompose. We need the orthogonal matrix.
-    # Treat Q as a stack of eigenvectors.
-    Q, _R = linalg.qr_reduced(X)
-
-    # Treat Q as eigenvectors, and 'D' as eigenvalues.
-    # return Q D Q.T.
-    # This matrix will be dense, symmetric, and have a given spectrum.
-    return Q @ (eigvals[:, None] * Q.T)
+def symmetric_matrix_from_eigenvalues(eigvals, /):
+    """Generate a symmetric matrix with prescribed real eigenvalues."""
+    key = prng.prng_key(0)
+    return hermitian_matrix_from_eigenvalues(eigvals, key=key, dtype=float)
 
 
 def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
