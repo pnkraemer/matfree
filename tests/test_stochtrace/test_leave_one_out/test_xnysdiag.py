@@ -3,6 +3,8 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
+from .conftest import exp_eigvals, step_eigvals
+
 
 def test_xnysdiag_kwargs_customizable():
     """Assert that the XNysDiag method supports customizable kwargs."""
@@ -62,85 +64,104 @@ def test_xnysdiag_error_num_samples_more_than_dimension(n):
     "dtype_op, dtype_sample",
     [(float, float), (complex, complex), (complex, float), (float, complex)],
 )
-def test_xnysdiag_exact_when_num_samples_equals_dimension(n, dtype_op, dtype_sample):
-    """Assert exact diagonal computation when num_samples equals the dimension."""
-    key = prng.prng_key(1)
-    key_eigvals, key_eigvecs, key = prng.split(key, 3)
+def cases_exact_num_samples_equals_dimension(nystrom, n, dtype_op, dtype_sample):
+    key_eigvals, key_eigvecs = prng.split(prng.prng_key(1), 2)
     d = linalg.abs2(prng.normal(key_eigvals, shape=(n,), dtype=dtype_op)) + 1e-6
     A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype_op)
-    expected = linalg.diagonal(A).real
+    expected = {"fx": linalg.diagonal(A).real}
 
     def matvec(v, A):
-        return A @ v
+        return {"fx": A @ v["fx"]}
 
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype_sample), num=n)
-    integrand = stochtrace.leave_one_out_xnysdiag()
+    params = (A,)
+    x_like = {"fx": np.ones(n, dtype=dtype_sample)}
+    sampler = stochtrace.sampler_normal(x_like, num=n)
+    integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-    test_util.assert_allclose(estimate(matvec, key, A), expected)
+    return matvec, params, estimate, expected
 
 
+@testing.parametrize("n, num_samples", [(50, 10), (100, 30)])
 @testing.parametrize("dtype", [float, complex])
-def test_xnysdiag_fast_spectral_decay(nystrom, dtype):
-    """Assert that a diagonal with fast spectral decay is estimated accurately.
-
-    Reproduces the setup of the experiment 'exp' from Fig 16.1 of Ethan Epperly's thesis.
-    """
+def cases_exact_nystrom_eigh_num_samples_more_than_rank(n, num_samples, dtype):
     rdtype = np.abs(dtype(0)).dtype
-    n = 1000
+    rank = num_samples - 5
+    key_eigvals, key_eigvecs = prng.split(prng.prng_key(1), 2)
+    eigvals_nz = (
+        linalg.abs2(prng.normal(key_eigvals, shape=(rank,), dtype=rdtype)) + 1e-6
+    )
+    d = np.concatenate([eigvals_nz, np.zeros(n - rank, dtype=rdtype)]).real
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    expected = {"fx": linalg.diagonal(A).real}
+
+    def matvec(v, A):
+        return {"fx": A @ v["fx"]}
+
+    params = (A,)
+    x_like = {"fx": np.ones(n, dtype=dtype)}
+    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
+    integrand = stochtrace.leave_one_out_xnysdiag(nystrom=stochtrace.nystrom_eigh())
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+    return matvec, params, estimate, expected
+
+
+@testing.parametrize_with_cases(
+    "matvec, params, estimate, expected", cases=".", prefix="cases_exact_"
+)
+def test_xnysdiag_exact(matvec, params, estimate, expected):
+    """Assert exact diagonal computation when num_samples is large enough."""
+    key = prng.prng_key(7)
+    received = estimate(matvec, key, *params)
+    test_util.assert_allclose(received["fx"], expected["fx"])
+
+
+def cases_experiments_exp():
+    """Eigenvalues that decay rapidly."""
+    eigvals = exp_eigvals(1_000)
     num_samples = 50
-    num_rep = 10
-    key = prng.prng_key(1)
-    key_eigvecs, key = prng.split(key)
-    d = 0.7 ** np.arange(n).astype(rdtype)
-    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
-    expected = linalg.diagonal(A).real
-
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=num_samples)
-    integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    def matvec(v, A):
-        return A @ v
-
-    key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
-    max_abs_err = np.array_max(np.abs(received - expected), axis=1)
-    norm_expected = np.array_max(np.abs(expected))
-    median_max_rel_err = np.median(max_abs_err / norm_expected)
-    assert float(median_max_rel_err) < 1e-3
+    max_rel_err = 1e-3
+    return eigvals, num_samples, max_rel_err
 
 
+def cases_experiments_step():
+    """Eigenvalues that are flat with a sudden drop."""
+    eigvals = step_eigvals(1_000)
+    num_samples = 110
+    max_rel_err = 5e-2
+    return eigvals, num_samples, max_rel_err
+
+
+@testing.parametrize_with_cases(
+    "eigvals, num_samples, max_rel_err", cases=".", prefix="cases_experiments_"
+)
 @testing.parametrize("dtype", [float, complex])
-def test_xnysdiag_large_spectral_drop(nystrom, dtype):
-    """Assert that a diagonal with a large spectral drop is estimated accurately.
-
-    Reproduces the setup of the experiment 'step' from Fig 16.1 of Ethan Epperly's thesis.
-    """
+def test_xnysdiag_reproduce_experiments(
+    nystrom, eigvals, num_samples, max_rel_err, dtype
+):
+    """Assert that the experiments from Fig 16.1 of Ethan Epperly's thesis are reproduced accurately."""
     rdtype = np.abs(dtype(0)).dtype
-    n = 1000
-    m = 50
+    n = len(eigvals)
     num_rep = 10
-    key = prng.prng_key(4)
+    key = prng.prng_key(50)
     key_eigvecs, key = prng.split(key)
-    large_eigenvalues = np.ones(m, dtype=rdtype)
-    small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
-    d = np.concatenate([large_eigenvalues, small_eigenvalues])
-    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    eigvals = eigvals.astype(rdtype)
+    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, key_eigvecs, dtype=dtype)
     expected = linalg.diagonal(A).real
 
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=2 * m + 10)
+    x_like = {"fx": np.ones(n, dtype=dtype)}
+    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
     integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, A):
-        return A @ v
+        return {"fx": A @ v["fx"]}
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)["fx"]
     max_abs_err = np.array_max(np.abs(received - expected), axis=1)
     norm_expected = np.array_max(np.abs(expected))
     median_max_rel_err = np.median(max_abs_err / norm_expected)
-    assert float(median_max_rel_err) < 5e-2
+    assert float(median_max_rel_err) < max_rel_err
 
 
 @testing.parametrize("dtype", [float])
