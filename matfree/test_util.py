@@ -11,17 +11,9 @@ def hermitian_matrix_from_eigenvalues(eigvals, /, key, *, dtype=None):
     (n,) = eigvals.shape
     if dtype is None:
         dtype = eigvals.dtype
-    if key is None:
-        key = prng.prng_key(0)
     eigvals = eigvals.real
     Q, _ = linalg.qr_reduced(prng.normal(key, shape=(n, n), dtype=dtype))
     return (Q * eigvals) @ Q.T.conj()
-
-
-def symmetric_matrix_from_eigenvalues(eigvals, /):
-    """Generate a symmetric matrix with prescribed real eigenvalues."""
-    key = prng.prng_key(0)
-    return hermitian_matrix_from_eigenvalues(eigvals, key=key, dtype=float)
 
 
 def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
