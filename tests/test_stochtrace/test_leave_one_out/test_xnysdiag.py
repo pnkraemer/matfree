@@ -17,10 +17,13 @@ def test_xnysdiag_kwargs_customizable():
     """Assert that the XNysDiag method supports customizable kwargs."""
     n = 10
     num_samples = 5
-    key_mat, key = prng.split(prng.prng_key(1), 2)
+    rank = 3
+    key_eigvals, key_eigvecs, key = prng.split(prng.prng_key(1), 3)
     # Low-rank + small regularisation: shifted Cholesky and eigh give different results
-    A_factor = prng.normal(key_mat, shape=(n, 3))
-    A = A_factor @ A_factor.T + np.eye(n) * 1e-4
+    nz_eigvals = linalg.abs2(prng.normal(key_eigvals, shape=(rank,)))
+    z_eigvals = np.zeros(n - rank)
+    d = np.concatenate([nz_eigvals, z_eigvals]) + 1e-3
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs)
 
     def matvec(v, A):
         return A @ v
