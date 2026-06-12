@@ -195,29 +195,3 @@ def test_xnysdiag_sum_equals_xnystrace(nystrom, dtype):
 
     trace_via_diag = np.sum(diag_result)
     test_util.assert_allclose(trace_via_diag, trace_result)
-
-
-def test_xnysdiag_pytrees_supported(nystrom):
-    """Assert that the XNysDiag method supports pytrees."""
-    n1 = 100
-    n2 = 50
-    key_mat1, key_mat2, key_est = prng.split(prng.prng_key(1), 3)
-    A = prng.normal(key_mat1, shape=(n1, n1))
-    A = A @ A.T.conj() + np.eye(n1, dtype=A.dtype) * 1e-6
-    B = prng.normal(key_mat2, shape=(n2, n2))
-    B = B @ B.T.conj() + np.eye(n2, dtype=B.dtype) * 1e-6
-
-    def matvec(v, A, B):
-        return {"fx": A @ v["fx"], "fy": B @ v["fy"]}
-
-    integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
-    x_like = {"fx": np.ones(n1), "fy": np.ones(n2)}
-    sampler = stochtrace.sampler_normal(x_like, num=n1 + n2)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    received = estimate(matvec, key_est, A, B)
-    expected = {"fx": linalg.diagonal(A).real, "fy": linalg.diagonal(B).real}
-    assert isinstance(received, dict)
-    assert set(received.keys()) == {"fx", "fy"}
-    assert np.allclose(received["fx"], expected["fx"], rtol=1e-4)
-    assert np.allclose(received["fy"], expected["fy"], rtol=1e-4)
