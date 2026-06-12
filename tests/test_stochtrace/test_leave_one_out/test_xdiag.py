@@ -73,20 +73,20 @@ def test_xdiag_fast_spectral_decay(dtype):
     n = 1000
     num_rep = 10
     key = prng.prng_key(1)
-    key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
+    key_eigvecs, key = prng.split(key)
     d = 0.7 ** np.arange(n).astype(rdtype)
-    expected = linalg.abs2(U) @ d  # diag(U diag(d) U^H)_j = sum_k d_k |U_jk|^2
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    expected = linalg.diagonal(A).real
 
     sampler = stochtrace.sampler_signs(np.ones(n, dtype=dtype), num=35)
     integrand = stochtrace.leave_one_out_xdiag()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
+    def matvec(v, A):
+        return A @ v
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
     max_abs_err = np.array_max(np.abs(received - expected), axis=1)
     max_rel_err = max_abs_err / np.array_max(np.abs(expected))
     assert float(np.median(max_rel_err)) < 1e-2
@@ -103,22 +103,22 @@ def test_xdiag_large_spectral_drop(dtype):
     m = 50
     num_rep = 10
     key = prng.prng_key(4)
-    key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
+    key_eigvecs, key = prng.split(key)
     large_eigenvalues = np.ones(m, dtype=rdtype)
     small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
     d = np.concatenate([large_eigenvalues, small_eigenvalues])
-    expected = linalg.abs2(U) @ d
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    expected = linalg.diagonal(A).real
 
     sampler = stochtrace.sampler_signs(np.ones(n, dtype=dtype), num=m + 10)
     integrand = stochtrace.leave_one_out_xdiag()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
+    def matvec(v, A):
+        return A @ v
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
     max_abs_err = np.array_max(np.abs(received - expected), axis=1)
     norm_expected = np.array_max(np.abs(expected))
     median_max_rel_err = np.median(max_abs_err / norm_expected)

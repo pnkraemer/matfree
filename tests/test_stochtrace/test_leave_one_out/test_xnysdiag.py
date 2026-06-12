@@ -71,8 +71,9 @@ def test_xnysdiag_error_num_samples_more_than_dimension(n):
 def test_xnysdiag_exact_when_num_samples_equals_dimension(n, dtype_op, dtype_sample):
     """Assert exact diagonal computation when num_samples equals the dimension."""
     key = prng.prng_key(1)
-    A = prng.normal(key, shape=(n, n), dtype=dtype_op)
-    A = A @ A.T.conj() + np.eye(n, dtype=dtype_op) * 1e-6
+    key_eigvals, key_eigvecs, key = prng.split(key, 3)
+    d = linalg.abs2(prng.normal(key_eigvals, shape=(n,), dtype=dtype_op)) + 1e-6
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype_op)
     expected = linalg.diagonal(A).real
 
     def matvec(v, A):
@@ -95,20 +96,20 @@ def test_xnysdiag_fast_spectral_decay(nystrom, dtype):
     num_samples = 50
     num_rep = 10
     key = prng.prng_key(1)
-    key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
+    key_eigvecs, key = prng.split(key)
     d = 0.7 ** np.arange(n).astype(rdtype)
-    expected = linalg.abs2(U) @ d
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    expected = linalg.diagonal(A).real
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=num_samples)
     integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
+    def matvec(v, A):
+        return A @ v
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
     max_abs_err = np.array_max(np.abs(received - expected), axis=1)
     norm_expected = np.array_max(np.abs(expected))
     median_max_rel_err = np.median(max_abs_err / norm_expected)
@@ -126,29 +127,30 @@ def test_xnysdiag_large_spectral_drop(nystrom, dtype):
     m = 50
     num_rep = 10
     key = prng.prng_key(4)
-    key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
+    key_eigvecs, key = prng.split(key)
     large_eigenvalues = np.ones(m, dtype=rdtype)
     small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
     d = np.concatenate([large_eigenvalues, small_eigenvalues])
-    expected = linalg.abs2(U) @ d
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    expected = linalg.diagonal(A).real
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=2 * m + 10)
     integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
+    def matvec(v, A):
+        return A @ v
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
     max_abs_err = np.array_max(np.abs(received - expected), axis=1)
     norm_expected = np.array_max(np.abs(expected))
     median_max_rel_err = np.median(max_abs_err / norm_expected)
     assert float(median_max_rel_err) < 5e-2
 
 
-def test_xnysdiag_sum_equals_xnystrace(nystrom):
+@testing.parametrize("dtype", [float])
+def test_xnysdiag_sum_equals_xnystrace(nystrom, dtype):
     """Assert that summing XNysDiag estimates over entries gives the XNysTrace estimate.
 
     This tests the mathematical identity: sum_j diag_loo[j,i] = tr_loo[i] for every i.
@@ -157,9 +159,9 @@ def test_xnysdiag_sum_equals_xnystrace(nystrom):
     """
     n = 100
     num_samples = 20
-    key_mat, key_est = prng.split(prng.prng_key(1), 2)
-    A = prng.normal(key_mat, shape=(n, n))
-    A = A @ A.T.conj() + np.eye(n) * 1e-6
+    key_eigvals, key_eigvecs, key_est = prng.split(prng.prng_key(1), 3)
+    d = linalg.abs2(prng.normal(key_eigvals, shape=(n,), dtype=dtype)) + 1e-6
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
 
     def matvec(v, A):
         return A @ v
