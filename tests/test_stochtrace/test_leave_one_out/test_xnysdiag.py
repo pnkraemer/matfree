@@ -57,6 +57,9 @@ def test_xnysdiag_error_num_samples_more_than_dimension(n):
         estimate(matvec, key, A)
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize("n", [10, 20])
 @testing.parametrize(
     "dtype_op, dtype_sample",
@@ -123,6 +126,9 @@ def cases_experiments_step():
     return test_util.hermitian_matrix_eigvals_step, 110, 5e-2
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize_with_cases(
     "make_A, num_samples, max_rel_err", cases=".", prefix="cases_experiments_"
 )
@@ -154,6 +160,9 @@ def test_xnysdiag_reproduce_experiments(
     assert float(median_max_rel_err) < max_rel_err
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize("dtype", [float])
 def test_xnysdiag_sum_equals_xnystrace(nystrom, dtype):
     """Assert that summing XNysDiag estimates over entries gives the XNysTrace estimate.

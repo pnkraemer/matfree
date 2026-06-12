@@ -64,6 +64,9 @@ def test_xnystrace_error_num_samples_more_than_dimension(n):
         estimate(matvec, key, A)
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
@@ -98,6 +101,9 @@ def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
     assert float(mean_rel_err) < 1e-4
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize("apply_resphering", [True, False])
 @testing.parametrize("dtype", [float, complex])
 def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
@@ -132,6 +138,9 @@ def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
     assert float(mean_rel_err) < 1e-3
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize("n", [10, 20])
 @testing.parametrize(
     "dtype_op, dtype_sample",
@@ -155,6 +164,9 @@ def test_xnystrace_exact_when_num_samples_equals_dimension(
     test_util.assert_allclose(estimate(matvec, key, A), expected)
 
 
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 def test_xnystrace_pytrees_supported(nystrom):
     """Assert that the XNysTrace method supports pytrees."""
     n1 = 100
