@@ -1,14 +1,14 @@
 """Test preconditioning with partial Cholesky decompositions."""
 
 from matfree import low_rank, test_util
-from matfree.backend import linalg, np, testing
+from matfree.backend import linalg, np, prng, testing
 
 
 @testing.parametrize("n", [10])
 def test_preconditioner_solves_correctly(n):
     # Create a relatively ill-conditioned matrix
     cov_eig = 1.5 ** np.arange(-n // 2, n // 2, step=1.0)
-    cov = test_util.symmetric_matrix_from_eigenvalues(cov_eig)
+    cov = test_util.hermitian_matrix_from_eigenvalues(cov_eig, prng.prng_key(1))
 
     def element(i, j):
         return cov[i, j]

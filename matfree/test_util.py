@@ -3,23 +3,32 @@
 from matfree.backend import linalg, np, prng, tree
 
 
-def symmetric_matrix_from_eigenvalues(eigvals, /):
-    """Generate a symmetric matrix with prescribed eigenvalues."""
+def hermitian_matrix_from_eigenvalues(eigvals, /, key, *, dtype=None):
+    """Generate a Hermitian matrix with prescribed real eigenvalues.
+
+    For real dtype the result is symmetric; for complex dtype it is Hermitian.
+    """
     (n,) = eigvals.shape
+    if dtype is None:
+        dtype = eigvals.dtype
+    eigvals = eigvals.real
+    Q, _ = linalg.qr_reduced(prng.normal(key, shape=(n, n), dtype=dtype))
+    return (Q * eigvals) @ Q.T.conj()
 
-    # Need _some_ matrix to start with
-    A = np.reshape(np.arange(1.0, n**2 + 1.0), (n, n))
-    A = A / linalg.matrix_norm(A, which="fro")
-    X = A.T @ A + np.eye(n)
 
-    # QR decompose. We need the orthogonal matrix.
-    # Treat Q as a stack of eigenvectors.
-    Q, _R = linalg.qr_reduced(X)
+def hermitian_matrix_eigvals_decaying(n, /, key, *, dtype=None):
+    """Hermitian matrix whose eigenvalues decay geometrically (0.7^k)."""
+    eigvals = 0.7 ** np.arange(n)
+    rdtype = np.zeros((), dtype=dtype).real.dtype
+    return hermitian_matrix_from_eigenvalues(eigvals, key, dtype=rdtype)
 
-    # Treat Q as eigenvectors, and 'D' as eigenvalues.
-    # return Q D Q.T.
-    # This matrix will be dense, symmetric, and have a given spectrum.
-    return Q @ (eigvals[:, None] * Q.T)
+
+def hermitian_matrix_eigvals_step(
+    n, /, key, *, num_flat=50, drop_value=1e-3, dtype=None
+):
+    """Hermitian matrix whose eigenvalues are flat then drop sharply."""
+    eigvals = np.concatenate([np.ones(num_flat), np.ones(n - num_flat) * drop_value])
+    return hermitian_matrix_from_eigenvalues(eigvals, key, dtype=dtype)
 
 
 def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):

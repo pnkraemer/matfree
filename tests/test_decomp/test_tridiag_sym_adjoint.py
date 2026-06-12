@@ -11,8 +11,9 @@ from matfree.backend import func, linalg, np, prng, testing, tree
 def test_adjoint_vjp_matches_jax_vjp(reortho, n, krylov_num_matvecs, seed):
     """Test that the custom VJP yields the same output as autodiff."""
     # Set up a test-matrix
-    eigvals = prng.uniform(prng.prng_key(seed), shape=(n,)) + 1.0
-    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    key_eig, key_mat = prng.split(prng.prng_key(seed))
+    eigvals = prng.uniform(key_eig, shape=(n,)) + 1.0
+    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, key_mat)
     params = _sym(matrix)
 
     def matvec(s, p):

@@ -113,7 +113,8 @@ def estimator_leave_one_out(integrand: Callable, /, sampler: Callable) -> Callab
 
     def estimate(matvec, key, *parameters):
         samples = sampler(key)
-        return np.mean(integrand(matvec, samples, *parameters), axis=0)
+        Qs = integrand(matvec, samples, *parameters)
+        return tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
 
     return estimate
 
@@ -146,8 +147,9 @@ def estimator_leave_one_out_mean_and_sem(
     def estimate(matvec, key, *parameters):
         samples = sampler(key)
         Qs = integrand(matvec, samples, *parameters)
-        mean = np.mean(Qs, axis=0)
-        sem = np.std(Qs, axis=0) / np.sqrt(Qs.shape[0])
+        n_samples = tree.tree_leaves(Qs)[0].shape[0]
+        mean = tree.tree_map(lambda s: np.mean(s, axis=0), Qs)
+        sem = tree.tree_map(lambda s: np.std(s, axis=0) / np.sqrt(n_samples), Qs)
         return mean, sem
 
     return estimate
@@ -266,6 +268,88 @@ def leave_one_out_xtrace(*, apply_resphering: bool = True) -> Callable:
     return integrand
 
 
+def leave_one_out_xdiag() -> Callable:
+    """Construct an integrand for estimating the diagonal using the XDiag algorithm (Epperly et al. 2024).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one diagonal
+        estimate per leave-one-out sample.
+
+    Notes
+    -----
+    The number of samples must be less than or equal to the dimension of the operator.
+
+    The sum of the diagonal estimate over all entries is an unbiased estimate of the trace but
+    generally has higher variance than the estimate produced by
+    [leave_one_out_xnystrace][matfree.stochtrace.leave_one_out_xnystrace].
+
+    References
+    ----------
+    - Epperly EN, Tropp JA, Webber RJ (2024). XTrace: Making the most of every sample in stochastic trace estimation.
+        SIAM J Matrix Anal A. 45.1: 1-23.
+        doi: [10.1137/23M1548323](https://doi.org/10.1137/23M1548323)
+        arXiv: [2301.07825](https://arxiv.org/abs/2301.07825)
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        if 2 * num_samples >= n:
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            diag_B = linalg.diagonal(B_mat)
+            return func.vmap(unflatten)(
+                np.ones((num_samples, 1), dtype=diag_B.dtype) * diag_B
+            )
+
+        matvec_flat_transpose = func.linear_transpose(matvec_flat, Omega[:, 0])
+
+        def matvec_flat_adjoint(v):
+            (result,) = matvec_flat_transpose(v.conj())
+            return result.conj()
+
+        Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
+        Q, R = linalg.qr_reduced(Y)
+        Z = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(Q)
+
+        def _diag_exact():
+            diag_B = func.vmap(linalg.vdot, in_axes=0)(Z, Q)
+            return np.ones(num_samples, dtype=diag_B.dtype) * diag_B[:, None]
+
+        def _diag_estimate():
+            S = _qr_leave_one_out_factor(R)
+            QS = Q @ S
+            S_vd_R = func.vmap(linalg.vdot, in_axes=1)(S, R)
+
+            diag_B_hat = func.vmap(linalg.vdot, in_axes=0)(Z, Q)
+            diag_B_hat_loo = diag_B_hat[:, None] - QS * (Z @ S).conj()
+            diag_residual_loo = QS * S_vd_R * Omega.conj()
+            return diag_B_hat_loo + diag_residual_loo
+
+        Y_rank = np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype))
+
+        diag_loo = control_flow.cond(Y_rank < num_samples, _diag_exact, _diag_estimate)
+        return func.vmap(unflatten)(diag_loo.T)
+
+    return integrand
+
+
 def leave_one_out_xnystrace(
     *,
     nystrom: Callable[[Callable, Array], tuple[Array, Array, Array]] | None = None,
@@ -374,6 +458,77 @@ def leave_one_out_xnystrace(
         tr_B_hat_loo = tr_B_hat - np.sum(linalg.abs2(Z), axis=0)
         tr_residual_loo = linalg.abs2(func.vmap(linalg.vdot, in_axes=1)(Z, Omega))
         return tr_B_hat_loo + residual_scale * tr_residual_loo
+
+    return integrand
+
+
+def leave_one_out_xnysdiag(
+    *, nystrom: Callable[[Callable, Array], tuple[Array, Array, Array]] | None = None
+) -> Callable:
+    """Construct an integrand for estimating the diagonal of a positive semi-definite operator using the XNysDiag algorithm (Epperly et al. 2025).
+
+    Parameters
+    ----------
+    nystrom
+        A callable with signature ``(matvec_flat, Omega) -> (nystrom_left, downdate, shift)``.
+        Usually the return value of
+        [`nystrom_shifted_cholesky`][matfree.stochtrace.nystrom_shifted_cholesky]
+        or [`nystrom_eigh`][matfree.stochtrace.nystrom_eigh] (default: `nystrom_eigh`).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one diagonal
+        estimate per leave-one-out sample.
+        The `matvec` must be a positive semi-definite operator.
+
+    Notes
+    -----
+    The number of samples must be less than or equal to the dimension of the operator.
+    The output diagonal is real-valued (PSD operators have real diagonal).
+
+    The sum of the diagonal estimate over all entries equals the corresponding
+    [leave_one_out_xnystrace][matfree.stochtrace.leave_one_out_xnystrace]
+    trace estimate exactly for the same operator and samples (when ``apply_resphering=False``).
+
+    References
+    ----------
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+    if nystrom is None:
+        nystrom = nystrom_eigh()
+
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        if num_samples == n:
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            diag_B = linalg.diagonal(B_mat)
+            diag_all = np.ones((num_samples, 1), dtype=diag_B.dtype) * diag_B
+            return tree.tree_map(lambda x: x.real, func.vmap(unflatten)(diag_all))
+
+        F, Z, shift = nystrom(matvec_flat, Omega)
+        Z_vd_Omega = func.vmap(linalg.vdot, in_axes=1)(Z, Omega)
+
+        diag_B_hat = np.sum(linalg.abs2(F), axis=1) - shift
+        diag_B_hat_loo = diag_B_hat[:, None] - linalg.abs2(Z)
+        diag_res_loo = Z * Z_vd_Omega * Omega.conj()
+        diag_loo = (diag_B_hat_loo + diag_res_loo).T
+        return tree.tree_map(lambda x: x.real, func.vmap(unflatten)(diag_loo))
 
     return integrand
 
