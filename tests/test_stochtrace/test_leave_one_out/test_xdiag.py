@@ -4,7 +4,6 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
-
 @testing.parametrize("n", [10, 20])
 def test_xdiag_error_num_samples_more_than_dimension(n):
     """Assert that num_samples greater than the dimension raises a ValueError."""
@@ -74,34 +73,26 @@ def test_xdiag_exact(matvec, params, sampler, expected):
 
 
 def cases_experiments_exp():
-    """Eigenvalues that decay rapidly."""
-    eigvals = test_util.eigenvalues_fast_spectral_decay(1_000)
-    num_samples = 35
-    max_rel_err = 1e-2
-    return eigvals, num_samples, max_rel_err
+    """Hermitian matrix with eigenvalues that decay rapidly."""
+    return test_util.hermitian_matrix_eigvals_decaying, 35, 1e-2
 
 
 def cases_experiments_step():
-    """Eigenvalues that are flat with a sudden drop."""
-    eigvals = test_util.eigenvalues_large_spectral_drop(1_000)
-    num_samples = 60
-    max_rel_err = 5e-2
-    return eigvals, num_samples, max_rel_err
+    """Hermitian matrix with eigenvalues that are flat with a sudden drop."""
+    return test_util.hermitian_matrix_eigvals_step, 60, 5e-2
 
 
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize_with_cases(
-    "eigvals, num_samples, max_rel_err", cases=".", prefix="cases_experiments_"
+    "make_A, num_samples, max_rel_err", cases=".", prefix="cases_experiments_"
 )
-def test_xdiag_reproduce_experiments(eigvals, num_samples, max_rel_err, dtype):
+def test_xdiag_reproduce_experiments(make_A, num_samples, max_rel_err, dtype):
     """Assert that the experiments from Fig 16.1 of Ethan Epperly's thesis are reproduced accurately."""
-    rdtype = np.abs(dtype(0)).dtype
-    n = len(eigvals)
+    n = 1_000
     num_rep = 10
     key = prng.prng_key(50)
     key_eigvecs, key = prng.split(key)
-    eigvals = eigvals.astype(rdtype)
-    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, key_eigvecs, dtype=dtype)
+    A = make_A(n, key_eigvecs, dtype=dtype)
     expected = linalg.diagonal(A).real
 
     x_like = {"fx": np.ones(n, dtype=dtype)}

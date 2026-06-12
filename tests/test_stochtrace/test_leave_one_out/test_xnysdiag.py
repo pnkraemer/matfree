@@ -4,7 +4,6 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
-
 def test_xnysdiag_kwargs_customizable():
     """Assert that the XNysDiag method supports customizable kwargs."""
     n = 10
@@ -115,36 +114,28 @@ def test_xnysdiag_exact(matvec, params, estimate, expected):
 
 
 def cases_experiments_exp():
-    """Eigenvalues that decay rapidly."""
-    eigvals = test_util.eigenvalues_fast_spectral_decay(1_000)
-    num_samples = 50
-    max_rel_err = 1e-3
-    return eigvals, num_samples, max_rel_err
+    """Hermitian matrix with eigenvalues that decay rapidly."""
+    return test_util.hermitian_matrix_eigvals_decaying, 50, 1e-3
 
 
 def cases_experiments_step():
-    """Eigenvalues that are flat with a sudden drop."""
-    eigvals = test_util.eigenvalues_large_spectral_drop(1_000)
-    num_samples = 110
-    max_rel_err = 5e-2
-    return eigvals, num_samples, max_rel_err
+    """Hermitian matrix with eigenvalues that are flat with a sudden drop."""
+    return test_util.hermitian_matrix_eigvals_step, 110, 5e-2
 
 
 @testing.parametrize_with_cases(
-    "eigvals, num_samples, max_rel_err", cases=".", prefix="cases_experiments_"
+    "make_A, num_samples, max_rel_err", cases=".", prefix="cases_experiments_"
 )
 @testing.parametrize("dtype", [float, complex])
 def test_xnysdiag_reproduce_experiments(
-    nystrom, eigvals, num_samples, max_rel_err, dtype
+    nystrom, make_A, num_samples, max_rel_err, dtype
 ):
     """Assert that the experiments from Fig 16.1 of Ethan Epperly's thesis are reproduced accurately."""
-    rdtype = np.abs(dtype(0)).dtype
-    n = len(eigvals)
+    n = 1_000
     num_rep = 10
     key = prng.prng_key(50)
     key_eigvecs, key = prng.split(key)
-    eigvals = eigvals.astype(rdtype)
-    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, key_eigvecs, dtype=dtype)
+    A = make_A(n, key_eigvecs, dtype=dtype)
     expected = linalg.diagonal(A).real
 
     x_like = {"fx": np.ones(n, dtype=dtype)}

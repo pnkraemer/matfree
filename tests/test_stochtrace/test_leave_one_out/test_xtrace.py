@@ -4,7 +4,6 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
-
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize("n, num_samples", [(10, 4), (15, 6)])
 def test_qr_leave_one_out_factor_downdate_identity(n, num_samples, dtype):
@@ -52,24 +51,22 @@ def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
 
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
-    rdtype = np.abs(dtype(0)).dtype
-    d = test_util.eigenvalues_fast_spectral_decay(1_000).astype(rdtype)
-    n = len(d)
+    n = 1_000
     num_rep = 10
     key = prng.prng_key(1)
     key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    expected = np.sum(d).astype(dtype)
+    A = test_util.hermitian_matrix_eigvals_decaying(n, key_mat, dtype=dtype)
+    expected = linalg.trace(A)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
     integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
+    def matvec(v, A):
+        return A @ v
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
     rel_err = np.abs(received - expected) / np.abs(expected)
     mean_rel_err = np.mean(rel_err)
     assert float(mean_rel_err) < 1e-5
@@ -82,15 +79,13 @@ def test_xtrace_large_spectral_drop(apply_resphering, dtype):
 
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
-    rdtype = np.abs(dtype(0)).dtype
-    d = test_util.eigenvalues_large_spectral_drop(1_000).astype(rdtype)
-    n = len(d)
+    n = 1_000
     m = 50
     num_rep = 10
     key = prng.prng_key(4)
     key_mat, key = prng.split(key)
-    A = test_util.hermitian_matrix_from_eigenvalues(d, key_mat, dtype=dtype)
-    expected = np.sum(d).astype(dtype)
+    A = test_util.hermitian_matrix_eigvals_step(n, key_mat, dtype=dtype)
+    expected = linalg.trace(A)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
     integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)

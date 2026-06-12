@@ -4,7 +4,6 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
-
 def test_xnystrace_kwargs_customizable():
     """Assert that the XNysTrace method supports customizable kwargs."""
     n = 10
@@ -72,15 +71,13 @@ def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
 
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
-    rdtype = np.abs(dtype(0)).dtype
-    d = test_util.eigenvalues_fast_spectral_decay(1_000).astype(rdtype)
-    n = len(d)
+    n = 1_000
     num_samples = 50
     num_rep = 10
     key = prng.prng_key(1)
     key_mat, key = prng.split(key)
-    A = test_util.hermitian_matrix_from_eigenvalues(d, key_mat, dtype=dtype)
-    expected = np.sum(d).astype(dtype)
+    A = test_util.hermitian_matrix_eigvals_decaying(n, key_mat, dtype=dtype)
+    expected = linalg.trace(A).real
 
     if apply_resphering:
         sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=num_samples)
@@ -108,15 +105,13 @@ def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
 
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
-    rdtype = np.abs(dtype(0)).dtype
-    d = test_util.eigenvalues_large_spectral_drop(1_000).astype(rdtype)
-    n = len(d)
+    n = 1_000
     m = 50
     num_rep = 10
     key = prng.prng_key(4)
     key_mat, key = prng.split(key)
-    A = test_util.hermitian_matrix_from_eigenvalues(d, key_mat, dtype=dtype)
-    expected = np.sum(d).astype(dtype)
+    A = test_util.hermitian_matrix_eigvals_step(n, key_mat, dtype=dtype)
+    expected = linalg.trace(A).real
 
     if apply_resphering:
         sampler = stochtrace.sampler_sphere(np.ones(n, dtype=dtype), num=2 * m + 10)
@@ -149,7 +144,7 @@ def test_xnystrace_exact_when_num_samples_equals_dimension(
     key = prng.prng_key(1)
     A = prng.normal(key, shape=(n, n), dtype=dtype_op)
     A = A @ A.T.conj() + np.eye(n, dtype=dtype_op) * 1e-6
-    expected = linalg.trace(A)
+    expected = linalg.trace(A).real
 
     def matvec(v, A):
         return A @ v

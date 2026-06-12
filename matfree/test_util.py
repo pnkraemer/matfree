@@ -16,16 +16,19 @@ def hermitian_matrix_from_eigenvalues(eigvals, /, key, *, dtype=None):
     return (Q * eigvals) @ Q.T.conj()
 
 
-def eigenvalues_fast_spectral_decay(n, /):
-    """Eigenvalue array with rapid geometric decay."""
-    return 0.7 ** np.arange(n)
+def hermitian_matrix_eigvals_decaying(n, /, key, *, dtype=None):
+    """Hermitian matrix whose eigenvalues decay geometrically (0.7^k)."""
+    eigvals = 0.7 ** np.arange(n)
+    rdtype = np.zeros((), dtype=dtype).real.dtype
+    return hermitian_matrix_from_eigenvalues(eigvals, key, dtype=rdtype)
 
 
-def eigenvalues_large_spectral_drop(n, /, *, num_flat=50, drop_value=1e-3):
-    """Eigenvalue array that is flat then drops sharply."""
-    eigvals_flat = np.ones(num_flat)
-    eigvals_drop = np.ones(n - num_flat) * drop_value
-    return np.concatenate([eigvals_flat, eigvals_drop])
+def hermitian_matrix_eigvals_step(
+    n, /, key, *, num_flat=50, drop_value=1e-3, dtype=None
+):
+    """Hermitian matrix whose eigenvalues are flat then drop sharply."""
+    eigvals = np.concatenate([np.ones(num_flat), np.ones(n - num_flat) * drop_value])
+    return hermitian_matrix_from_eigenvalues(eigvals, key, dtype=dtype)
 
 
 def asymmetric_matrix_from_singular_values(vals, /, nrows, ncols):
