@@ -3,7 +3,7 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
-from .helpers import exp_eigvals, step_eigvals
+from .conftest import exp_eigvals, step_eigvals
 
 
 @testing.parametrize("dtype", [float, complex])

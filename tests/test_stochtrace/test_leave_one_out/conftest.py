@@ -1,4 +1,4 @@
-"""Helper functions for the leave-one-out experiments."""
+"""Helpers for the leave-one-out experiments."""
 
 import numpy as np
 

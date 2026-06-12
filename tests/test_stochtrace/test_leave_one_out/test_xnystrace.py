@@ -3,7 +3,6 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
-from .helpers import exp_eigvals, step_eigvals
 
 
 @testing.fixture(name="nystrom")
@@ -13,6 +12,7 @@ from .helpers import exp_eigvals, step_eigvals
 def fixture_nystrom(factory):
     """Create a nystrom with default settings."""
     return factory()
+from .conftest import exp_eigvals, step_eigvals
 
 
 def test_xnystrace_kwargs_customizable():
