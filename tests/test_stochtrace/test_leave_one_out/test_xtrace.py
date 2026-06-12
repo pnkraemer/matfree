@@ -3,6 +3,8 @@
 from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
+from .helpers import exp_eigvals, step_eigvals
+
 
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize("n, num_samples", [(10, 4), (15, 6)])
@@ -52,12 +54,12 @@ def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
     Reproduces the results of the experiment 'exp' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
-    n = 1000
+    d = exp_eigvals(1_000).astype(rdtype)
+    n = len(d)
     num_rep = 10
     key = prng.prng_key(1)
     key_mat, key = prng.split(key)
     U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    d = 0.7 ** np.arange(n).astype(rdtype)
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
@@ -82,26 +84,24 @@ def test_xtrace_large_spectral_drop(apply_resphering, dtype):
     Reproduces the results of the experiment 'step' from the XTrace paper.
     """
     rdtype = np.abs(dtype(0)).dtype
-    n = 1000
+    d = step_eigvals(1_000).astype(rdtype)
+    n = len(d)
     m = 50
     num_rep = 10
     key = prng.prng_key(4)
     key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    large_eigenvalues = np.ones(m, dtype=rdtype)
-    small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
-    d = np.concatenate([large_eigenvalues, small_eigenvalues])
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_mat, dtype=dtype)
     expected = np.sum(d).astype(dtype)
 
     sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
     integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
+    def matvec(v, A):
+        return A @ v
 
     key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
     rel_err = np.abs(received - expected) / np.abs(expected)
     mean_rel_err = np.mean(rel_err)
     assert float(mean_rel_err) < (1e-5 if apply_resphering else 1e-4)
