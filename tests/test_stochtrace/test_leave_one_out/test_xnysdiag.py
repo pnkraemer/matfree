@@ -4,15 +4,6 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
-@testing.fixture(name="nystrom")
-@testing.parametrize(
-    "factory", [stochtrace.nystrom_eigh, stochtrace.nystrom_shifted_cholesky]
-)
-def fixture_nystrom(factory):
-    """Create a nystrom with default settings."""
-    return factory()
-
-
 def test_xnysdiag_kwargs_customizable():
     """Assert that the XNysDiag method supports customizable kwargs."""
     n = 10
