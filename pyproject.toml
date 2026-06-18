@@ -29,8 +29,8 @@ cpu = [
     "jax[cpu]",
 ]
 test =[
-    "pytest",
-    "pytest-cases",
+    "pytest<9.0",  # pinned in June '26 to handle an error
+    "pytest-cases<4.0",  # pinned in June '26 to handle an error
     "pytest-xdist",
 ]
 format-and-lint =[
