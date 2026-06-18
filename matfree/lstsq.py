@@ -46,6 +46,28 @@ def lsmr(
         }
         ```
 
+    The solver returns a ``stats`` dictionary with the following keys:
+    ``iteration_count``, ``norm_residual``, ``norm_At_residual``, ``norm_A``,
+    ``cond_A``, ``norm_x``, ``istop``, and ``success``.
+
+    ``istop`` is an integer code for the reason the solver stopped.
+    The values match SciPy's convention:
+
+    | ``istop`` | Meaning |
+    |-----------|---------|
+    | 0 | ``b`` is zero; the exact solution is ``x = 0``. |
+    | 1 | ``|| Ax - b ||`` is small relative to ``||b||`` and ``||A|| ||x||``. Converged. |
+    | 2 | Normal-equations residual ``||Aᵀr|| / (||A|| ||r||)`` satisfies ``atol``. Converged. |
+    | 3 | Condition-number estimate exceeded ``1 / ctol``. |
+    | 4 | Machine-precision limit reached for the residual. |
+    | 5 | Machine-precision limit reached for the normal-equations residual. |
+    | 6 | Machine-precision limit reached for the condition-number estimate. |
+    | 7 | Maximum iterations (``maxiter``) reached without convergence. |
+
+    ``success`` is ``True`` when the solver terminated for any reason other
+    than hitting ``maxiter`` (``istop != 7``) and other than a NaN-induced
+    early exit (``istop >= 0``).
+
     Setting `custom_vjp` to `True` implies using the low-memory
     gradients of matrix-free least squares,
     according to what has been proposed by Roy et al. (2025).
@@ -216,6 +238,12 @@ def lsmr(
         # there was an error on return when arnorm==0
         normar = alpha * beta
 
+        # Determine initial istop (mirrors the stopping checks in make_step).
+        # If normb==0 or normar==0, the solution is already x0; don't iterate.
+        istop = -1
+        istop = np.where(normar == 0, 2, istop)
+        istop = np.where(normb == 0, 0, istop)
+
         # Main iteration loop.
         state = State(  # type: ignore
             itn=0,
@@ -246,7 +274,7 @@ def lsmr(
             normA=normA,
             condA=condA,
             normx=normx,
-            istop=0,
+            istop=istop,
         )
         state = tree.tree_map(np.asarray, state)
         return state, normb
@@ -269,7 +297,6 @@ def lsmr(
             chat, shat, alphahat = _sym_ortho(state.alphabar, damp)
 
             # Use a plane rotation (Q_i) to turn B_i to R_i
-
             rhoold = state.rho
             c, s, rho = _sym_ortho(alphahat, beta)
             thetanew = s * alpha
@@ -286,7 +313,6 @@ def lsmr(
             zetabar = -sbar * state.zetabar
 
             # Update h, h_hat, x.
-
             hbar = state.h - state.hbar * (thetabar * rho / (rhoold * rhobarold))
             x = state.x + (zeta / (rho * rhobar)) * hbar
             h = v - state.h * (thetanew / rho)
@@ -345,9 +371,9 @@ def lsmr(
             rtol = btol + atol * normA * normx / normb
 
             # Early exits
-            istop = 0
-            istop = np.where(normar == 0, 9, istop)
-            istop = np.where(normb == 0, 8, istop)
+            istop = -1
+            istop = np.where(normar == 0, 2, istop)
+            istop = np.where(normb == 0, 0, istop)
             istop = np.where(itn >= maxiter, 7, istop)
             istop = np.where(1 + test3 <= 1, 6, istop)
             istop = np.where(1 + test2 <= 1, 5, istop)
@@ -394,7 +420,7 @@ def lsmr(
         def cond(state):
             state_flat, _ = tree.ravel_pytree(state)
             no_nans = np.logical_not(np.any(np.isnan(state_flat)))
-            proceed = np.where(state.istop == 0, True, False)
+            proceed = np.where(state.istop == -1, True, False)
             return np.logical_and(proceed, no_nans)
 
         return cond
@@ -408,6 +434,7 @@ def lsmr(
             "cond_A": state.condA,
             "norm_x": state.normx,
             "istop": state.istop,
+            "success": (state.istop >= 0) & (state.istop != 7),
         }
 
     if custom_vjp:

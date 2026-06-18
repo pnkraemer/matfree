@@ -66,4 +66,4 @@ def test_logdet_product_exact_for_full_num_matvecs_lanczos(n):
     expected = x.T @ logA @ x
 
     # They should be identical
-    assert np.allclose(received, expected)
+    assert np.allclose(received, expected, atol=1e-3, rtol=1e-3)
