@@ -44,120 +44,105 @@ def test_xtrace_error_num_samples_more_than_dimension(n):
         estimate(matvec, key, A)
 
 
-@testing.parametrize("apply_resphering", [True, False])
-@testing.parametrize("dtype", [float, complex])
-def test_xtrace_fast_spectral_decay(apply_resphering, dtype):
-    """Assert that a trace with fast spectral decay is estimated accurately.
-
-    Reproduces the results of the experiment 'exp' from the XTrace paper.
-    """
-    n = 1_000
-    num_rep = 10
-    key = prng.prng_key(1)
-    key_mat, key = prng.split(key)
-    A = test_util.hermitian_matrix_eigvals_decaying(n, key_mat, dtype=dtype)
-    expected = linalg.trace(A)
-
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=35)
-    integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    def matvec(v, A):
-        return A @ v
-
-    key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
-    rel_err = np.abs(received - expected) / np.abs(expected)
-    mean_rel_err = np.mean(rel_err)
-    assert float(mean_rel_err) < 1e-5
-
-
-@testing.parametrize("apply_resphering", [True, False])
-@testing.parametrize("dtype", [float, complex])
-def test_xtrace_large_spectral_drop(apply_resphering, dtype):
-    """Assert that a trace with a large spectral drop is estimated accurately.
-
-    Reproduces the results of the experiment 'step' from the XTrace paper.
-    """
-    n = 1_000
-    m = 50
-    num_rep = 10
-    key = prng.prng_key(4)
-    key_mat, key = prng.split(key)
-    A = test_util.hermitian_matrix_eigvals_step(n, key_mat, dtype=dtype)
-    expected = linalg.trace(A)
-
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=m + 10)
-    integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    def matvec(v, A):
-        return A @ v
-
-    key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
-    rel_err = np.abs(received - expected) / np.abs(expected)
-    mean_rel_err = np.mean(rel_err)
-    assert float(mean_rel_err) < (1e-5 if apply_resphering else 1e-4)
-
-
-@testing.parametrize("n, rank", [(50, 10), (100, 30)])
-@testing.parametrize("dtype", [float, complex])
-def test_xtrace_low_rank_operator(n, rank, dtype):
-    """Assert that the trace of an already-low-rank operator is computed exactly."""
-    key = prng.prng_key(5)
-    key_mat1, key_mat2, key = prng.split(key, 3)
-    A = prng.normal(key_mat1, shape=(n, rank), dtype=dtype)
-    B = prng.normal(key_mat2, shape=(rank, n), dtype=dtype)
-    expected = linalg.trace(A @ B)
-
-    def matvec(v, A, B):
-        return A @ (B @ v)
-
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=rank + 1)
-    integrand = stochtrace.leave_one_out_xtrace()
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-    test_util.assert_allclose(estimate(matvec, key, A, B), expected)
-
-
 @testing.parametrize("n, num_samples", [(10, 5), (21, 11)])
 @testing.parametrize(
     "dtype_op, dtype_sample",
     [(float, float), (complex, complex), (complex, float), (float, complex)],
 )
-def test_xtrace_exact_when_num_samples_more_than_half_dimension(
+def cases_exact_num_samples_at_least_half_dimension(
     n, num_samples, dtype_op, dtype_sample
 ):
-    """Assert exact trace computation when num_samples is large."""
-    key = prng.prng_key(1)
-    A = np.tril(np.ones((n, n), dtype=dtype_op))
+    A = np.tril(np.ones((n, n))).astype(dtype_op)
     expected = linalg.trace(A)
+
+    def matvec(v, A):
+        return {"fx": A @ v["fx"]}
+
+    params = (A,)
+    x_like = {"fx": np.ones(n, dtype=dtype_sample)}
+    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
+    return matvec, params, sampler, expected
+
+
+@testing.parametrize("n, rank", [(50, 10), (100, 30)])
+@testing.parametrize("dtype", [float, complex])
+def cases_exact_num_samples_more_than_rank(n, rank, dtype):
+    key_mat1, key_mat2 = prng.split(prng.prng_key(1), 2)
+    A = prng.normal(key_mat1, shape=(n, rank), dtype=dtype)
+    B = prng.normal(key_mat2, shape=(rank, n), dtype=dtype)
+    expected = linalg.trace(A @ B)
+
+    def matvec(v, A, B):
+        return {"fx": A @ (B @ v["fx"])}
+
+    params = (A, B)
+    x_like = {"fx": np.ones(n, dtype=dtype)}
+    sampler = stochtrace.sampler_normal(x_like, num=rank + 1)
+    return matvec, params, sampler, expected
+
+
+@testing.parametrize_with_cases(
+    "matvec, params, sampler, expected", cases=".", prefix="cases_exact_"
+)
+def test_xtrace_exact(matvec, params, sampler, expected):
+    """Assert exact trace computation when num_samples is large enough."""
+    key = prng.prng_key(1)
+    integrand = stochtrace.leave_one_out_xtrace()
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+    received = estimate(matvec, key, *params)
+    test_util.assert_allclose(received, expected)
+
+
+@testing.parametrize("apply_resphering", [True, False])
+def cases_experiments_exp(apply_resphering):
+    """Hermitian matrix with eigenvalues that decay rapidly."""
+    return (
+        test_util.hermitian_matrix_eigvals_decaying,
+        35,
+        1e-5,
+        apply_resphering,
+        prng.prng_key(1),
+    )
+
+
+@testing.parametrize("apply_resphering", [True, False])
+def cases_experiments_step(apply_resphering):
+    """Hermitian matrix with eigenvalues that are flat with a sudden drop."""
+    max_rel_err = 1e-5 if apply_resphering else 1e-4
+    return (
+        test_util.hermitian_matrix_eigvals_step,
+        60,
+        max_rel_err,
+        apply_resphering,
+        prng.prng_key(4),
+    )
+
+
+@testing.parametrize("dtype", [float, complex])
+@testing.parametrize_with_cases(
+    "make_A, num_samples, max_rel_err, apply_resphering, key",
+    cases=".",
+    prefix="cases_experiments_",
+)
+def test_xtrace_reproduce_experiments(
+    make_A, num_samples, max_rel_err, apply_resphering, key, dtype
+):
+    """Assert that the experiments from the XTrace paper are reproduced accurately."""
+    n = 1_000
+    num_rep = 10
+    key_mat, key = prng.split(key)
+    A = make_A(n, key_mat, dtype=dtype)
+    expected = linalg.trace(A)
+
+    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=num_samples)
+    integrand = stochtrace.leave_one_out_xtrace(apply_resphering=apply_resphering)
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, A):
         return A @ v
 
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype_sample), num=num_samples)
-    integrand = stochtrace.leave_one_out_xtrace()
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-    test_util.assert_allclose(estimate(matvec, key, A), expected)
-
-
-def test_xtrace_pytrees_supported():
-    """Assert that the XTrace algorithm supports pytrees."""
-    n1 = 100
-    n2 = 50
-    key_mat1, key_mat2, key_est = prng.split(prng.prng_key(1), 3)
-    A = prng.normal(key_mat1, shape=(n1, n1))
-    B = prng.normal(key_mat2, shape=(n2, n2))
-
-    def matvec(v, A, B):
-        return {"fx": A @ v["fx"], "fy": B @ v["fy"]}
-
-    integrand = stochtrace.leave_one_out_xtrace()
-    x_like = {"fx": np.ones(n1), "fy": np.ones(n2)}
-    sampler = stochtrace.sampler_normal(x_like, num=n1 + n2 - 1)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    received = estimate(matvec, key_est, A, B)
-    expected = linalg.trace(A) + linalg.trace(B)
-    assert np.allclose(received, expected, rtol=1e-2)
+    key_ests = prng.split(key, num_rep)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
+    rel_err = np.abs(received - expected) / np.abs(expected)
+    mean_rel_err = np.mean(rel_err)
+    assert float(mean_rel_err) < max_rel_err
