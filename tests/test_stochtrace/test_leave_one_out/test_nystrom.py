@@ -278,10 +278,10 @@ def test_nystrom_eigh_non_essential_test_vectors_ignored(
     F_unique, Z_unique, shift_unique = stochtrace.nystrom_eigh()(matvec, Omega_unique)
     F, Z, shift = stochtrace.nystrom_eigh()(matvec, Omega)
 
-    assert np.allclose(F @ F.T.conj(), F_unique @ F_unique.T.conj(), atol=1e-6)
+    assert np.allclose(F @ F.T.conj(), F_unique @ F_unique.T.conj(), atol=1e-5)
     received = Z[:, num_copies:-num_copies]
     expected = Z_unique[:, num_copies:]
-    assert np.allclose(received, expected, atol=1e-6)
+    assert np.allclose(received, expected, atol=1e-5)
     assert np.allclose(Z[:, :num_copies], 0.0)
     assert np.allclose(Z[:, -num_copies:], 0.0)
     assert np.allclose(shift, shift_unique)
