@@ -92,7 +92,7 @@ def cases_exact_num_samples_equals_dimension(nystrom, n, dtype_op, dtype_sample)
 @testing.parametrize("n, num_samples", [(50, 10), (100, 30)])
 @testing.parametrize("dtype", [float, complex])
 def cases_exact_nystrom_eigh_num_samples_more_than_rank(n, num_samples, dtype):
-    """Mirrors xnysdiag's case of the same name -- only nystrom_eigh is exact here."""
+    """Hermitian low-rank matrix; only nystrom_eigh recovers the trace exactly here."""
     rdtype = np.abs(dtype(0)).dtype
     rank = num_samples - 5
     key_eigvals, key_eigvecs = prng.split(prng.prng_key(1), 2)
