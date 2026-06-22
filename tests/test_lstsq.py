@@ -66,6 +66,47 @@ def test_value_and_grad_matches_numpy_lstsq_no_damping(
     test_util.assert_allclose(dmatrix1, dmatrix2)
 
 
+def test_zero_rhs_does_not_yield_nan():
+    key = prng.prng_key(seed=1)
+    A_shape = (5, 3)
+
+    key, subkey = prng.split(key, 2)
+    matrix = prng.normal(subkey, shape=A_shape)
+
+    key, subkey = prng.split(key, 2)
+    rhs = np.zeros((A_shape[0],))
+
+    key, subkey = prng.split(key, num=2)
+    dsol = prng.normal(subkey, shape=(A_shape[1],))
+
+    def lstsq_jnp(a, b):
+        sol, *_ = linalg.lstsq(a, b)
+        return sol
+
+    expected, expected_vjp = func.vjp(lstsq_jnp, matrix, rhs)
+    dmatrix1, drhs1 = expected_vjp(dsol)
+
+    def vecmat(vector, p_as_list):
+        [p] = p_as_list
+        [(v,)] = vector
+        return [(p.T @ v,)]
+
+    @func.jit
+    def lstsq_matfree(a, b):
+        lsmr = lstsq.lsmr(atol=1e-5, btol=1e-5, ctol=1e-5)
+        sol, _ = lsmr(vecmat, a, b)
+        [(sol_arr,)] = sol
+        return sol_arr
+
+    received, received_vjp = func.vjp(lstsq_matfree, [(rhs,)], [matrix])
+    drhs_pytree, [dmatrix2] = received_vjp(dsol)  # mind the order of rhs & matrix
+    [(drhs2,)] = drhs_pytree
+
+    test_util.assert_allclose(received, expected)
+    test_util.assert_allclose(drhs1, drhs2)
+    test_util.assert_allclose(dmatrix1, dmatrix2)
+
+
 @testing.parametrize_with_cases("A_shape", cases=".", prefix="case_A_shape_")
 @testing.parametrize("seed", [1])
 @testing.parametrize("rank_deficient", [True, False])
