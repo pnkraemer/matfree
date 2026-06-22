@@ -66,16 +66,30 @@ def test_xnysdiag_error_num_samples_more_than_dimension(n):
     [(float, float), (complex, complex), (complex, float), (float, complex)],
 )
 def cases_exact_num_samples_equals_dimension(nystrom, n, dtype_op, dtype_sample):
-    key_eigvals, key_eigvecs = prng.split(prng.prng_key(1), 2)
-    d = linalg.abs2(prng.normal(key_eigvals, shape=(n,), dtype=dtype_op)) + 1e-6
-    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype_op)
-    expected = {"fx": linalg.diagonal(A).real}
+    """Exact diagonal when num_samples equals the operator's dimension.
 
-    def matvec(v, A):
-        return {"fx": A @ v["fx"]}
+    Uses two differently-sized pytree blocks, also exercising heterogeneous
+    pytree support.
+    """
+    n1 = max(1, n // 3)
+    n2 = n - n1
+    key_eigvals1, key_eigvals2, key_eigvecs1, key_eigvecs2 = prng.split(
+        prng.prng_key(1), 4
+    )
+    d1 = linalg.abs2(prng.normal(key_eigvals1, shape=(n1,), dtype=dtype_op)) + 1e-6
+    d2 = linalg.abs2(prng.normal(key_eigvals2, shape=(n2,), dtype=dtype_op)) + 1e-6
+    A1 = test_util.hermitian_matrix_from_eigenvalues(d1, key_eigvecs1, dtype=dtype_op)
+    A2 = test_util.hermitian_matrix_from_eigenvalues(d2, key_eigvecs2, dtype=dtype_op)
+    expected = {"fx": linalg.diagonal(A1).real, "fy": linalg.diagonal(A2).real}
 
-    params = (A,)
-    x_like = {"fx": np.ones(n, dtype=dtype_sample)}
+    def matvec(v, A1, A2):
+        return {"fx": A1 @ v["fx"], "fy": A2 @ v["fy"]}
+
+    params = (A1, A2)
+    x_like = {
+        "fx": np.ones(n1, dtype=dtype_sample),
+        "fy": np.ones(n2, dtype=dtype_sample),
+    }
     sampler = stochtrace.sampler_normal(x_like, num=n)
     integrand = stochtrace.leave_one_out_xnysdiag(nystrom=nystrom)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
@@ -113,7 +127,8 @@ def test_xnysdiag_exact(matvec, params, estimate, expected):
     """Assert exact diagonal computation when num_samples is large enough."""
     key = prng.prng_key(7)
     received = estimate(matvec, key, *params)
-    test_util.assert_allclose(received["fx"], expected["fx"])
+    for leaf, expected_leaf in expected.items():
+        test_util.assert_allclose(received[leaf], expected_leaf)
 
 
 def cases_experiments_exp():
