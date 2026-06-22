@@ -52,14 +52,25 @@ def test_xtrace_error_num_samples_more_than_dimension(n):
 def cases_exact_num_samples_at_least_half_dimension(
     n, num_samples, dtype_op, dtype_sample
 ):
-    A = np.tril(np.ones((n, n))).astype(dtype_op)
-    expected = linalg.trace(A)
+    """Exact trace when num_samples is at least half the operator's dimension.
 
-    def matvec(v, A):
-        return {"fx": A @ v["fx"]}
+    Uses two differently-sized pytree blocks, also exercising heterogeneous
+    pytree support.
+    """
+    n1 = max(1, n // 3)
+    n2 = n - n1
+    A1 = np.tril(np.ones((n1, n1))).astype(dtype_op)
+    A2 = np.tril(np.ones((n2, n2))).astype(dtype_op)
+    expected = linalg.trace(A1) + linalg.trace(A2)
 
-    params = (A,)
-    x_like = {"fx": np.ones(n, dtype=dtype_sample)}
+    def matvec(v, A1, A2):
+        return {"fx": A1 @ v["fx"], "fy": A2 @ v["fy"]}
+
+    params = (A1, A2)
+    x_like = {
+        "fx": np.ones(n1, dtype=dtype_sample),
+        "fy": np.ones(n2, dtype=dtype_sample),
+    }
     sampler = stochtrace.sampler_normal(x_like, num=num_samples)
     return matvec, params, sampler, expected
 

@@ -73,16 +73,28 @@ def test_xnystrace_error_num_samples_more_than_dimension(n):
     [(float, float), (complex, complex), (complex, float), (float, complex)],
 )
 def cases_exact_num_samples_equals_dimension(nystrom, n, dtype_op, dtype_sample):
-    key = prng.prng_key(1)
-    A = prng.normal(key, shape=(n, n), dtype=dtype_op)
-    A = A @ A.T.conj() + np.eye(n, dtype=dtype_op) * 1e-6
-    expected = linalg.trace(A).real
+    """Exact trace when num_samples equals the operator's dimension.
 
-    def matvec(v, A):
-        return {"fx": A @ v["fx"]}
+    Uses two differently-sized pytree blocks, also exercising heterogeneous
+    pytree support.
+    """
+    n1 = max(1, n // 3)
+    n2 = n - n1
+    key1, key2 = prng.split(prng.prng_key(1), 2)
+    A1 = prng.normal(key1, shape=(n1, n1), dtype=dtype_op)
+    A1 = A1 @ A1.T.conj() + np.eye(n1, dtype=dtype_op) * 1e-6
+    A2 = prng.normal(key2, shape=(n2, n2), dtype=dtype_op)
+    A2 = A2 @ A2.T.conj() + np.eye(n2, dtype=dtype_op) * 1e-6
+    expected = (linalg.trace(A1) + linalg.trace(A2)).real
 
-    params = (A,)
-    x_like = {"fx": np.ones(n, dtype=dtype_sample)}
+    def matvec(v, A1, A2):
+        return {"fx": A1 @ v["fx"], "fy": A2 @ v["fy"]}
+
+    params = (A1, A2)
+    x_like = {
+        "fx": np.ones(n1, dtype=dtype_sample),
+        "fy": np.ones(n2, dtype=dtype_sample),
+    }
     sampler = stochtrace.sampler_normal(x_like, num=n)
     integrand = stochtrace.leave_one_out_xnystrace(nystrom=nystrom)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
