@@ -19,8 +19,7 @@ def hermitian_matrix_from_eigenvalues(eigvals, /, key, *, dtype=None):
 def hermitian_matrix_eigvals_decaying(n, /, key, *, base=0.7, dtype=None):
     """Hermitian matrix whose eigenvalues decay geometrically (base^k)."""
     eigvals = base ** np.arange(n)
-    rdtype = np.zeros((), dtype=dtype).real.dtype
-    return hermitian_matrix_from_eigenvalues(eigvals, key, dtype=rdtype)
+    return hermitian_matrix_from_eigenvalues(eigvals, key, dtype=dtype)
 
 
 def hermitian_matrix_eigvals_step(
