@@ -1,13 +1,13 @@
 """Tests for eigenvalue functionality."""
 
 from matfree import decomp, eig, test_util
-from matfree.backend import linalg, np, testing
+from matfree.backend import linalg, np, prng, testing
 
 
 @testing.parametrize("nrows", [10])
 def test_equal_to_linalg_eigh(nrows):
     eigvals = np.arange(1.0, 1.0 + nrows)
-    A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
     v0 = np.ones((nrows,))
     num_matvecs = nrows
 
@@ -24,7 +24,7 @@ def test_equal_to_linalg_eigh(nrows):
 @testing.parametrize("num_matvecs", [8, 4, 0])
 def test_shapes_as_expected_vector(nrows, num_matvecs):
     eigvals = np.arange(1.0, 1.0 + nrows)
-    A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
     v0 = np.ones((nrows,))
 
     tridiag_sym = decomp.tridiag_sym(num_matvecs, reortho="full")
@@ -38,7 +38,7 @@ def test_shapes_as_expected_vector(nrows, num_matvecs):
 @testing.parametrize("num_matvecs", [0, 2, 3])
 def test_shapes_as_expected_lists_tuples(nrows, num_matvecs):
     eigvals = np.arange(1.0, 1.0 + nrows)
-    A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
     v0 = np.ones((nrows,))
 
     # Map Pytrees to Pytrees

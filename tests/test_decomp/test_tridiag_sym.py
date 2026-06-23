@@ -1,7 +1,7 @@
 """Test the tri-diagonalisation."""
 
 from matfree import decomp, test_util
-from matfree.backend import linalg, np, testing
+from matfree.backend import linalg, np, prng, testing
 
 
 @testing.parametrize("reortho", ["full", "none"])
@@ -9,7 +9,7 @@ from matfree.backend import linalg, np, testing
 def test_full_rank_reconstruction_is_exact(reortho, ndim):
     # Set up a test-matrix and an initial vector
     eigvals = np.arange(1.0, 2.0, step=1 / ndim)
-    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
     def matvec(s, p):
@@ -46,7 +46,7 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
 def test_mid_rank_reconstruction_satisfies_decomposition(ndim, num_matvecs, reortho):
     # Set up a test-matrix and an initial vector
     eigvals = np.arange(1.0, 2.0, step=1 / ndim)
-    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
     vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
 
     def matvec(s, p):

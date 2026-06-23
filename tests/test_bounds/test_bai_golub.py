@@ -1,14 +1,14 @@
 """Tests for Bai and Golub's log-determinant bounds."""
 
 from matfree import bounds, test_util
-from matfree.backend import linalg, np
+from matfree.backend import linalg, np, prng
 
 
 def test_logdet():
     """Test that Bai and Golub's log-determinant bound is correct."""
     # Set up a test-problem.
     eigvals = np.asarray([1.0, 2.0, 3.0, 4.0])
-    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
 
     # Compute the bound
     trace = linalg.trace(matrix)

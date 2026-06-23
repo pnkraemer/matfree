@@ -22,7 +22,7 @@ def test_funm_lanczos_sym_matches_eigh_implementation(dense_funm, reortho, n):
     v = prng.normal(prng.prng_key(2), shape=(n,))
 
     eigvals = np.linspace(0.01, 0.99, num=n)
-    matrix = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
 
     # Compute the solution
     eigvals, eigvecs = linalg.eigh(matrix)

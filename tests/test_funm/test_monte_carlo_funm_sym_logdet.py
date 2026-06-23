@@ -4,13 +4,13 @@ from matfree import decomp, funm, stochtrace, test_util
 from matfree.backend import linalg, np, prng, testing
 
 
-def make_A(n, num_significant_eigvals):
+def make_A(n, num_significant_eigvals, key):
     """Make a positive definite matrix with certain spectrum."""
     # 'Invent' a spectrum. Use the number of pre-defined eigenvalues.
     d = np.arange(n) / n + 1.0
     d = d.at[num_significant_eigvals:].set(0.001)
 
-    return test_util.symmetric_matrix_from_eigenvalues(d)
+    return test_util.hermitian_matrix_from_eigenvalues(d, key)
 
 
 @testing.parametrize("n", [200])
@@ -20,12 +20,12 @@ def make_A(n, num_significant_eigvals):
 # But logdet seems to converge sooo much faster.
 def test_logdet_spd(n, num_significant_eigvals, num_matvecs):
     """Assert that the log-determinant estimation matches the true log-determinant."""
-    A = make_A(n, num_significant_eigvals)
+    key_A, key = prng.split(prng.prng_key(1))
+    A = make_A(n, num_significant_eigvals, key_A)
 
     def matvec(x):
         return {"fx": A @ x["fx"]}
 
-    key = prng.prng_key(1)
     args_like = {"fx": np.ones((n,), dtype=float)}
     sampler = stochtrace.sampler_normal(args_like, num=10)
     tridiag_sym = decomp.tridiag_sym(num_matvecs, materialize=True)
@@ -45,7 +45,7 @@ def test_logdet_spd_exact_for_full_num_matvecs_lanczos(n):
     r"""Computing v^\top f(A) v with max-order Lanczos should be exact for _any_ v."""
     # Construct a (numerically nice) matrix
     eigvals = np.arange(1.0, 1.0 + n, step=1.0)
-    A = test_util.symmetric_matrix_from_eigenvalues(eigvals)
+    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
 
     # Set up max-num_matvecs Lanczos approximation inside SLQ for the matrix-logarithm
     num_matvecs = n - 1

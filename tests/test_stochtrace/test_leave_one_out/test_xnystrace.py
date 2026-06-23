@@ -4,15 +4,6 @@ from matfree import stochtrace, test_util
 from matfree.backend import func, linalg, np, prng, testing
 
 
-@testing.fixture(name="nystrom")
-@testing.parametrize(
-    "factory", [stochtrace.nystrom_eigh, stochtrace.nystrom_shifted_cholesky]
-)
-def fixture_nystrom(factory):
-    """Create a nystrom with default settings."""
-    return factory()
-
-
 def test_xnystrace_kwargs_customizable():
     """Assert that the XNysTrace method supports customizable kwargs."""
     n = 10
@@ -73,121 +64,147 @@ def test_xnystrace_error_num_samples_more_than_dimension(n):
         estimate(matvec, key, A)
 
 
-@testing.parametrize("apply_resphering", [True, False])
-@testing.parametrize("dtype", [float, complex])
-def test_xnystrace_fast_spectral_decay(nystrom, apply_resphering, dtype):
-    """Assert that a trace with fast spectral decay is estimated accurately.
-
-    Reproduces the results of the experiment 'exp' from the XTrace paper.
-    """
-    rdtype = np.abs(dtype(0)).dtype
-    n = 1000
-    num_samples = 50
-    num_rep = 10
-    key = prng.prng_key(1)
-    key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    d = 0.7 ** np.arange(n).astype(rdtype)
-    expected = np.sum(d).astype(dtype)
-
-    if apply_resphering:
-        sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype), num=num_samples)
-    else:
-        sampler = stochtrace.sampler_signs(np.ones(n, dtype=dtype), num=num_samples)
-    integrand = stochtrace.leave_one_out_xnystrace(
-        nystrom=nystrom, apply_resphering=apply_resphering
-    )
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
-
-    key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
-    rel_err = np.abs(received - expected) / np.abs(expected)
-    mean_rel_err = np.mean(rel_err)
-    assert float(mean_rel_err) < 1e-4
-
-
-@testing.parametrize("apply_resphering", [True, False])
-@testing.parametrize("dtype", [float, complex])
-def test_xnystrace_large_spectral_drop(nystrom, apply_resphering, dtype):
-    """Assert that a trace with a large spectral drop is estimated accurately.
-
-    Reproduces the results of the experiment 'step' from the XTrace paper.
-    """
-    rdtype = np.abs(dtype(0)).dtype
-    n = 1000
-    m = 50
-    num_rep = 10
-    key = prng.prng_key(4)
-    key_mat, key = prng.split(key)
-    U = linalg.qr_reduced(prng.normal(key_mat, shape=(n, n), dtype=dtype))[0]
-    large_eigenvalues = np.ones(m, dtype=rdtype)
-    small_eigenvalues = np.ones(n - m, dtype=rdtype) * 1e-3
-    d = np.concatenate([large_eigenvalues, small_eigenvalues])
-    expected = np.sum(d).astype(dtype)
-
-    if apply_resphering:
-        sampler = stochtrace.sampler_sphere(np.ones(n, dtype=dtype), num=2 * m + 10)
-    else:
-        sampler = stochtrace.sampler_signs(np.ones(n, dtype=dtype), num=2 * m + 10)
-    integrand = stochtrace.leave_one_out_xnystrace(
-        nystrom=nystrom, apply_resphering=apply_resphering
-    )
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    def matvec(v, d, U):
-        return U @ (d * (U.T.conj() @ v))
-
-    key_ests = prng.split(key, num_rep)
-    received = func.vmap(lambda key: estimate(matvec, key, d, U))(key_ests)
-    rel_err = np.abs(received - expected) / np.abs(expected)
-    mean_rel_err = np.mean(rel_err)
-    assert float(mean_rel_err) < 1e-3
-
-
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
 @testing.parametrize("n", [10, 20])
 @testing.parametrize(
     "dtype_op, dtype_sample",
     [(float, float), (complex, complex), (complex, float), (float, complex)],
 )
-def test_xnystrace_exact_when_num_samples_equals_dimension(
-    n, nystrom, dtype_op, dtype_sample
-):
-    """Assert exact trace computation when num_samples equals the dimension."""
+def cases_exact_num_samples_equals_dimension(nystrom, n, dtype_op, dtype_sample):
+    """Exact trace when num_samples equals the operator's dimension.
+
+    Uses two differently-sized pytree blocks, also exercising heterogeneous
+    pytree support.
+    """
+    n1 = max(1, n // 3)
+    n2 = n - n1
+    key1, key2 = prng.split(prng.prng_key(1), 2)
+    A1 = prng.normal(key1, shape=(n1, n1), dtype=dtype_op)
+    A1 = A1 @ A1.T.conj() + np.eye(n1, dtype=dtype_op) * 1e-6
+    A2 = prng.normal(key2, shape=(n2, n2), dtype=dtype_op)
+    A2 = A2 @ A2.T.conj() + np.eye(n2, dtype=dtype_op) * 1e-6
+    expected = (linalg.trace(A1) + linalg.trace(A2)).real
+
+    def matvec(v, A1, A2):
+        return {"fx": A1 @ v["fx"], "fy": A2 @ v["fy"]}
+
+    params = (A1, A2)
+    x_like = {
+        "fx": np.ones(n1, dtype=dtype_sample),
+        "fy": np.ones(n2, dtype=dtype_sample),
+    }
+    sampler = stochtrace.sampler_normal(x_like, num=n)
+    integrand = stochtrace.leave_one_out_xnystrace(nystrom=nystrom)
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+    return matvec, params, estimate, expected
+
+
+@testing.parametrize("n, num_samples", [(50, 10), (100, 30)])
+@testing.parametrize("dtype", [float, complex])
+def cases_exact_nystrom_eigh_num_samples_more_than_rank(n, num_samples, dtype):
+    """Hermitian low-rank matrix; only nystrom_eigh recovers the trace exactly here."""
+    rdtype = np.abs(dtype(0)).dtype
+    rank = num_samples - 5
+    key_eigvals, key_eigvecs = prng.split(prng.prng_key(1), 2)
+    eigvals_nz = (
+        linalg.abs2(prng.normal(key_eigvals, shape=(rank,), dtype=rdtype)) + 1e-6
+    )
+    d = np.concatenate([eigvals_nz, np.zeros(n - rank, dtype=rdtype)]).real
+    A = test_util.hermitian_matrix_from_eigenvalues(d, key_eigvecs, dtype=dtype)
+    expected = linalg.trace(A).real
+
+    def matvec(v, A):
+        return {"fx": A @ v["fx"]}
+
+    params = (A,)
+    x_like = {"fx": np.ones(n, dtype=dtype)}
+    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
+    integrand = stochtrace.leave_one_out_xnystrace(nystrom=stochtrace.nystrom_eigh())
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
+    return matvec, params, estimate, expected
+
+
+@testing.parametrize_with_cases(
+    "matvec, params, estimate, expected", cases=".", prefix="cases_exact_"
+)
+def test_xnystrace_exact(matvec, params, estimate, expected):
+    """Assert exact trace computation when num_samples is large enough."""
     key = prng.prng_key(1)
-    A = prng.normal(key, shape=(n, n), dtype=dtype_op)
-    A = A @ A.T.conj() + np.eye(n, dtype=dtype_op) * 1e-6
-    expected = linalg.trace(A)
+    received = estimate(matvec, key, *params)
+    test_util.assert_allclose(received, expected)
+
+
+@testing.parametrize("apply_resphering", [True, False])
+def cases_experiments_exp(apply_resphering):
+    """Hermitian matrix with eigenvalues that decay rapidly."""
+    sampler_factory = (
+        stochtrace.sampler_normal if apply_resphering else stochtrace.sampler_signs
+    )
+    return (
+        test_util.hermitian_matrix_eigvals_decaying,
+        50,
+        1e-4,
+        apply_resphering,
+        sampler_factory,
+        prng.prng_key(1),
+    )
+
+
+@testing.parametrize("apply_resphering", [True, False])
+def cases_experiments_step(apply_resphering):
+    """Hermitian matrix with eigenvalues that are flat with a sudden drop."""
+    sampler_factory = (
+        stochtrace.sampler_sphere if apply_resphering else stochtrace.sampler_signs
+    )
+    return (
+        test_util.hermitian_matrix_eigvals_step,
+        110,
+        1e-3,
+        apply_resphering,
+        sampler_factory,
+        prng.prng_key(4),
+    )
+
+
+@testing.parametrize(
+    "nystrom", [stochtrace.nystrom_eigh(), stochtrace.nystrom_shifted_cholesky()]
+)
+@testing.parametrize("dtype", [float, complex])
+@testing.parametrize_with_cases(
+    "make_A, num_samples, max_rel_err, apply_resphering, sampler_factory, key",
+    cases=".",
+    prefix="cases_experiments_",
+)
+def test_xnystrace_reproduce_experiments(
+    make_A,
+    num_samples,
+    max_rel_err,
+    apply_resphering,
+    sampler_factory,
+    key,
+    dtype,
+    nystrom,
+):
+    """Assert that the experiments from the XTrace paper are reproduced accurately."""
+    n = 1_000
+    num_rep = 10
+    key_mat, key = prng.split(key)
+    A = make_A(n, key_mat, dtype=dtype)
+    expected = linalg.trace(A).real
+
+    sampler = sampler_factory(np.ones(n, dtype=dtype), num=num_samples)
+    integrand = stochtrace.leave_one_out_xnystrace(
+        nystrom=nystrom, apply_resphering=apply_resphering
+    )
+    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, A):
         return A @ v
 
-    sampler = stochtrace.sampler_normal(np.ones(n, dtype=dtype_sample), num=n)
-    integrand = stochtrace.leave_one_out_xnystrace(nystrom=nystrom)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-    test_util.assert_allclose(estimate(matvec, key, A), expected)
-
-
-def test_xnystrace_pytrees_supported(nystrom):
-    """Assert that the XNysTrace method supports pytrees."""
-    n1 = 100
-    n2 = 50
-    key_mat1, key_mat2, key_est = prng.split(prng.prng_key(1), 3)
-    A = prng.normal(key_mat1, shape=(n1, n1))
-    A = A @ A.T.conj() + np.eye(n1, dtype=A.dtype) * 1e-6
-    B = prng.normal(key_mat2, shape=(n2, n2))
-    B = B @ B.T.conj() + np.eye(n2, dtype=B.dtype) * 1e-6
-
-    def matvec(v, A, B):
-        return {"fx": A @ v["fx"], "fy": B @ v["fy"]}
-
-    integrand = stochtrace.leave_one_out_xnystrace(nystrom=nystrom)
-    x_like = {"fx": np.ones(n1), "fy": np.ones(n2)}
-    sampler = stochtrace.sampler_normal(x_like, num=n1 + n2 - 1)
-    estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
-
-    received = estimate(matvec, key_est, A, B)
-    expected = linalg.trace(A) + linalg.trace(B)
-    assert np.allclose(received, expected, rtol=1e-2)
+    key_ests = prng.split(key, num_rep)
+    received = func.vmap(lambda key: estimate(matvec, key, A))(key_ests)
+    rel_err = np.abs(received - expected) / np.abs(expected)
+    mean_rel_err = np.mean(rel_err)
+    assert float(mean_rel_err) < max_rel_err

@@ -16,10 +16,10 @@ def case_cholesky_partial_pivot():
 @testing.parametrize("n", [5])
 @testing.parametrize_with_cases("cholesky", cases=".", prefix="case_cholesky")
 def test_full_rank_cholesky_reconstructs_matrix(cholesky, n):
-    key = prng.prng_key(2)
+    key_eig, key_mat = prng.split(prng.prng_key(2))
 
-    cov_eig = 1.0 + prng.uniform(key, shape=(n,), dtype=float)
-    cov = test_util.symmetric_matrix_from_eigenvalues(cov_eig)
+    cov_eig = 1.0 + prng.uniform(key_eig, shape=(n,), dtype=float)
+    cov = test_util.hermitian_matrix_from_eigenvalues(cov_eig, key_mat)
 
     approximation, _info = cholesky(lambda i, j: cov[i, j], nrows=n, rank=n)()
 
@@ -31,10 +31,10 @@ def test_full_rank_cholesky_reconstructs_matrix(cholesky, n):
 @testing.parametrize("rank", [4])
 @testing.parametrize_with_cases("cholesky", cases=".", prefix="case_cholesky")
 def test_output_the_right_shapes(cholesky: Callable, n, rank):
-    key = prng.prng_key(1)
+    key_eig, key_mat = prng.split(prng.prng_key(1))
 
-    cov_eig = 0.1 + prng.uniform(key, shape=(n,))
-    cov = test_util.symmetric_matrix_from_eigenvalues(cov_eig)
+    cov_eig = 0.1 + prng.uniform(key_eig, shape=(n,))
+    cov = test_util.hermitian_matrix_from_eigenvalues(cov_eig, key_mat)
 
     approximation, _info = cholesky(lambda i, j: cov[i, j], nrows=n, rank=rank)()
     assert approximation.shape == (n, rank)
@@ -42,9 +42,9 @@ def test_output_the_right_shapes(cholesky: Callable, n, rank):
 
 @testing.parametrize("n", [10])
 def test_full_rank_nopivot_matches_cholesky(n):
-    key = prng.prng_key(2)
-    cov_eig = 0.01 + prng.uniform(key, shape=(n,), dtype=float)
-    cov = test_util.symmetric_matrix_from_eigenvalues(cov_eig)
+    key_eig, key_mat = prng.split(prng.prng_key(2))
+    cov_eig = 0.01 + prng.uniform(key_eig, shape=(n,), dtype=float)
+    cov = test_util.hermitian_matrix_from_eigenvalues(cov_eig, key_mat)
     reference = linalg.cholesky(cov)
 
     # Sanity check: pivoting should definitely not satisfy this:
@@ -63,10 +63,10 @@ def test_full_rank_nopivot_matches_cholesky(n):
 @testing.parametrize("n", [10])
 @testing.parametrize("rank", [5])
 def test_pivoting_improves_the_estimate(n, rank):
-    key = prng.prng_key(1)
+    key_eig, key_mat = prng.split(prng.prng_key(1))
 
-    cov_eig = 0.1 + prng.uniform(key, shape=(n,))
-    cov = test_util.symmetric_matrix_from_eigenvalues(cov_eig)
+    cov_eig = 0.1 + prng.uniform(key_eig, shape=(n,))
+    cov = test_util.hermitian_matrix_from_eigenvalues(cov_eig, key_mat)
 
     def element(i, j):
         return cov[i, j]
