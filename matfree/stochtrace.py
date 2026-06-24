@@ -534,6 +534,116 @@ def leave_one_out_xnysdiag(
     return integrand
 
 
+def leave_one_out_xrownorms_squared(*, is_normal: bool = False) -> Callable:
+    """Construct an integrand for estimating squared row norms using the XRowNorm/XSymRowNorm algorithms (Epperly, 2025).
+
+    Parameters
+    ----------
+    is_normal
+        `True` indicates that the operator is normal (or almost-Hermitian), which allows for the more sample-efficient XSymRowNorm construction.
+        `False` uses the more general XRowNorm construction.
+
+        An operator `matvec` is normal if it commutes with its adjoint (i.e. conjugate-transpose-conjugate) operation `matvec_adj`.
+        That is, applying `matvec` followed by `matvec_adj` is equivalent to applying `matvec_adj` followed by `matvec`, up to numerical precision.
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one squared-row-norm
+        estimate per leave-one-out sample.
+
+    Notes
+    -----
+    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
+
+    References
+    ----------
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        out_shape = func.eval_shape(matvec, sample0, *params)
+        out0 = tree.tree_map(lambda s: np.zeros(s.shape, dtype=s.dtype), out_shape)
+        _, unflatten_out = tree.ravel_pytree(out0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        num_matvecs = (2 if is_normal else 3) * num_samples
+
+        if num_matvecs >= n:
+            # It's faster, more accurate, and allocates less memory to compute the row
+            # norms exactly and deterministically on the materialized operator when
+            # the number of matvecs exceeds the input dimension of the operator
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            rownorms_squared = _rownorms_squared(B_mat)
+            srn_all = (
+                np.ones(num_samples, dtype=rownorms_squared.dtype)
+                * rownorms_squared[:, None]
+            )
+            return func.vmap(unflatten_out)(srn_all.T)
+
+        matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
+
+        matvec_flat_transpose = func.linear_transpose(matvec_flat, Omega[:, 0])
+
+        def matvec_flat_adjoint(v):
+            (result,) = matvec_flat_transpose(v.conj())
+            return result.conj()
+
+        G = matmat(Omega)
+        if is_normal:
+            Y = G
+        else:
+            Y = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
+        Q, R = linalg.qr_reduced(Y)
+
+        Z = matmat(Q)
+        srn_B_hat = _rownorms_squared(Z)
+
+        def _rownorms_squared_exact():
+            return np.ones(num_samples, dtype=srn_B_hat.dtype) * srn_B_hat[:, None]
+
+        def _rownorms_squared_estimate():
+            S = _qr_leave_one_out_factor(R)
+
+            W = Q.T.conj() @ Omega
+            W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
+            # Omega projected onto the subspace spanned by Q_i, i.e. Q formed leaving out Omega[:, i]
+            X = W - S * W_vd_S.conj()
+
+            # srn(B_hat) leaving out one sample
+            srn_B_hat_loo = srn_B_hat[:, None] - linalg.abs2(Z @ S)
+            # Johnson-Lindenstrauss estimate of srn(B - B_hat_{-i}) using samples[i, :] as probes.
+            srn_residual_loo = linalg.abs2(G - Z @ X)
+            return srn_B_hat_loo + srn_residual_loo
+
+        is_Y_rank_deficient = (
+            np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype)) < num_samples
+        )
+
+        srn_loo = control_flow.cond(
+            is_Y_rank_deficient, _rownorms_squared_exact, _rownorms_squared_estimate
+        )
+
+        return func.vmap(unflatten_out)(srn_loo.T)
+
+    return integrand
+
+
 def _qr_leave_one_out_factor(R):
     r"""Compute the downdate factor for a QR decomposition leaving out a single column.
 
@@ -696,6 +806,11 @@ def nystrom_eigh(
 def _symmetrize(x):
     r"""Symmetrize a matrix by computing \((x + x^H) / 2\)."""
     return (x + x.T.conj()) / 2
+
+
+def _rownorms_squared(X):
+    """Compute the squared row norms of a matrix."""
+    return np.sum(linalg.abs2(X), axis=1)
 
 
 def monte_carlo_diagonal():
