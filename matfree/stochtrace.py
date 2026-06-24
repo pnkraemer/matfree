@@ -18,6 +18,7 @@ def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable
         [monte_carlo_trace][matfree.stochtrace.monte_carlo_trace],
         [monte_carlo_diagonal][matfree.stochtrace.monte_carlo_diagonal],
         [monte_carlo_frobeniusnorm_squared][matfree.stochtrace.monte_carlo_frobeniusnorm_squared],
+        [monte_carlo_rownorms_squared][matfree.stochtrace.monte_carlo_rownorms_squared],
         or any of the ``monte_carlo_funm_*`` functions from [matfree.funm][matfree.funm].
     sampler
         The sample function. See below for recommendations.
@@ -742,6 +743,24 @@ def monte_carlo_trace_and_diagonal():
         trace_form = linalg.inner(v_flat.conj(), Qv_flat)
         diagonal_form = unflatten(v_flat.conj() * Qv_flat)
         return {"trace": trace_form, "diagonal": diagonal_form}
+
+    return integrand
+
+
+def monte_carlo_rownorms_squared():
+    """Construct the integrand for estimating the squared row norms.
+
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+
+    Notes
+    -----
+    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
+    """
+
+    def integrand(matvec, v, *parameters):
+        Qv = matvec(v, *parameters)
+        Qv_flat, unflatten = tree.ravel_pytree(Qv)
+        return unflatten(linalg.abs2(Qv_flat))
 
     return integrand
 
