@@ -1,7 +1,7 @@
 """Tests for leave_one_out_xrownorms_squared."""
 
 from matfree import stochtrace, test_util
-from matfree.backend import func, linalg, np, prng, testing, config
+from matfree.backend import config, func, linalg, np, prng, testing
 
 
 @testing.parametrize("is_normal", [False, True])
@@ -15,7 +15,7 @@ def test_xrownorms_squared_error_num_samples_more_than_dimension(n, is_normal):
         return A @ v
 
     integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
-    sampler = stochtrace.sampler_normal(np.ones(n), num=n + 1)
+    sampler = stochtrace.sampler_signs(np.ones(n), num=n + 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     message = f"Number of samples num={n + 1} exceeds the acceptable range."
     message = f"{message} Expected: 1 <= num <= {n}."
@@ -51,7 +51,7 @@ def cases_exact_num_samples_at_least_dimension(n, is_normal):
 
     params = (A1, A2)
     x_like = {"x": np.ones(n1), "y": np.ones(n2)}
-    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
+    sampler = stochtrace.sampler_signs(x_like, num=num_samples)
     integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     return matvec, params, estimate, expected
@@ -79,7 +79,7 @@ def cases_exact_num_samples_more_than_rank(n, rank, dtype, is_normal):
 
     params = (A,)
     x_like = {"x": np.ones(n, dtype=dtype)}
-    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
+    sampler = stochtrace.sampler_signs(x_like, num=num_samples)
     integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     return matvec, params, estimate, expected
@@ -113,12 +113,14 @@ def cases_experiments_step_normal():
 
 def cases_experiments_step_general():
     """Hermitian matrix with eigenvalues that are flat with a sudden drop, XRowNorm"""
-    return test_util.hermitian_matrix_eigvals_step, 60, 5e-5, False
+    return test_util.hermitian_matrix_eigvals_step, 60, 1e-5, False
 
 
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize_with_cases(
-    "make_A, num_samples, max_rel_err, is_normal", cases=".", prefix="cases_experiments_"
+    "make_A, num_samples, max_rel_err, is_normal",
+    cases=".",
+    prefix="cases_experiments_",
 )
 def test_xrownorms_squared_reproduce_experiments(
     make_A, num_samples, max_rel_err, is_normal, dtype
@@ -135,7 +137,7 @@ def test_xrownorms_squared_reproduce_experiments(
     expected = np.sum(linalg.abs2(A), axis=1)
 
     x_like = {"x": np.ones(n, dtype=dtype)}
-    sampler = stochtrace.sampler_normal(x_like, num=num_samples)
+    sampler = stochtrace.sampler_signs(x_like, num=num_samples)
     integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
