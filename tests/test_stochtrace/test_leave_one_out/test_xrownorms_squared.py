@@ -2,6 +2,7 @@
 
 from matfree import stochtrace, test_util
 from matfree.backend import config, func, linalg, np, prng, testing
+from matfree.backend.typing import Array, Callable, NamedTuple
 
 
 @testing.parametrize("is_normal", [False, True])
@@ -95,40 +96,73 @@ def test_xrownorms_squared_exact(matvec, params, estimate, expected):
     for leaf, expected_leaf in expected.items():
         test_util.assert_allclose(received[leaf], expected_leaf)
 
+class _ExperimentParams(NamedTuple):
+    make_A: Callable[[int, Array, type], Array]
+    num_samples: int
+    max_rel_err: float
+    is_normal: bool
+    requires_x64: bool
+    dtype: type
 
 def cases_experiments_exp_normal():
     """Hermitian matrix with eigenvalues that decay rapidly, XSymRowNorm"""
-    return test_util.hermitian_matrix_eigvals_decaying, 50, 1e-12, True
+    return _ExperimentParams(
+        make_A=test_util.hermitian_matrix_eigvals_decaying,
+        num_samples=50,
+        max_rel_err=1e-12,
+        is_normal=True,
+        requires_x64=True,
+        dtype=dtype,
+    )
 
 
 def cases_experiments_exp_general():
     """Hermitian matrix with eigenvalues that decay rapidly, XRowNorm"""
-    return test_util.hermitian_matrix_eigvals_decaying, 35, 1e-9, False
+    return _ExperimentParams(
+        make_A=test_util.hermitian_matrix_eigvals_decaying,
+        num_samples=35,
+        max_rel_err=1e-9,
+        is_normal=False,
+        requires_x64=True,
+        dtype=dtype,
+    )
 
 
 def cases_experiments_step_normal():
     """Hermitian matrix with eigenvalues that are flat with a sudden drop, XSymRowNorm"""
-    return test_util.hermitian_matrix_eigvals_step, 60, 9e-3, True
+    return _ExperimentParams(
+        make_A=test_util.hermitian_matrix_eigvals_step,
+        num_samples=60,
+        max_rel_err=9e-3,
+        is_normal=True,
+        requires_x64=False,
+        dtype=dtype,
+    )
 
 
 def cases_experiments_step_general():
     """Hermitian matrix with eigenvalues that are flat with a sudden drop, XRowNorm"""
-    return test_util.hermitian_matrix_eigvals_step, 60, 1e-5, False
+    return _ExperimentParams(
+        make_A=test_util.hermitian_matrix_eigvals_step,
+        num_samples=60,
+        max_rel_err=1e-5,
+        is_normal=False,
+        requires_x64=False,
+        dtype=dtype,
+    )
 
 
 @testing.parametrize("dtype", [float, complex])
 @testing.parametrize_with_cases(
-    "make_A, num_samples, max_rel_err, is_normal",
+    "make_A, num_samples, max_rel_err, is_normal, requires_x64, dtype",
     cases=".",
     prefix="cases_experiments_",
 )
 def test_xrownorms_squared_reproduce_experiments(
-    make_A, num_samples, max_rel_err, is_normal, dtype
+    make_A, num_samples, max_rel_err, is_normal, requires_x64, dtype
 ):
     """Assert that squared row norms are estimated accurately for structured spectra."""
-    requires_x64 = make_A is test_util.hermitian_matrix_eigvals_decaying
-    if requires_x64:
-        config.update("jax_enable_x64", True)
+    config.update("jax_enable_x64", requires_x64)
     n = 1_000
     num_rep = 10
     key = prng.prng_key(50)
@@ -149,5 +183,4 @@ def test_xrownorms_squared_reproduce_experiments(
     max_rel_errs = np.array_max(np.abs(received - expected) / np.abs(expected), axis=1)
     median_max_rel_err = np.median(max_rel_errs)
     assert float(median_max_rel_err) < max_rel_err
-    if requires_x64:
-        config.update("jax_enable_x64", False)
+    config.update("jax_enable_x64", False)

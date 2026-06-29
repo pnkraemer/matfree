@@ -6,6 +6,7 @@ from typing import (  # noqa: F401, UP035
     Any,
     Generic,
     Iterable,
+    NamedTuple,
     Sequence,
     Tuple,
     TypeVar,
