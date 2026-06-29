@@ -319,15 +319,11 @@ def leave_one_out_xdiag() -> Callable:
                 np.ones((num_samples, 1), dtype=diag_B.dtype) * diag_B
             )
 
-        matvec_flat_transpose = func.linear_transpose(matvec_flat, Omega[:, 0])
-
-        def matvec_flat_adjoint(v):
-            (result,) = matvec_flat_transpose(v.conj())
-            return result.conj()
+        matvec_flat_adjoint = func.linear_adjoint(matvec_flat, Omega[:, 0])
 
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
         Q, R = linalg.qr_reduced(Y)
-        Z = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(Q)
+        (Z,) = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(Q)
 
         def _diag_exact():
             diag_B = func.vmap(linalg.vdot, in_axes=0)(Z, Q)
@@ -597,18 +593,13 @@ def leave_one_out_xrownorms_squared(*, is_normal: bool = False) -> Callable:
             return func.vmap(unflatten_out)(srn_all.T)
 
         matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
-
-        matvec_flat_transpose = func.linear_transpose(matvec_flat, Omega[:, 0])
-
-        def matvec_flat_adjoint(v):
-            (result,) = matvec_flat_transpose(v.conj())
-            return result.conj()
+        matvec_flat_adjoint = func.linear_adjoint(matvec_flat, Omega[:, 0])
 
         G = matmat(Omega)
         if is_normal:
             Y = G
         else:
-            Y = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
+            (Y,) = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
         Q, R = linalg.qr_reduced(Y)
 
         Z = matmat(Q)
