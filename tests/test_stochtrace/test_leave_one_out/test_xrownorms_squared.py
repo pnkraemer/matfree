@@ -104,7 +104,9 @@ class _ExperimentParams(NamedTuple):
     requires_x64: bool
     dtype: type
 
-def cases_experiments_exp_normal():
+
+@testing.parametrize("dtype", [float, complex])
+def cases_experiments_exp_normal(dtype):
     """Hermitian matrix with eigenvalues that decay rapidly, XSymRowNorm"""
     return _ExperimentParams(
         make_A=test_util.hermitian_matrix_eigvals_decaying,
@@ -116,7 +118,8 @@ def cases_experiments_exp_normal():
     )
 
 
-def cases_experiments_exp_general():
+@testing.parametrize("dtype", [float, complex])
+def cases_experiments_exp_general(dtype):
     """Hermitian matrix with eigenvalues that decay rapidly, XRowNorm"""
     return _ExperimentParams(
         make_A=test_util.hermitian_matrix_eigvals_decaying,
@@ -128,7 +131,8 @@ def cases_experiments_exp_general():
     )
 
 
-def cases_experiments_step_normal():
+@testing.parametrize("dtype", [float, complex])
+def cases_experiments_step_normal(dtype):
     """Hermitian matrix with eigenvalues that are flat with a sudden drop, XSymRowNorm"""
     return _ExperimentParams(
         make_A=test_util.hermitian_matrix_eigvals_step,
@@ -140,7 +144,8 @@ def cases_experiments_step_normal():
     )
 
 
-def cases_experiments_step_general():
+@testing.parametrize("dtype", [float, complex])
+def cases_experiments_step_general(dtype):
     """Hermitian matrix with eigenvalues that are flat with a sudden drop, XRowNorm"""
     return _ExperimentParams(
         make_A=test_util.hermitian_matrix_eigvals_step,
@@ -152,7 +157,6 @@ def cases_experiments_step_general():
     )
 
 
-@testing.parametrize("dtype", [float, complex])
 @testing.parametrize_with_cases(
     "make_A, num_samples, max_rel_err, is_normal, requires_x64, dtype",
     cases=".",
