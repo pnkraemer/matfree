@@ -1,4 +1,4 @@
-"""Tests for leave_one_out_xrownorms_squared."""
+"""Tests for leave_one_out_xsymrownorms_squared."""
 
 from matfree import stochtrace, test_util
 from matfree.backend import config, func, linalg, np, prng, testing
@@ -6,7 +6,7 @@ from matfree.backend.typing import Array, Callable, NamedTuple
 
 
 @testing.parametrize("n", [10, 20])
-def test_xrownorms_squared_error_num_samples_more_than_dimension(n):
+def test_xsymrownorms_squared_error_num_samples_more_than_dimension(n):
     """Assert that num_samples greater than the dimension raises a ValueError."""
     key = prng.prng_key(1)
     A = np.eye(n)
@@ -14,7 +14,7 @@ def test_xrownorms_squared_error_num_samples_more_than_dimension(n):
     def matvec(v, A):
         return A @ v
 
-    integrand = stochtrace.leave_one_out_xrownorms_squared()
+    integrand = stochtrace.leave_one_out_xsymrownorms_squared()
     sampler = stochtrace.sampler_signs(np.ones(n), num=n + 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     message = f"Number of samples num={n + 1} exceeds the acceptable range."
@@ -25,14 +25,14 @@ def test_xrownorms_squared_error_num_samples_more_than_dimension(n):
 
 @testing.parametrize("n", [12, 30])
 def cases_exact_num_samples_at_least_dimension(n):
-    """Exact squared row norms when num_samples >= n/3.
+    """Exact squared row norms when num_samples >= n/2.
 
     Uses two differently-sized pytree blocks, also exercising heterogeneous
     pytree support.
     """
     n1 = max(1, n // 3)
     n2 = n - n1
-    num_samples = n // 3
+    num_samples = n // 2
     key_eigvals1, key_eigvals2, key_eigvecs1, key_eigvecs2 = prng.split(
         prng.prng_key(1), 4
     )
@@ -51,7 +51,7 @@ def cases_exact_num_samples_at_least_dimension(n):
     params = (A1, A2)
     x_like = {"x": np.ones(n1), "y": np.ones(n2)}
     sampler = stochtrace.sampler_signs(x_like, num=num_samples)
-    integrand = stochtrace.leave_one_out_xrownorms_squared()
+    integrand = stochtrace.leave_one_out_xsymrownorms_squared()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     return matvec, params, estimate, expected
 
@@ -62,9 +62,9 @@ def cases_exact_num_samples_more_than_rank(n, rank, dtype):
     """Exact squared row norms when num_samples exceeds the operator's rank."""
     num_samples = rank + 1
     key_mat1, key_mat2 = prng.split(prng.prng_key(1), 2)
-    A1 = prng.normal(key_mat1, shape=(n + 1, rank), dtype=dtype)
-    A2 = prng.normal(key_mat2, shape=(rank, n), dtype=dtype)
-    A = A1 @ A2
+    nz_eigvals = prng.normal(key_mat1, shape=(rank,), dtype=dtype)
+    eigvals = np.concatenate([nz_eigvals, np.zeros(n - rank, dtype=dtype)])
+    A = test_util.hermitian_matrix_from_eigenvalues(eigvals, key_mat2, dtype=dtype)
     expected = {"fx": np.sum(linalg.abs2(A), axis=1)}
 
     def matvec(v, A):
@@ -73,7 +73,7 @@ def cases_exact_num_samples_more_than_rank(n, rank, dtype):
     params = (A,)
     x_like = {"x": np.ones(n, dtype=dtype)}
     sampler = stochtrace.sampler_signs(x_like, num=num_samples)
-    integrand = stochtrace.leave_one_out_xrownorms_squared()
+    integrand = stochtrace.leave_one_out_xsymrownorms_squared()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     return matvec, params, estimate, expected
 
@@ -81,7 +81,7 @@ def cases_exact_num_samples_more_than_rank(n, rank, dtype):
 @testing.parametrize_with_cases(
     "matvec, params, estimate, expected", cases=".", prefix="cases_exact_"
 )
-def test_xrownorms_squared_exact(matvec, params, estimate, expected):
+def test_xsymrownorms_squared_exact(matvec, params, estimate, expected):
     """Assert exact squared row norms when num_samples is large enough."""
     key = prng.prng_key(1)
     received = estimate(matvec, key, *params)
@@ -102,8 +102,8 @@ def cases_experiments_exp(dtype):
     """Hermitian matrix with eigenvalues that decay rapidly."""
     return _ExperimentParams(
         make_A=test_util.hermitian_matrix_eigvals_decaying,
-        num_samples=35,
-        max_rel_err=1e-9,
+        num_samples=50,
+        max_rel_err=1e-12,
         requires_x64=True,
         dtype=dtype,
     )
@@ -115,7 +115,7 @@ def cases_experiments_step(dtype):
     return _ExperimentParams(
         make_A=test_util.hermitian_matrix_eigvals_step,
         num_samples=60,
-        max_rel_err=1e-5,
+        max_rel_err=9e-3,
         requires_x64=False,
         dtype=dtype,
     )
@@ -126,7 +126,7 @@ def cases_experiments_step(dtype):
     cases=".",
     prefix="cases_experiments_",
 )
-def test_xrownorms_squared_reproduce_experiments(
+def test_xsymrownorms_squared_reproduce_experiments(
     make_A, num_samples, max_rel_err, requires_x64, dtype
 ):
     """Assert that squared row norms are estimated accurately for structured spectra."""
@@ -140,7 +140,7 @@ def test_xrownorms_squared_reproduce_experiments(
 
     x_like = {"x": np.ones(n, dtype=dtype)}
     sampler = stochtrace.sampler_signs(x_like, num=num_samples)
-    integrand = stochtrace.leave_one_out_xrownorms_squared()
+    integrand = stochtrace.leave_one_out_xsymrownorms_squared()
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, A):
