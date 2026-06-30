@@ -544,11 +544,13 @@ def leave_one_out_xrownorms_squared() -> Callable:
 
     Notes
     -----
-    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
+    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec (
+    see [`func.linear_adjoint`][matfree.func.linear_adjoint]).
 
     For normal operators (those that commute with their adjoint),
     [leave_one_out_xsymrownorms_squared][matfree.stochtrace.leave_one_out_xsymrownorms_squared],
-    requires fewer matvecs per sample but is typically less accurate per sample.
+    performs only 2/3 of the matvecs per sample compared to this algorithm but is typically less
+    accurate per sample.
 
     References
     ----------
@@ -559,7 +561,7 @@ def leave_one_out_xrownorms_squared() -> Callable:
 
 
 def leave_one_out_xsymrownorms_squared() -> Callable:
-    """Construct an integrand for estimating squared row norms using the XSymRowNorm algorithm (Epperly, 2025).
+    """Construct an integrand for estimating squared row norms of a normal operator using the XSymRowNorm algorithm (Epperly, 2025).
 
     Returns
     -------
@@ -569,12 +571,13 @@ def leave_one_out_xsymrownorms_squared() -> Callable:
         whose input has the signature ``(matvec, samples, *params)`` and whose output is a
         pytree with each leaf having shape ``(num_samples, n_k)``, giving one squared-row-norm
         estimate per leave-one-out sample.
+        The input and output pytree structures are assumed to be identical.
         The ``matvec`` must be a normal operator, i.e. it must commute with its adjoint
         (conjugate-transpose-conjugate) up to numerical precision.
 
     Notes
     -----
-    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
+    For normal operators, the row and column norms are equal, so this algorithm can also be used to estimate squared column norms.
 
     For general (non-normal) operators, use
     [leave_one_out_xrownorms_squared][matfree.stochtrace.leave_one_out_xrownorms_squared].
