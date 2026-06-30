@@ -530,17 +530,8 @@ def leave_one_out_xnysdiag(
     return integrand
 
 
-def leave_one_out_xrownorms_squared(*, is_normal: bool = False) -> Callable:
-    """Construct an integrand for estimating squared row norms using the XRowNorm/XSymRowNorm algorithms (Epperly, 2025).
-
-    Parameters
-    ----------
-    is_normal
-        `True` indicates that the operator is normal (or almost-Hermitian), which allows for the more sample-efficient XSymRowNorm construction.
-        `False` uses the more general XRowNorm construction.
-
-        An operator `matvec` is normal if it commutes with its adjoint (i.e. conjugate-transpose-conjugate) operation `matvec_adj`.
-        That is, applying `matvec` followed by `matvec_adj` is equivalent to applying `matvec_adj` followed by `matvec`, up to numerical precision.
+def leave_one_out_xrownorms_squared() -> Callable:
+    """Construct an integrand for estimating squared row norms using the XRowNorm algorithm (Epperly, 2025).
 
     Returns
     -------
@@ -555,12 +546,48 @@ def leave_one_out_xrownorms_squared(*, is_normal: bool = False) -> Callable:
     -----
     To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
 
+    For normal operators (those that commute with their adjoint),
+    [leave_one_out_xsymrownorms_squared][matfree.stochtrace.leave_one_out_xsymrownorms_squared],
+    requires fewer matvecs per sample but is typically less accurate per sample.
+
     References
     ----------
     - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
         arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
     """
+    return _leave_one_out_rownorms_squared(iterate_subspace=True)
 
+
+def leave_one_out_xsymrownorms_squared() -> Callable:
+    """Construct an integrand for estimating squared row norms using the XSymRowNorm algorithm (Epperly, 2025).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one squared-row-norm
+        estimate per leave-one-out sample.
+        The ``matvec`` must be a normal operator, i.e. it must commute with its adjoint
+        (conjugate-transpose-conjugate) up to numerical precision.
+
+    Notes
+    -----
+    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
+
+    For general (non-normal) operators, use
+    [leave_one_out_xrownorms_squared][matfree.stochtrace.leave_one_out_xrownorms_squared].
+
+    References
+    ----------
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+    return _leave_one_out_rownorms_squared(iterate_subspace=False)
+
+
+def _leave_one_out_rownorms_squared(*, iterate_subspace: bool):
     def integrand(matvec, samples, *params):
         sample0 = tree.tree_map(lambda s: s[0], samples)
         _, unflatten = tree.ravel_pytree(sample0)
@@ -578,9 +605,13 @@ def leave_one_out_xrownorms_squared(*, is_normal: bool = False) -> Callable:
         def matvec_flat(v):
             return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
 
-        num_matvecs = (2 if is_normal else 3) * num_samples
+        def matvec_flat_adjoint(v):
+            return tree.ravel_pytree(func.linear_adjoint(matvec_flat, v))[0]
 
-        if num_matvecs >= n:
+        matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
+
+        num_matvecs_per_sample = 2 + int(iterate_subspace)
+        if num_matvecs_per_sample * num_samples >= n:
             # It's faster, more accurate, and allocates less memory to compute the row
             # norms exactly and deterministically on the materialized operator when
             # the number of matvecs exceeds the input dimension of the operator
@@ -592,14 +623,11 @@ def leave_one_out_xrownorms_squared(*, is_normal: bool = False) -> Callable:
             )
             return func.vmap(unflatten_out)(srn_all.T)
 
-        matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
-        matvec_flat_adjoint = func.linear_adjoint(matvec_flat, Omega[:, 0])
-
         G = matmat(Omega)
-        if is_normal:
-            Y = G
+        if iterate_subspace:
+            Y = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
         else:
-            (Y,) = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
+            Y = G
         Q, R = linalg.qr_reduced(Y)
 
         Z = matmat(Q)

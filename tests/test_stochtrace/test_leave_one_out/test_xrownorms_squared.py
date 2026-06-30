@@ -1,8 +1,14 @@
-"""Tests for leave_one_out_xrownorms_squared."""
+"""Tests for leave_one_out_xrownorms_squared and leave_one_out_xsymrownorms_squared."""
 
 from matfree import stochtrace, test_util
 from matfree.backend import config, func, linalg, np, prng, testing
 from matfree.backend.typing import Array, Callable, NamedTuple
+
+
+def _make_integrand(is_normal):
+    if is_normal:
+        return stochtrace.leave_one_out_xsymrownorms_squared()
+    return stochtrace.leave_one_out_xrownorms_squared()
 
 
 @testing.parametrize("is_normal", [False, True])
@@ -15,7 +21,7 @@ def test_xrownorms_squared_error_num_samples_more_than_dimension(n, is_normal):
     def matvec(v, A):
         return A @ v
 
-    integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
+    integrand = _make_integrand(is_normal)
     sampler = stochtrace.sampler_signs(np.ones(n), num=n + 1)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     message = f"Number of samples num={n + 1} exceeds the acceptable range."
@@ -53,7 +59,7 @@ def cases_exact_num_samples_at_least_dimension(n, is_normal):
     params = (A1, A2)
     x_like = {"x": np.ones(n1), "y": np.ones(n2)}
     sampler = stochtrace.sampler_signs(x_like, num=num_samples)
-    integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
+    integrand = _make_integrand(is_normal)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     return matvec, params, estimate, expected
 
@@ -81,7 +87,7 @@ def cases_exact_num_samples_more_than_rank(n, rank, dtype, is_normal):
     params = (A,)
     x_like = {"x": np.ones(n, dtype=dtype)}
     sampler = stochtrace.sampler_signs(x_like, num=num_samples)
-    integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
+    integrand = _make_integrand(is_normal)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
     return matvec, params, estimate, expected
 
@@ -95,6 +101,7 @@ def test_xrownorms_squared_exact(matvec, params, estimate, expected):
     received = estimate(matvec, key, *params)
     for leaf, expected_leaf in expected.items():
         test_util.assert_allclose(received[leaf], expected_leaf)
+
 
 class _ExperimentParams(NamedTuple):
     make_A: Callable[[int, Array, type], Array]
@@ -176,7 +183,7 @@ def test_xrownorms_squared_reproduce_experiments(
 
     x_like = {"x": np.ones(n, dtype=dtype)}
     sampler = stochtrace.sampler_signs(x_like, num=num_samples)
-    integrand = stochtrace.leave_one_out_xrownorms_squared(is_normal=is_normal)
+    integrand = _make_integrand(is_normal)
     estimate = stochtrace.estimator_leave_one_out(integrand, sampler)
 
     def matvec(v, A):
