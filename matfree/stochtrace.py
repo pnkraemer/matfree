@@ -605,10 +605,8 @@ def _leave_one_out_rownorms_squared(*, iterate_subspace: bool):
         def matvec_flat(v):
             return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
 
-        def matvec_flat_adjoint(v):
-            return tree.ravel_pytree(func.linear_adjoint(matvec_flat, v))[0]
-
         matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
+        matvec_flat_adjoint = func.linear_adjoint(matvec_flat, Omega[:, 0])
 
         num_matvecs_per_sample = 2 + int(iterate_subspace)
         if num_matvecs_per_sample * num_samples >= n:
@@ -625,7 +623,7 @@ def _leave_one_out_rownorms_squared(*, iterate_subspace: bool):
 
         G = matmat(Omega)
         if iterate_subspace:
-            Y = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
+            (Y,) = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
         else:
             Y = G
         Q, R = linalg.qr_reduced(Y)
