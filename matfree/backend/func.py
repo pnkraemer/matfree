@@ -46,6 +46,18 @@ def linear_transpose(func, *primals):
     return jax.linear_transpose(func, *primals)
 
 
+def linear_adjoint(func, *primals):
+    transpose = jax.linear_transpose(func, *primals)
+
+    def tree_conj(x):
+        return jax.tree.map(lambda x: x.conj(), x)
+
+    def adjoint(*primal_results):
+        return tree_conj(transpose(*tree_conj(primal_results)))
+
+    return adjoint
+
+
 def grad(func):
     return jax.grad(func)
 

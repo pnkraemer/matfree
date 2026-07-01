@@ -18,6 +18,7 @@ def estimator_monte_carlo(integrand: Callable, /, sampler: Callable) -> Callable
         [monte_carlo_trace][matfree.stochtrace.monte_carlo_trace],
         [monte_carlo_diagonal][matfree.stochtrace.monte_carlo_diagonal],
         [monte_carlo_frobeniusnorm_squared][matfree.stochtrace.monte_carlo_frobeniusnorm_squared],
+        [monte_carlo_rownorms_squared][matfree.stochtrace.monte_carlo_rownorms_squared],
         or any of the ``monte_carlo_funm_*`` functions from [matfree.funm][matfree.funm].
     sampler
         The sample function. See below for recommendations.
@@ -318,15 +319,11 @@ def leave_one_out_xdiag() -> Callable:
                 np.ones((num_samples, 1), dtype=diag_B.dtype) * diag_B
             )
 
-        matvec_flat_transpose = func.linear_transpose(matvec_flat, Omega[:, 0])
-
-        def matvec_flat_adjoint(v):
-            (result,) = matvec_flat_transpose(v.conj())
-            return result.conj()
+        matvec_flat_adjoint = func.linear_adjoint(matvec_flat, Omega[:, 0])
 
         Y = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)(Omega)
         Q, R = linalg.qr_reduced(Y)
-        Z = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(Q)
+        (Z,) = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(Q)
 
         def _diag_exact():
             diag_B = func.vmap(linalg.vdot, in_axes=0)(Z, Q)
@@ -533,6 +530,140 @@ def leave_one_out_xnysdiag(
     return integrand
 
 
+def leave_one_out_xrownorms_squared() -> Callable:
+    """Construct an integrand for estimating squared row norms using the XRowNorm algorithm (Epperly, 2025).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one squared-row-norm
+        estimate per leave-one-out sample.
+
+    Notes
+    -----
+    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec (
+    see [`func.linear_adjoint`][matfree.func.linear_adjoint]).
+
+    For normal operators (those that commute with their adjoint),
+    [leave_one_out_xsymrownorms_squared][matfree.stochtrace.leave_one_out_xsymrownorms_squared],
+    performs only 2/3 of the matvecs per sample compared to this algorithm but is typically less
+    accurate per sample.
+
+    References
+    ----------
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+    return _leave_one_out_rownorms_squared(iterate_subspace=True)
+
+
+def leave_one_out_xsymrownorms_squared() -> Callable:
+    """Construct an integrand for estimating squared row norms of a normal operator using the XSymRowNorm algorithm (Epperly, 2025).
+
+    Returns
+    -------
+    integrand
+        An integrand function compatible with
+        [estimator_leave_one_out][matfree.stochtrace.estimator_leave_one_out]
+        whose input has the signature ``(matvec, samples, *params)`` and whose output is a
+        pytree with each leaf having shape ``(num_samples, n_k)``, giving one squared-row-norm
+        estimate per leave-one-out sample.
+        The input and output pytree structures are assumed to be identical.
+        The ``matvec`` must be a normal operator, i.e. it must commute with its adjoint
+        (conjugate-transpose-conjugate) up to numerical precision.
+
+    Notes
+    -----
+    For normal operators, the row and column norms are equal, so this algorithm can also be used to estimate squared column norms.
+
+    For general (non-normal) operators, use
+    [leave_one_out_xrownorms_squared][matfree.stochtrace.leave_one_out_xrownorms_squared].
+
+    References
+    ----------
+    - Epperly EN (2025). Make the most of what you have: Resource-efficient randomized algorithms for matrix computations. PhD Thesis.
+        arXiv: [2512.15929](https://arxiv.org/abs/2512.15929)
+    """
+    return _leave_one_out_rownorms_squared(iterate_subspace=False)
+
+
+def _leave_one_out_rownorms_squared(*, iterate_subspace: bool):
+    def integrand(matvec, samples, *params):
+        sample0 = tree.tree_map(lambda s: s[0], samples)
+        _, unflatten = tree.ravel_pytree(sample0)
+
+        out_shape = func.eval_shape(matvec, sample0, *params)
+        out0 = tree.tree_map(lambda s: np.zeros(s.shape, dtype=s.dtype), out_shape)
+        _, unflatten_out = tree.ravel_pytree(out0)
+
+        Omega = func.vmap(lambda s: tree.ravel_pytree(s)[0])(samples).T
+        n, num_samples = Omega.shape
+
+        if num_samples > n:
+            raise ValueError(_error_num_samples(num_samples, maxval=n, minval=1))
+
+        def matvec_flat(v):
+            return tree.ravel_pytree(matvec(unflatten(v), *params))[0]
+
+        matmat = func.vmap(matvec_flat, in_axes=-1, out_axes=-1)
+        matvec_flat_adjoint = func.linear_adjoint(matvec_flat, Omega[:, 0])
+
+        num_matvecs_per_sample = 2 + int(iterate_subspace)
+        if num_matvecs_per_sample * num_samples >= n:
+            # It's faster, more accurate, and allocates less memory to compute the row
+            # norms exactly and deterministically on the materialized operator when
+            # the number of matvecs exceeds the input dimension of the operator
+            B_mat = _materialize_operator(matvec_flat, Omega[:, 0])
+            rownorms_squared = _rownorms_squared(B_mat)
+            srn_all = (
+                np.ones(num_samples, dtype=rownorms_squared.dtype)
+                * rownorms_squared[:, None]
+            )
+            return func.vmap(unflatten_out)(srn_all.T)
+
+        G = matmat(Omega)
+        if iterate_subspace:
+            (Y,) = func.vmap(matvec_flat_adjoint, in_axes=-1, out_axes=-1)(G)
+        else:
+            Y = G
+        Q, R = linalg.qr_reduced(Y)
+
+        Z = matmat(Q)
+        srn_B_hat = _rownorms_squared(Z)
+
+        def _rownorms_squared_exact():
+            return np.ones(num_samples, dtype=srn_B_hat.dtype) * srn_B_hat[:, None]
+
+        def _rownorms_squared_estimate():
+            S = _qr_leave_one_out_factor(R)
+
+            W = Q.T.conj() @ Omega
+            W_vd_S = func.vmap(linalg.vdot, in_axes=1)(W, S)
+            # Omega projected onto the subspace spanned by Q_i, i.e. Q formed leaving out Omega[:, i]
+            X = W - S * W_vd_S.conj()
+
+            # srn(B_hat) leaving out one sample
+            srn_B_hat_loo = srn_B_hat[:, None] - linalg.abs2(Z @ S)
+            # Johnson-Lindenstrauss estimate of srn(B - B_hat_{-i}) using samples[i, :] as probes.
+            srn_residual_loo = linalg.abs2(G - Z @ X)
+            return srn_B_hat_loo + srn_residual_loo
+
+        is_Y_rank_deficient = (
+            np.sum(np.abs(linalg.diagonal(R)) > np.finfo_eps(R.dtype)) < num_samples
+        )
+
+        srn_loo = control_flow.cond(
+            is_Y_rank_deficient, _rownorms_squared_exact, _rownorms_squared_estimate
+        )
+
+        return func.vmap(unflatten_out)(srn_loo.T)
+
+    return integrand
+
+
 def _qr_leave_one_out_factor(R):
     r"""Compute the downdate factor for a QR decomposition leaving out a single column.
 
@@ -697,6 +828,11 @@ def _symmetrize(x):
     return (x + x.T.conj()) / 2
 
 
+def _rownorms_squared(X):
+    """Compute the squared row norms of a matrix."""
+    return np.sum(linalg.abs2(X), axis=1)
+
+
 def monte_carlo_diagonal():
     """Construct the integrand for estimating the diagonal.
 
@@ -742,6 +878,24 @@ def monte_carlo_trace_and_diagonal():
         trace_form = linalg.inner(v_flat.conj(), Qv_flat)
         diagonal_form = unflatten(v_flat.conj() * Qv_flat)
         return {"trace": trace_form, "diagonal": diagonal_form}
+
+    return integrand
+
+
+def monte_carlo_rownorms_squared():
+    """Construct the integrand for estimating the squared row norms.
+
+    Use with [estimator_monte_carlo][matfree.stochtrace.estimator_monte_carlo].
+
+    Notes
+    -----
+    To estimate squared column norms instead, pass the adjoint (i.e. conjugate-transpose-conjugate) of the matvec.
+    """
+
+    def integrand(matvec, v, *parameters):
+        Qv = matvec(v, *parameters)
+        Qv_flat, unflatten = tree.ravel_pytree(Qv)
+        return unflatten(linalg.abs2(Qv_flat))
 
     return integrand
 
