@@ -6,11 +6,14 @@ from matfree.backend import linalg, np, prng, testing
 
 @testing.parametrize("reortho", ["full", "none"])
 @testing.parametrize("ndim", [12])
-def test_full_rank_reconstruction_is_exact(reortho, ndim):
+@testing.parametrize("dtype", [float, complex])
+def test_full_rank_reconstruction_is_exact(reortho, ndim, dtype):
     # Set up a test-matrix and an initial vector
     eigvals = np.arange(1.0, 2.0, step=1 / ndim)
-    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
-    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
+    matrix = test_util.hermitian_matrix_from_eigenvalues(
+        eigvals, prng.prng_key(1), dtype=dtype
+    )
+    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals))).astype(dtype)
 
     def matvec(s, p):
         [(x,)] = s
@@ -23,7 +26,7 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
 
     # Reconstruct the original matrix from the full-num_matvecs approximation
     # Q shape is (k, n) -- rows are Krylov vectors
-    matrix_reconstructed = Q.T @ T @ Q
+    matrix_reconstructed = Q.T @ T @ Q.conj()
 
     if reortho == "full":
         tols = {"atol": 1e-5, "rtol": 1e-5}
@@ -43,11 +46,16 @@ def test_full_rank_reconstruction_is_exact(reortho, ndim):
 @testing.parametrize("num_matvecs", [1, 5, 11])
 @testing.parametrize("ndim", [12])
 @testing.parametrize("reortho", ["full", "none"])
-def test_mid_rank_reconstruction_satisfies_decomposition(ndim, num_matvecs, reortho):
+@testing.parametrize("dtype", [float, complex])
+def test_mid_rank_reconstruction_satisfies_decomposition(
+    ndim, num_matvecs, reortho, dtype
+):
     # Set up a test-matrix and an initial vector
     eigvals = np.arange(1.0, 2.0, step=1 / ndim)
-    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
-    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
+    matrix = test_util.hermitian_matrix_from_eigenvalues(
+        eigvals, prng.prng_key(1), dtype=dtype
+    )
+    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals))).astype(dtype)
 
     def matvec(s, p):
         [(x,)] = s
