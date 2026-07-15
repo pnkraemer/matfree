@@ -20,6 +20,23 @@ def test_equal_to_linalg_eigh(nrows):
     assert np.allclose(vals, S)
 
 
+@testing.parametrize("nrows", [48])
+@testing.parametrize("num_matvecs", [24])
+def test_ritz_values_stay_bounded_for_complex_hermitian(nrows, num_matvecs):
+    C = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=complex)
+    A = C @ C.T.conj() + nrows * np.eye(nrows)
+    v0 = np.ones((nrows,), dtype=A.dtype)
+
+    tridiag_sym = decomp.tridiag_sym(num_matvecs, reortho="full")
+    alg = eig.eigh_partial(tridiag_sym)
+    vals, _ = alg(lambda v, p: p @ v, v0, A)
+
+    true_vals, _ = linalg.eigh(A)
+    assert np.array_max(vals) <= np.array_max(true_vals) + 1e-6 * np.array_max(
+        true_vals
+    )
+
+
 @testing.parametrize("nrows", [8])
 @testing.parametrize("num_matvecs", [8, 4, 0])
 def test_shapes_as_expected_vector(nrows, num_matvecs):

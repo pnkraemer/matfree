@@ -7,7 +7,7 @@ from matfree.backend import linalg, np, prng, testing
 @testing.parametrize("nrows", [10])
 @testing.parametrize("num_matvecs", [0, 5, 9])
 @testing.parametrize("reortho", ["none", "full"])
-@testing.parametrize("dtype", [float])
+@testing.parametrize("dtype", [float, complex])
 def test_decomposition_is_satisfied(nrows, num_matvecs, reortho, dtype):
     # Create a well-conditioned test-matrix
     A = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=dtype)
@@ -65,7 +65,7 @@ def test_reorthogonalisation_improves_the_estimate(nrows, num_matvecs, reortho):
     # Test the decompositions
     e0, ek = np.eye(num_matvecs)[[0, -1], :]
     test_util.assert_allclose(A @ Q.T - Q.T @ H - linalg.outer(r, ek), 0.0)
-    test_util.assert_allclose(Q @ Q.T - np.eye(num_matvecs), 0.0)
+    test_util.assert_allclose(Q @ Q.T.conj() - np.eye(num_matvecs), 0.0)
     test_util.assert_allclose(Q.T @ e0, c * v)
 
 

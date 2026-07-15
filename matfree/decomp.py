@@ -130,7 +130,7 @@ def _tridiag_reortho_full(num_matvecs: int, /, *, custom_vjp: bool, materialize:
     def estimate(matvec, vec, *params):
         Q, H, v, norm = alg(matvec, vec, *params)
 
-        T = 0.5 * (H + H.T)
+        T = 0.5 * (H + H.T.conj())
         diags = linalg.diagonal(T, offset=0)
         offdiags = linalg.diagonal(T, offset=1)
 
@@ -219,9 +219,9 @@ def _tridiag_reortho_none(num_matvecs: int, /, *, custom_vjp: bool, materialize:
 
 def _tridiag_forward(matvec, num_matvecs, vec, *params):
     # Pre-allocate
-    vectors = np.zeros((num_matvecs + 1, len(vec)))
-    offdiags = np.zeros((num_matvecs,))
-    diags = np.zeros((num_matvecs,))
+    vectors = np.zeros((num_matvecs + 1, len(vec)), dtype=vec.dtype)
+    offdiags = np.zeros((num_matvecs,), dtype=vec.dtype)
+    diags = np.zeros((num_matvecs,), dtype=vec.dtype)
 
     # Normalize (not all Lanczos implementations do that)
     v0 = vec / linalg.vector_norm(vec)
@@ -261,7 +261,7 @@ def _tridiag_fwd_init(matvec, vec, *params):
     for x_{k+1}, a_k, and b_k, using
     orthogonality of the x_k.
     """
-    a = vec @ (matvec(vec, *params))
+    a = linalg.vdot(vec, matvec(vec, *params))
     r = (matvec(vec, *params)) - a * vec
     b = linalg.vector_norm(r)
     x = r / b
@@ -285,7 +285,7 @@ def _tridiag_fwd_step(matvec, params, i, val):
 
 def _tridiag_fwd_step_apply(matvec, vec, b, vec_previous, *params):
     """Apply Lanczos' recurrence."""
-    a = vec @ (matvec(vec, *params))
+    a = linalg.vdot(vec, matvec(vec, *params))
     r = matvec(vec, *params) - a * vec - b * vec_previous
     b = linalg.vector_norm(r)
     x = r / b
@@ -353,8 +353,8 @@ def hessenberg(
 ):
     r"""Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
 
-    Factorise $A \approx Q H Q^\top$, where $Q$ is orthogonal and $H$ is upper Hessenberg.
-    Works for **arbitrary square matrices**. Does not support complex-valued matrices.
+    Factorise $A \approx Q H Q^H$, where $Q$ is orthonormal and $H$ is upper Hessenberg.
+    Works for **arbitrary square matrices** including complex-valued matrices.
 
     Setting `custom_vjp` to `True` implies using efficient, numerically stable
     gradients of the Arnoldi iteration which was proposed by Krämer et al. (2024).
@@ -432,7 +432,7 @@ def _hessenberg_forward(matvec, num_matvecs, v, *params, reortho: str):
     (n,), k = np.shape(v), num_matvecs
     Q = np.zeros((n, k), dtype=v.dtype)
     H = np.zeros((k, k), dtype=v.dtype)
-    initlength = np.sqrt(linalg.inner(v, v))
+    initlength = np.sqrt(linalg.vdot(v, v))
     init = (Q, H, v, initlength)
 
     if num_matvecs == 0:
@@ -460,15 +460,15 @@ def _hessenberg_forward_step(Q, H, v, length, matvec, *params, idx, reortho: str
     v = matvec(v, *params)
 
     # Orthonormalise
-    h = Q.T @ v
+    h = Q.T.conj() @ v
     v = v - Q @ h
 
     # Re-orthonormalise
     if reortho != "none":
-        v = v - Q @ (Q.T @ v)
+        v = v - Q @ (Q.T.conj() @ v)
 
     # Read the length
-    length = np.sqrt(linalg.inner(v, v))
+    length = np.sqrt(linalg.vdot(v, v))
 
     # Save
     h = h.at[idx + 1].set(length)
