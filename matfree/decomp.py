@@ -37,9 +37,11 @@ def tridiag_sym(
 ):
     r"""Construct an implementation of **tridiagonalisation**.
 
-    Decompose a real **symmetric** matrix into a product of orthogonal-**tridiagonal**-orthogonal matrices.
+    Decompose a real **symmetric** or complex **Hermitian** matrix into a product of orthonormal-**tridiagonal**-orthonormal matrices.
     Use this algorithm for approximate **eigenvalue** decompositions.
-    Does not support complex-valued matrices.
+    Complex-valued matrices are supported in the forward pass, but not in the
+    custom reverse-mode adjoint. Use ``custom_vjp=False`` for complex-valued
+    differentiation.
 
     The present implementation allocates all Lanczos vectors before running the
     algorithm. If `reortho` is set to `"full"`, it also uses full reorthogonalisation.
@@ -354,7 +356,10 @@ def hessenberg(
     r"""Construct a **Hessenberg-factorisation** via the Arnoldi iteration.
 
     Factorise $A \approx Q H Q^H$, where $Q$ is orthonormal and $H$ is upper Hessenberg.
-    Works for **arbitrary square matrices** including complex-valued matrices.
+    Works for **arbitrary square matrices** including complex-valued matrices
+    in the forward pass, but complex-valued matrices are not supported by the
+    custom reverse-mode adjoint. Use ``custom_vjp=False`` for complex-valued
+    differentiation.
 
     Setting `custom_vjp` to `True` implies using efficient, numerically stable
     gradients of the Arnoldi iteration which was proposed by Krämer et al. (2024).

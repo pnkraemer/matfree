@@ -22,7 +22,7 @@ def test_equal_to_linalg_eigh(nrows):
 
 @testing.parametrize("nrows", [48])
 @testing.parametrize("num_matvecs", [24])
-def test_ritz_values_stay_bounded_for_complex_hermitian(nrows, num_matvecs):
+def test_ritz_values_stay_bounded_for_complex_hermitian_regression(nrows, num_matvecs):
     C = prng.normal(prng.prng_key(1), shape=(nrows, nrows), dtype=complex)
     A = C @ C.T.conj() + nrows * np.eye(nrows)
     v0 = np.ones((nrows,), dtype=A.dtype)
