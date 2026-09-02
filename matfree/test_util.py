@@ -62,7 +62,7 @@ def tree_random_like(key, pytree, *, generate_func=prng.normal):
 
 def assert_columns_orthonormal(Q, /):
     """Assert that the columns in a matrix are orthonormal."""
-    eye_like = Q.T @ Q
+    eye_like = Q.T.conj() @ Q
     ref = np.eye(len(eye_like))
     assert_allclose(eye_like, ref)
 
