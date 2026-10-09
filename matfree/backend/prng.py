@@ -27,3 +27,7 @@ def rademacher(key, *, shape, dtype=None):
     if dtype is None:
         return jax.random.rademacher(key, shape=shape)
     return jax.random.rademacher(key, shape=shape, dtype=dtype)
+
+
+def choice(key, a, *, shape, p=None, replace=True):
+    return jax.random.choice(key, a, shape=shape, p=p, replace=replace)

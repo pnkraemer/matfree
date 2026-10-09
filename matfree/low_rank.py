@@ -1,6 +1,6 @@
 """Low-rank approximations (like partial Cholesky decompositions) of matrices."""
 
-from matfree.backend import control_flow, func, linalg, np
+from matfree.backend import control_flow, func, linalg, np, prng
 from matfree.backend.typing import Array, Callable
 
 
@@ -11,10 +11,11 @@ def preconditioner(cholesky: Callable, /) -> Callable:
     ----------
     cholesky
         (Partial) Cholesky decomposition.
-        Usually, the result of either
-        [cholesky_partial][matfree.low_rank.cholesky_partial]
+        Usually, the result of
+        [cholesky_partial][matfree.low_rank.cholesky_partial],
+        [cholesky_partial_pivot][matfree.low_rank.cholesky_partial_pivot],
         or
-        [cholesky_partial_pivot][matfree.low_rank.cholesky_partial_pivot].
+        [cholesky_partial_pivot_random][matfree.low_rank.cholesky_partial_pivot_random].
 
 
     Returns
@@ -181,6 +182,128 @@ def _cholesky_partial_pivot_body(fn: Callable, n: int, *args):
         return L, P, P_matrix, success
 
     return body
+
+
+def cholesky_partial_pivot_random(
+    mat_el: Callable,
+    /,
+    *,
+    nrows: int,
+    rank: int,
+    block_size: int = 1,
+    atol: float = 0.0,
+    rtol: float = 0.0,
+    regularization: float | None = None,
+) -> Callable:
+    r"""Compute a partial Cholesky factorisation with random pivoting (RPCholesky).
+
+    Pivots are sampled with probabilities proportional to the diagonal of the
+    residual $K - L L^*$, so only the diagonal and `rank` rows of $K$ are
+    evaluated (Chen, Epperly, Tropp, Webber, "Randomly pivoted Cholesky:
+    Practical approximation of a kernel matrix with few entry evaluations",
+    Comm. Pure Appl. Math., 2025). With `block_size > 1`, each round samples
+    `block_size` distinct pivots and factors the corresponding block
+    (block RPCholesky); `rank` must be a multiple of `block_size`.
+
+    The factorisation stops after `rank` columns, or earlier once the trace of
+    the residual drops below `atol` or below `rtol` times the trace of $K$.
+    Columns beyond the computed rank are zero, so the result can be passed to
+    [preconditioner][matfree.low_rank.preconditioner].
+
+    Each pivot block $C$ is factored as $C + r \, \mathrm{tr}(C) I$, which keeps
+    the factorisation stable when the block is (numerically) singular; by
+    default, $r$ is the machine precision for `block_size > 1` and zero for
+    `block_size = 1` (a single pivot is positive by construction).
+
+    The function `mat_el(i, j, *params)` must return elements of a
+    **positive semi-definite** (Hermitian) matrix.
+
+    Returns
+    -------
+    cholesky
+        A function `cholesky(key, *params)` that returns `L` of shape
+        `(nrows, rank)` with $K \approx L L^*$, and a dict with
+        `"success"` (whether every pivot block was positive definite),
+        `"rank"` (the number of computed columns),
+        `"pivots"` (the pivot indices; `-1` beyond `"rank"`),
+        `"trace_residual"` and `"trace"`.
+    """
+    if rank > nrows:
+        msg = f"Rank exceeds nrows: {rank} >= {nrows}."
+        raise ValueError(msg)
+    if rank < 1:
+        msg = f"Rank must be positive, but {rank} < {1}."
+        raise ValueError(msg)
+    if rank % block_size != 0:
+        msg = f"Rank must be a multiple of block_size, but {rank} % {block_size} != 0."
+        raise ValueError(msg)
+
+    def cholesky(key, *params):
+        idx = np.arange(nrows)
+
+        def element(i, j):
+            return mat_el(i, j, *params)
+
+        rows = func.vmap(func.vmap(element, in_axes=(None, 0)), in_axes=(0, None))
+        diagonal = func.vmap(element)(idx, idx).real
+        trace = np.sum(diagonal)
+        dtype = np.dtype(element(0, 0))
+        if regularization is None:
+            shift = np.finfo_eps(diagonal.dtype) if block_size > 1 else 0.0
+        else:
+            shift = regularization
+
+        def cond(carry):
+            counter, _R, _pivots, residual, success, _key = carry
+            trace_residual = np.sum(residual)
+            tolerance = np.elementwise_max(atol, rtol * trace)
+            return np.logical_and(
+                np.logical_and(success, trace_residual > tolerance), counter < rank
+            )
+
+        def body(carry):
+            counter, R, pivots, residual, success, key = carry
+
+            # Sample distinct pivots proportionally to the residual diagonal
+            key, subkey = prng.split(key)
+            probs = residual / np.sum(residual)
+            S = prng.choice(subkey, nrows, shape=(block_size,), p=probs, replace=False)
+
+            # Residual rows at the pivots and the (regularised) pivot block.
+            # R stores the rows of L^*, so K ~ R^* R.
+            G = rows(S, idx) - R[:, S].T.conj() @ R
+            C = G[:, S]
+            C = C + shift * linalg.trace(C).real * np.eye(block_size, dtype=dtype)
+            chol_C = linalg.cholesky(C)
+            ok = np.logical_not(np.any(np.isnan(chol_C)))
+
+            # New rows of L^*, and update of the residual diagonal
+            G_solved = linalg.solve_triangular(chol_C, G, lower=True)
+            update = counter + np.arange(block_size)
+            R = np.where(ok, R.at[update].set(G_solved), R)
+            residual_new = residual - np.sum(linalg.abs2(G_solved), axis=0)
+            residual_new = np.elementwise_max(residual_new, 0.0)
+            residual = np.where(ok, residual_new, residual)
+            pivots = np.where(ok, pivots.at[update].set(S), pivots)
+            counter = np.where(ok, counter + block_size, counter)
+            return counter, R, pivots, residual, np.logical_and(success, ok), key
+
+        R = np.zeros((rank, nrows), dtype=dtype)
+        pivots = -np.ones((rank,), dtype=idx.dtype)
+        init = (np.asarray(0), R, pivots, diagonal, np.asarray(True), key)
+        counter, R, pivots, residual, success, _ = control_flow.while_loop(
+            cond, body, init
+        )
+        info = {
+            "success": success,
+            "rank": counter,
+            "pivots": pivots,
+            "trace_residual": np.sum(residual),
+            "trace": trace,
+        }
+        return R.T.conj(), info
+
+    return cholesky
 
 
 def _swap_cols(arr, i, j):
