@@ -71,3 +71,18 @@ def test_mid_rank_reconstruction_satisfies_decomposition(
     # Q shape (k, n), Q.T shape (n, k)
     e_K = np.eye(num_matvecs)[-1]
     test_util.assert_allclose(matrix @ Q.T - Q.T @ T - linalg.outer(q, e_K), 0.0)
+
+
+@testing.parametrize("reortho", ["full", "none"])
+@testing.parametrize("custom_vjp", [True, False])
+def test_init_length_inv_is_inverse_norm_of_initial_vector(reortho, custom_vjp):
+    eigvals = np.arange(1.0, 2.0, step=1 / 12)
+    matrix = test_util.hermitian_matrix_from_eigenvalues(eigvals, prng.prng_key(1))
+    vector = np.flip(np.arange(1.0, 1.0 + len(eigvals)))
+
+    def matvec(x, p):
+        return p @ x
+
+    algorithm = decomp.tridiag_sym(5, reortho=reortho, custom_vjp=custom_vjp)
+    *_, init_length_inv = algorithm(matvec, vector, matrix)
+    test_util.assert_allclose(init_length_inv, 1.0 / linalg.vector_norm(vector))

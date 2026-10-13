@@ -130,7 +130,7 @@ def _tridiag_reortho_full(num_matvecs: int, /, *, custom_vjp: bool, materialize:
     alg = hessenberg(num_matvecs, custom_vjp=custom_vjp, reortho="full")
 
     def estimate(matvec, vec, *params):
-        Q, H, v, norm = alg(matvec, vec, *params)
+        Q, H, v, length_inv = alg(matvec, vec, *params)
 
         T = 0.5 * (H + H.T.conj())
         diags = linalg.diagonal(T, offset=0)
@@ -141,7 +141,7 @@ def _tridiag_reortho_full(num_matvecs: int, /, *, custom_vjp: bool, materialize:
             matrix = _todense_tridiag_sym(diags, offdiags)
 
         return _DecompResult(
-            Q_tall=Q, J_small=matrix, residual=v, init_length_inv=1.0 / norm
+            Q_tall=Q, J_small=matrix, residual=v, init_length_inv=length_inv
         )
 
     return estimate
