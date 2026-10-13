@@ -1,6 +1,5 @@
 # Matfree: Matrix-free linear algebra in JAX
 
-[![CI](https://github.com/pnkraemer/matfree/workflows/ci/badge.svg)](https://github.com/pnkraemer/matfree/actions)
 [![PyPI version](https://img.shields.io/pypi/v/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
 [![License](https://img.shields.io/pypi/l/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
 [![Python versions](https://img.shields.io/pypi/pyversions/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
@@ -182,7 +181,7 @@ Contributions are welcome!
 **Issues:**
 
 Most contributions start with an issue.
-Please don't hesitate to [_create issues_](https://github.com/pnkraemer/matfree/issues) in which you ask for features, give performance feedback, or simply want to reach out.
+Please don't hesitate to [_create issues_](https://github.com/pnkraemer/matfree/issues) in which you ask for features, give performance feedback, or simply want to reach out. If you already have public, (Matfree-compatible) code for the feature you're asking for, please include a link in the issue so we can get an idea how comprehensive a typical implementation is.
 
 **Pull requests:**
 
