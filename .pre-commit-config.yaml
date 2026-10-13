@@ -3,13 +3,13 @@ default_language_version:
   python: python3
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.3
+    rev: v0.17.0
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v2.4.0
     hooks:
       - id: mypy
         args:
@@ -17,7 +17,7 @@ repos:
           - --ignore-missing-imports
           - --explicit-package-bases
   - repo: https://github.com/lyz-code/yamlfix/
-    rev: 1.18.0
+    rev: 1.19.1
     hooks:
       - id: yamlfix
   - repo: https://github.com/executablebooks/mdformat
