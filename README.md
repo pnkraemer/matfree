@@ -1,6 +1,5 @@
 # Matfree: Matrix-free linear algebra in JAX
 
-[![CI](https://github.com/pnkraemer/matfree/workflows/ci/badge.svg)](https://github.com/pnkraemer/matfree/actions)
 [![PyPI version](https://img.shields.io/pypi/v/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
 [![License](https://img.shields.io/pypi/l/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
 [![Python versions](https://img.shields.io/pypi/pyversions/matfree.svg?color=1E4E8C)](https://pypi.org/project/matfree/)
