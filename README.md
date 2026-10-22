@@ -198,6 +198,7 @@ When making a pull request, keep in mind the following (rough) guidelines:
 - Most PRs resolve an issue.
 - Most PRs contain a single commit. [Here is how we can write better commit messages](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/).
 - Most enhancements (e.g. new features) are covered by tests.
+- AI generated code? See below.
 
 [Here is what GitHub considers important for informative pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/getting-started/best-practices-for-pull-requests).
 
@@ -210,6 +211,15 @@ Starting with a basic version of an algorithm is fine, but eventually, Matfree a
 - Should the algorithm work for general linear operators, e.g. functions that linearly map dictionaries to dictionaries such as Jacobians of neural networks? If so, cover this case in a test as well. See the tests and code for partial SVDs for inspiration.
 
 If any of the current code does not fulfill these goals, reach out by opening an issue.
+
+## Understand Matfree's policy on AI generated code
+
+Matfree was initially created (before most AI tools) by a human for other humans. Thus, certain standards apply:
+
+- All contributors should be able to explain all code decisions in the PRs they submitted. This includes unittests and docstrings.
+- All PRs are reviewed by (one) human, so please take this into account when submitting code. Keep PRs brief and easy to review.
+
+Please also see the AI-code policies by [Optax](https://optax.readthedocs.io/en/latest/development.html#can-i-contribute-ai-generated-code) and [JAX](https://docs.jax.dev/en/latest/contributing.html#can-i-contribute-ai-generated-code).
 
 ## Extend Matfree's documentation
 
