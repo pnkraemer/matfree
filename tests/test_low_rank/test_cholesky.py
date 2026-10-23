@@ -13,6 +13,14 @@ def case_cholesky_partial_pivot():
     return low_rank.cholesky_partial_pivot
 
 
+def case_cholesky_partial_pivot_random():
+    def cholesky(mat_el, *, nrows, rank):
+        chol = low_rank.cholesky_partial_pivot_random(mat_el, nrows=nrows, rank=rank)
+        return lambda *params: chol(prng.prng_key(0), *params)
+
+    return cholesky
+
+
 @testing.parametrize("n", [5])
 @testing.parametrize_with_cases("cholesky", cases=".", prefix="case_cholesky")
 def test_full_rank_cholesky_reconstructs_matrix(cholesky, n):
