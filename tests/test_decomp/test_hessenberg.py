@@ -69,6 +69,24 @@ def test_reorthogonalisation_improves_the_estimate(nrows, num_matvecs, reortho):
     test_util.assert_allclose(Q.T @ e0, c * v)
 
 
+@testing.parametrize("reortho_vjp", ["match", "none", "full"])
+def test_forward_pass_follows_reortho_not_reortho_vjp(reortho_vjp):
+    # Without reorthogonalisation, the basis of an ill-conditioned matrix
+    # loses orthogonality. reortho_vjp only concerns the adjoint pass.
+    A = linalg.hilbert(10)
+    v = prng.normal(prng.prng_key(2), shape=(10,))
+
+    def matvec(s, p):
+        return p @ s
+
+    def orthogonality_error(reortho):
+        algorithm = decomp.hessenberg(9, reortho=reortho, reortho_vjp=reortho_vjp)
+        Q, *_ = algorithm(matvec, v, A)
+        return np.array_max(np.abs(Q @ Q.T - np.eye(9)))
+
+    assert orthogonality_error("none") > 100 * orthogonality_error("full")
+
+
 @testing.parametrize("reortho_wrong", [True, "full_with_sparsity", "None"])
 def test_raises_error_for_wrong_reorthogonalisation_flag(reortho_wrong):
     with testing.raises(TypeError, match="Unexpected input"):

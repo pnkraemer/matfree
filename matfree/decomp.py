@@ -381,6 +381,13 @@ def hessenberg(
     if reortho not in reortho_expected:
         msg = f"Unexpected input for {reortho}: either of {reortho_expected} expected."
         raise TypeError(msg)
+    if reortho_vjp not in [*reortho_expected, "match"]:
+        msg = f"Unexpected input for {reortho_vjp}: either of {[*reortho_expected, 'match']} expected."
+        raise TypeError(msg)
+
+    # The forward pass uses 'reortho'; the custom adjoint uses 'reortho_vjp',
+    # which defaults to matching the forward pass.
+    reortho_adjoint = reortho if reortho_vjp == "match" else reortho_vjp
 
     def estimate(matvec, v, *params):
         v_flat, v_unravel = tree.ravel_pytree(v)
@@ -397,7 +404,7 @@ def hessenberg(
 
     def _estimate(matvec_convert: Callable, v, *params):
         return _hessenberg_forward(
-            matvec_convert, num_matvecs, v, *params, reortho=reortho_vjp
+            matvec_convert, num_matvecs, v, *params, reortho=reortho
         )
 
     def estimate_fwd(matvec_convert: Callable, v, *params):
@@ -419,7 +426,7 @@ def hessenberg(
             dH=dH,
             dr=dr,
             dc=dc,
-            reortho=reortho,
+            reortho=reortho_adjoint,
         )
 
     if custom_vjp:
